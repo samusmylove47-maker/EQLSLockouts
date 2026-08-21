@@ -84,8 +84,9 @@ exist". All searches are over the 15 files above unless stated.
 - `grep -F "outstanding replay"` → **0**. `/dzlisttimers` has never been run.
 - `grep -F "recently experienced"` → **0**. `grep -F "recently played here"` → **0**.
 - `grep -F "You do not have a lockout"` → **0**.
-- `grep -i "lockout"` → 106 hits, `grep -i "locked out"` → 31 hits. **Every one is
-  player chat. Zero system lines.**
+- `grep -i "lockout"` → 104 hits, `grep -i "locked out"` → 32 hits (raw, so
+  inflated by file duplication). **Every one is player chat. Filtering out the
+  chat verbs leaves zero system lines.**
 - Only **two** system line shapes containing the word "task" exist in the whole
   corpus: `You have been assigned the task '...'.` and `Your task '...' has been
   updated.` There is **no** completion line, removal line, expiry line, failure
