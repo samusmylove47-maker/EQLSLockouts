@@ -1,5 +1,15 @@
 'use strict';
 
+// SUPERSEDED BY analysis/hails.js — kept because its measurement is still
+// sound and it is how the real mechanism was found.
+//
+// Its premise is WRONG: it assumes entering a group instance grants the weekly
+// task. It does not. The task is granted at the Voidling in the STATIC zone, on
+// saying 'danger', 11-25 seconds BEFORE the instance is entered. This script
+// measured that offset as a negative number and that anomaly is what led to the
+// hail exchange. The correlation it reports is real; the causal direction in the
+// title is not. Use hails.js for the lockout state.
+//
 // Does entering a weekly boss's GROUP instance always grant the weekly task?
 //
 // Every one of the six observed grants followed a `- Group` entry, and no
