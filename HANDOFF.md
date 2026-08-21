@@ -51,9 +51,14 @@ The reliable check is the API, which is not edge-cached the same way:
 gh api repos/samusmylove47-maker/EQLSLockouts/contents/HANDOFF.md?ref=session-d/phase-0 --jq .size
 ```
 
-or compare `gh api .../commits/session-d/phase-0 --jq .sha` against the SHA the
-session reports. **This one is `6933e9f`** — anything older and you are reading a
-cached copy, not a stale report.
+then compare that size against what the raw URL gives you; if they differ, the
+raw copy is stale and you should wait rather than reason about it.
+
+**I first wrote the current commit SHA here as the thing to compare against, and
+the commit that added the line changed the SHA, so it was wrong the instant it
+was written.** That is "derive, never type" catching me inside a paragraph about
+verification. There is no fixed SHA to quote — ask `gh api` for it, or take it
+from whatever the session tells you in its reply.
 
 **Kind 2 — I read it, you cannot, and no amount of good faith fixes that.**
 
