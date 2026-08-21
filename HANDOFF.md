@@ -35,6 +35,26 @@ https://raw.githubusercontent.com/samusmylove47-maker/EQLSLockouts/session-d/pha
 | `analysis/derive.js`, `hails.js`, `make-fixture.js`, `group-entries.js` | the scripts that produce it |
 | `sources/raw/2026-08-10-weekly-task-fixture.log` | 87 lines, redacted, generated |
 
+**One trap in this channel itself, found by checking my own push.**
+`raw.githubusercontent.com` sits behind a CDN that caches for around five
+minutes, and a `Cache-Control: no-cache` request header does not bypass it. I
+fetched this file seconds after pushing the rewrite and got **HTTP 200 with the
+previous version** — right status, right-looking size, wrong content. **A 200
+that silently serves a stale file is the same failure family as the
+everquestlegends.com soft-404 already in our record.** If you curl a handoff
+immediately after a session says they have pushed, you may read the version
+before the one they are telling you about.
+
+The reliable check is the API, which is not edge-cached the same way:
+
+```
+gh api repos/samusmylove47-maker/EQLSLockouts/contents/HANDOFF.md?ref=session-d/phase-0 --jq .size
+```
+
+or compare `gh api .../commits/session-d/phase-0 --jq .sha` against the SHA the
+session reports. **This one is `6933e9f`** — anything older and you are reading a
+cached copy, not a stale report.
+
 **Kind 2 — I read it, you cannot, and no amount of good faith fixes that.**
 
 - **The raw logs.** 15 files, 434 MB, on this machine. Gitignored and they stay
