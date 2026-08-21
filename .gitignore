@@ -1,0 +1,5 @@
+# Raw logs never commit — they contain private chat.
+state/logs/
+*eqlog*.txt
+scratch/
+node_modules/

@@ -1,0 +1,1032 @@
+{
+  "generatedBy": "analysis/derive.js",
+  "generatedFor": "2026-08-21",
+  "note": "Every figure quoted in HANDOFF.md is read out of this file. State is kept per character: merging two grouped characters fabricates reset brackets seconds wide.",
+  "corpus": {
+    "files": 15,
+    "bytes": 433914867,
+    "lines": 5253948,
+    "perFile": [
+      {
+        "file": "eqlog_Avenrae_rivervale.txt",
+        "character": "Avenrae",
+        "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs",
+        "bytes": 33721238,
+        "lines": 428682,
+        "eventsAdded": 143
+      },
+      {
+        "file": "eqlog_Avenrae_rivervale_2026-08-15.txt",
+        "character": "Avenrae",
+        "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs",
+        "bytes": 92384005,
+        "lines": 1117985,
+        "eventsAdded": 278
+      },
+      {
+        "file": "eqlog_Avenrae_rivervale_2026-08-17.txt",
+        "character": "Avenrae",
+        "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs",
+        "bytes": 29825171,
+        "lines": 354786,
+        "eventsAdded": 80
+      },
+      {
+        "file": "eqlog_Shara_rivervale3.txt",
+        "character": "Shara",
+        "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs",
+        "bytes": 4912150,
+        "lines": 59304,
+        "eventsAdded": 2
+      },
+      {
+        "file": "eqlog_Shara_rivervale5.txt",
+        "character": "Shara",
+        "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs",
+        "bytes": 25768683,
+        "lines": 312149,
+        "eventsAdded": 121
+      },
+      {
+        "file": "eqlog_Shara_rivervale_2026-08-14.txt",
+        "character": "Shara",
+        "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs",
+        "bytes": 7114674,
+        "lines": 91576,
+        "eventsAdded": 23
+      },
+      {
+        "file": "eqlog_Shara_rivervale_2026-08-14b.txt",
+        "character": "Shara",
+        "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs",
+        "bytes": 112024239,
+        "lines": 1340004,
+        "eventsAdded": 383
+      },
+      {
+        "file": "eqlog_Shara_rivervale_2026-08-16.txt",
+        "character": "Shara",
+        "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs",
+        "bytes": 7032878,
+        "lines": 88772,
+        "eventsAdded": 20
+      },
+      {
+        "file": "eqlog_Shara_rivervale.txt",
+        "character": "Shara",
+        "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source",
+        "bytes": 66160702,
+        "lines": 795863,
+        "eventsAdded": 120
+      },
+      {
+        "file": "eqlog_Shara_rivervale2.txt",
+        "character": "Shara",
+        "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source",
+        "bytes": 8543093,
+        "lines": 102157,
+        "eventsAdded": 9
+      },
+      {
+        "file": "eqlog_Shara_rivervale3.txt",
+        "character": "Shara",
+        "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source",
+        "bytes": 4912150,
+        "lines": 59304,
+        "eventsAdded": 0
+      },
+      {
+        "file": "eqlog_Shara_rivervale4.txt",
+        "character": "Shara",
+        "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source",
+        "bytes": 6796306,
+        "lines": 79352,
+        "eventsAdded": 0
+      },
+      {
+        "file": "eqlog_Shara_rivervale5.txt",
+        "character": "Shara",
+        "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source",
+        "bytes": 25768683,
+        "lines": 312149,
+        "eventsAdded": 43
+      },
+      {
+        "file": "eqlog_Shara_rivervale_2026-08-17.txt",
+        "character": "Shara",
+        "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source",
+        "bytes": 3992759,
+        "lines": 51109,
+        "eventsAdded": 24
+      },
+      {
+        "file": "eqlog_Shara_rivervale_2026-08-18.txt",
+        "character": "Shara",
+        "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source",
+        "bytes": 4958136,
+        "lines": 60756,
+        "eventsAdded": 15
+      }
+    ]
+  },
+  "difficultyTable": [
+    {
+      "index": 0,
+      "label": "Normal"
+    },
+    {
+      "index": 1,
+      "label": "Awakened"
+    },
+    {
+      "index": 2,
+      "label": "Adaptive"
+    },
+    {
+      "index": 3,
+      "label": "Fused"
+    },
+    {
+      "index": 4,
+      "label": "Refined"
+    }
+  ],
+  "characters": [
+    {
+      "character": "Avenrae",
+      "coverage": {
+        "provenance": "observed",
+        "from": "2026-08-09 15:11:05",
+        "to": "2026-08-17 00:01:19",
+        "note": "Covers only the lines fed to this module. A live tailer that begins at the end of the file has no history; backfill explicitly if history is wanted."
+      },
+      "dropped": {
+        "unstamped": 16,
+        "duplicate": 0
+      },
+      "tasks": [
+        {
+          "task": "Potential of the Void - Lord Nagafen - Weekly",
+          "boss": "Lord Nagafen",
+          "cadence": "Weekly",
+          "assignments": [
+            "2026-08-10 17:14:49",
+            "2026-08-11 21:44:19"
+          ],
+          "completions": [
+            "2026-08-10 17:28:13",
+            "2026-08-11 21:59:50"
+          ]
+        },
+        {
+          "task": "Potential of the Void - Master Yael - Weekly",
+          "boss": "Master Yael",
+          "cadence": "Weekly",
+          "assignments": [
+            "2026-08-10 17:34:37",
+            "2026-08-11 22:38:27"
+          ],
+          "completions": [
+            "2026-08-10 17:38:07",
+            "2026-08-11 22:45:11"
+          ]
+        },
+        {
+          "task": "Potential of the Void - Lady Vox - Weekly",
+          "boss": "Lady Vox",
+          "cadence": "Weekly",
+          "assignments": [
+            "2026-08-10 17:48:21",
+            "2026-08-11 20:40:44"
+          ],
+          "completions": [
+            "2026-08-10 17:56:09",
+            "2026-08-11 20:52:36"
+          ]
+        }
+      ],
+      "grantsTotal": 6,
+      "grantsByItem": {
+        "Void-Touched Potential": 6
+      },
+      "voidTokenGrants": [
+        "2026-08-10 17:28:13",
+        "2026-08-10 17:38:07",
+        "2026-08-10 17:56:09",
+        "2026-08-11 20:52:36",
+        "2026-08-11 21:59:50",
+        "2026-08-11 22:45:11"
+      ],
+      "requestsGranted": 6,
+      "requestsRefused": 22,
+      "requestsUnknown": 0,
+      "period": {
+        "provenance": "inferred",
+        "atLeastDays": 4.988,
+        "lastGrantAt": "2026-08-11 22:38:27",
+        "stillRefusedAt": "2026-08-16 22:20:48",
+        "basis": "The weekly granted at lastGrantAt was still refused at stillRefusedAt, with a Voidling present as positive control and no grant in between. The period is therefore at least this long. It is a floor, not a value.",
+        "caveats": [
+          "Log stamps carry no timezone. An interval spanning a daylight-saving transition is wrong by the size of the shift. Treat as a bound, not a duration.",
+          "This bounds the period from below only. It says nothing about the upper bound, and nothing about which weekday or hour the turnover falls on."
+        ]
+      },
+      "resetProvenance": "inferred",
+      "resetBrackets": [
+        {
+          "boss": "Lady Vox",
+          "cadence": "Weekly",
+          "afterObserved": "2026-08-10 18:34:52",
+          "beforeObserved": "2026-08-11 20:40:44",
+          "widthHours": 26.098,
+          "afterWeekday": 1,
+          "beforeWeekday": 2
+        },
+        {
+          "boss": "Lord Nagafen",
+          "cadence": "Weekly",
+          "afterObserved": "2026-08-10 18:34:52",
+          "beforeObserved": "2026-08-11 21:44:19",
+          "widthHours": 27.157,
+          "afterWeekday": 1,
+          "beforeWeekday": 2
+        },
+        {
+          "boss": "Master Yael",
+          "cadence": "Weekly",
+          "afterObserved": "2026-08-10 18:34:52",
+          "beforeObserved": "2026-08-11 22:38:27",
+          "widthHours": 28.06,
+          "afterWeekday": 1,
+          "beforeWeekday": 2
+        }
+      ],
+      "resetIntersects": true,
+      "resetIntersectionHours": 26.098,
+      "instances": [
+        {
+          "zone": "The Plane of Hate",
+          "kind": "raid",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 7
+        },
+        {
+          "zone": "The Plane of Hate",
+          "kind": "group",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 7
+        },
+        {
+          "zone": "The Ruins of Old Paineel",
+          "kind": "raid",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 5
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "raid",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 5
+        },
+        {
+          "zone": "The Plane of Sky",
+          "kind": "raid",
+          "difficulty": 0,
+          "label": "Normal",
+          "seen": 5
+        },
+        {
+          "zone": "Nagafen's Lair",
+          "kind": "group",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 4
+        },
+        {
+          "zone": "The Ruins of Old Paineel",
+          "kind": "group",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 4
+        },
+        {
+          "zone": "The Ruins of Old Paineel",
+          "kind": "group",
+          "difficulty": 2,
+          "label": "Adaptive",
+          "seen": 4
+        },
+        {
+          "zone": "The Plane of Hate",
+          "kind": "group",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 4
+        },
+        {
+          "zone": "Nagafen's Lair",
+          "kind": "raid",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 3
+        },
+        {
+          "zone": "The Rathe Mountains",
+          "kind": "raid",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 3
+        },
+        {
+          "zone": "The Ruins of Old Paineel",
+          "kind": "group",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 2
+        },
+        {
+          "zone": "The Ruins of Old Paineel",
+          "kind": "group",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 2
+        },
+        {
+          "zone": "The Permafrost Caverns",
+          "kind": "group",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 2
+        },
+        {
+          "zone": "The Permafrost Caverns",
+          "kind": "group",
+          "difficulty": 2,
+          "label": "Adaptive",
+          "seen": 2
+        },
+        {
+          "zone": "The Permafrost Caverns",
+          "kind": "group",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 2
+        },
+        {
+          "zone": "Nagafen's Lair",
+          "kind": "group",
+          "difficulty": 2,
+          "label": "Adaptive",
+          "seen": 2
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "group",
+          "difficulty": 2,
+          "label": "Adaptive",
+          "seen": 2
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "group",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 2
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "group",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 2
+        },
+        {
+          "zone": "Nagafen's Lair",
+          "kind": "group",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 2
+        },
+        {
+          "zone": "Nagafen's Lair",
+          "kind": "group",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 2
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "raid",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 2
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "raid",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 2
+        },
+        {
+          "zone": "The Plane of Hate",
+          "kind": "group",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 2
+        },
+        {
+          "zone": "The Ruins of Old Guk",
+          "kind": "raid",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 1
+        },
+        {
+          "zone": "Temple of Cazic-Thule",
+          "kind": "raid",
+          "difficulty": 2,
+          "label": "Adaptive",
+          "seen": 1
+        },
+        {
+          "zone": "Temple of Cazic-Thule",
+          "kind": "raid",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 1
+        },
+        {
+          "zone": "Temple of Cazic-Thule",
+          "kind": "raid",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 1
+        },
+        {
+          "zone": "The Ruins of Old Paineel",
+          "kind": "group",
+          "difficulty": 0,
+          "label": "Normal",
+          "seen": 1
+        },
+        {
+          "zone": "The Ruins of Old Paineel",
+          "kind": "group",
+          "difficulty": null,
+          "label": null,
+          "seen": 1
+        },
+        {
+          "zone": "The Permafrost Caverns",
+          "kind": "group",
+          "difficulty": 0,
+          "label": "Normal",
+          "seen": 1
+        },
+        {
+          "zone": "The Permafrost Caverns",
+          "kind": "group",
+          "difficulty": null,
+          "label": null,
+          "seen": 1
+        },
+        {
+          "zone": "The Rathe Mountains",
+          "kind": "raid",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 1
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "raid",
+          "difficulty": 2,
+          "label": "Adaptive",
+          "seen": 1
+        },
+        {
+          "zone": "The Plane of Hate",
+          "kind": "raid",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 1
+        }
+      ]
+    },
+    {
+      "character": "Shara",
+      "coverage": {
+        "provenance": "observed",
+        "from": "2026-08-04 15:40:46",
+        "to": "2026-08-18 14:21:55",
+        "note": "Covers only the lines fed to this module. A live tailer that begins at the end of the file has no history; backfill explicitly if history is wanted."
+      },
+      "dropped": {
+        "unstamped": 14,
+        "duplicate": 235
+      },
+      "tasks": [
+        {
+          "task": "Potential of the Void - Lord Nagafen - Weekly",
+          "boss": "Lord Nagafen",
+          "cadence": "Weekly",
+          "assignments": [
+            "2026-08-10 17:14:53",
+            "2026-08-11 21:44:02"
+          ],
+          "completions": [
+            "2026-08-10 17:28:13",
+            "2026-08-11 21:59:51"
+          ]
+        },
+        {
+          "task": "Potential of the Void - Master Yael - Weekly",
+          "boss": "Master Yael",
+          "cadence": "Weekly",
+          "assignments": [
+            "2026-08-10 17:34:11",
+            "2026-08-11 22:38:03"
+          ],
+          "completions": [
+            "2026-08-10 17:38:07",
+            "2026-08-11 22:45:11"
+          ]
+        },
+        {
+          "task": "Potential of the Void - Lady Vox - Weekly",
+          "boss": "Lady Vox",
+          "cadence": "Weekly",
+          "assignments": [
+            "2026-08-10 17:48:23",
+            "2026-08-11 20:37:37"
+          ],
+          "completions": [
+            "2026-08-10 17:56:09",
+            "2026-08-11 20:52:37"
+          ]
+        },
+        {
+          "task": "Something is Wrrrong",
+          "boss": null,
+          "cadence": null,
+          "assignments": [
+            "2026-08-13 21:26:34",
+            "2026-08-13 21:26:43",
+            "2026-08-13 21:26:57",
+            "2026-08-13 21:27:16",
+            "2026-08-13 21:27:24",
+            "2026-08-13 21:27:30",
+            "2026-08-13 21:27:38",
+            "2026-08-13 21:27:52",
+            "2026-08-13 21:28:01"
+          ],
+          "completions": [
+            "2026-08-13 21:26:34",
+            "2026-08-13 21:26:38",
+            "2026-08-13 21:26:43",
+            "2026-08-13 21:26:51",
+            "2026-08-13 21:26:57",
+            "2026-08-13 21:27:12",
+            "2026-08-13 21:27:16",
+            "2026-08-13 21:27:21",
+            "2026-08-13 21:27:24",
+            "2026-08-13 21:27:28",
+            "2026-08-13 21:27:30",
+            "2026-08-13 21:27:35",
+            "2026-08-13 21:27:38",
+            "2026-08-13 21:27:42",
+            "2026-08-13 21:27:52",
+            "2026-08-13 21:27:57",
+            "2026-08-13 21:28:01",
+            "2026-08-13 21:28:04"
+          ]
+        },
+        {
+          "task": "This Means Warrr",
+          "boss": null,
+          "cadence": null,
+          "assignments": [
+            "2026-08-13 21:26:38",
+            "2026-08-13 21:26:51",
+            "2026-08-13 21:27:12",
+            "2026-08-13 21:27:21",
+            "2026-08-13 21:27:28",
+            "2026-08-13 21:27:35",
+            "2026-08-13 21:27:42",
+            "2026-08-13 21:27:57",
+            "2026-08-13 21:28:04"
+          ],
+          "completions": [
+            "2026-08-13 21:26:38",
+            "2026-08-13 21:26:41",
+            "2026-08-13 21:26:51",
+            "2026-08-13 21:27:12",
+            "2026-08-13 21:27:21",
+            "2026-08-13 21:27:28",
+            "2026-08-13 21:27:35",
+            "2026-08-13 21:27:42",
+            "2026-08-13 21:27:57",
+            "2026-08-13 21:28:04",
+            "2026-08-13 21:28:23"
+          ]
+        }
+      ],
+      "grantsTotal": 24,
+      "grantsByItem": {
+        "Void-Touched Potential": 6,
+        "Hamed's Ring of Tears": 9,
+        "Talisman of Kejaar Kerrath": 9
+      },
+      "voidTokenGrants": [
+        "2026-08-10 17:28:13",
+        "2026-08-10 17:38:07",
+        "2026-08-10 17:56:09",
+        "2026-08-11 20:52:37",
+        "2026-08-11 21:59:51",
+        "2026-08-11 22:45:11"
+      ],
+      "requestsGranted": 6,
+      "requestsRefused": 20,
+      "requestsUnknown": 0,
+      "period": {
+        "provenance": "inferred",
+        "atLeastDays": 5.783,
+        "lastGrantAt": "2026-08-11 22:38:02",
+        "stillRefusedAt": "2026-08-17 17:25:45",
+        "basis": "The weekly granted at lastGrantAt was still refused at stillRefusedAt, with a Voidling present as positive control and no grant in between. The period is therefore at least this long. It is a floor, not a value.",
+        "caveats": [
+          "Log stamps carry no timezone. An interval spanning a daylight-saving transition is wrong by the size of the shift. Treat as a bound, not a duration.",
+          "This bounds the period from below only. It says nothing about the upper bound, and nothing about which weekday or hour the turnover falls on."
+        ]
+      },
+      "resetProvenance": "inferred",
+      "resetBrackets": [
+        {
+          "boss": "Lady Vox",
+          "cadence": "Weekly",
+          "afterObserved": "2026-08-10 18:34:14",
+          "beforeObserved": "2026-08-11 20:37:37",
+          "widthHours": 26.056,
+          "afterWeekday": 1,
+          "beforeWeekday": 2
+        },
+        {
+          "boss": "Lord Nagafen",
+          "cadence": "Weekly",
+          "afterObserved": "2026-08-10 18:34:14",
+          "beforeObserved": "2026-08-11 21:44:02",
+          "widthHours": 27.163,
+          "afterWeekday": 1,
+          "beforeWeekday": 2
+        },
+        {
+          "boss": "Master Yael",
+          "cadence": "Weekly",
+          "afterObserved": "2026-08-10 18:34:14",
+          "beforeObserved": "2026-08-11 22:38:03",
+          "widthHours": 28.064,
+          "afterWeekday": 1,
+          "beforeWeekday": 2
+        }
+      ],
+      "resetIntersects": true,
+      "resetIntersectionHours": 26.056,
+      "instances": [
+        {
+          "zone": "The Castle of Mistmoore",
+          "kind": "raid",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 17
+        },
+        {
+          "zone": "The Ruins of Old Guk",
+          "kind": "raid",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 14
+        },
+        {
+          "zone": "Befallen",
+          "kind": "raid",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 13
+        },
+        {
+          "zone": "Blackburrow",
+          "kind": "raid",
+          "difficulty": 2,
+          "label": "Adaptive",
+          "seen": 9
+        },
+        {
+          "zone": "The Ruins of Old Paineel",
+          "kind": "raid",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 8
+        },
+        {
+          "zone": "Befallen",
+          "kind": "raid",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 6
+        },
+        {
+          "zone": "The Ruins of Old Paineel",
+          "kind": "group",
+          "difficulty": 2,
+          "label": "Adaptive",
+          "seen": 5
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "raid",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 5
+        },
+        {
+          "zone": "Nagafen's Lair",
+          "kind": "raid",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 4
+        },
+        {
+          "zone": "Nagafen's Lair",
+          "kind": "group",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 4
+        },
+        {
+          "zone": "The Ruins of Old Paineel",
+          "kind": "group",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 4
+        },
+        {
+          "zone": "The Plane of Sky",
+          "kind": "raid",
+          "difficulty": 0,
+          "label": "Normal",
+          "seen": 4
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "raid",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 4
+        },
+        {
+          "zone": "The Plane of Hate",
+          "kind": "raid",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 4
+        },
+        {
+          "zone": "The City of Guk",
+          "kind": "raid",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 4
+        },
+        {
+          "zone": "Temple of Cazic-Thule",
+          "kind": "raid",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 3
+        },
+        {
+          "zone": "The Rathe Mountains",
+          "kind": "raid",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 3
+        },
+        {
+          "zone": "Nagafen's Lair",
+          "kind": "group",
+          "difficulty": 2,
+          "label": "Adaptive",
+          "seen": 3
+        },
+        {
+          "zone": "Temple of Cazic-Thule",
+          "kind": "raid",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 2
+        },
+        {
+          "zone": "The Ruins of Old Paineel",
+          "kind": "group",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 2
+        },
+        {
+          "zone": "The Ruins of Old Paineel",
+          "kind": "group",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 2
+        },
+        {
+          "zone": "The Permafrost Caverns",
+          "kind": "group",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 2
+        },
+        {
+          "zone": "The Permafrost Caverns",
+          "kind": "group",
+          "difficulty": 2,
+          "label": "Adaptive",
+          "seen": 2
+        },
+        {
+          "zone": "The Permafrost Caverns",
+          "kind": "group",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 2
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "group",
+          "difficulty": 2,
+          "label": "Adaptive",
+          "seen": 2
+        },
+        {
+          "zone": "The Plane of Hate",
+          "kind": "group",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 2
+        },
+        {
+          "zone": "The Plane of Hate",
+          "kind": "group",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 2
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "group",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 2
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "group",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 2
+        },
+        {
+          "zone": "Nagafen's Lair",
+          "kind": "group",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 2
+        },
+        {
+          "zone": "Nagafen's Lair",
+          "kind": "group",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 2
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "raid",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 2
+        },
+        {
+          "zone": "The Plane of Hate",
+          "kind": "group",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 2
+        },
+        {
+          "zone": "Blackburrow",
+          "kind": "raid",
+          "difficulty": 3,
+          "label": "Fused",
+          "seen": 2
+        },
+        {
+          "zone": "Befallen",
+          "kind": "raid",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 2
+        },
+        {
+          "zone": "The Castle of Mistmoore",
+          "kind": "raid",
+          "difficulty": 2,
+          "label": "Adaptive",
+          "seen": 2
+        },
+        {
+          "zone": "Temple of Cazic-Thule",
+          "kind": "raid",
+          "difficulty": 2,
+          "label": "Adaptive",
+          "seen": 1
+        },
+        {
+          "zone": "The Ruins of Old Paineel",
+          "kind": "group",
+          "difficulty": 0,
+          "label": "Normal",
+          "seen": 1
+        },
+        {
+          "zone": "The Ruins of Old Paineel",
+          "kind": "group",
+          "difficulty": null,
+          "label": null,
+          "seen": 1
+        },
+        {
+          "zone": "The Permafrost Caverns",
+          "kind": "group",
+          "difficulty": 0,
+          "label": "Normal",
+          "seen": 1
+        },
+        {
+          "zone": "The Permafrost Caverns",
+          "kind": "group",
+          "difficulty": null,
+          "label": null,
+          "seen": 1
+        },
+        {
+          "zone": "The Rathe Mountains",
+          "kind": "raid",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 1
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "raid",
+          "difficulty": 2,
+          "label": "Adaptive",
+          "seen": 1
+        },
+        {
+          "zone": "The Plane of Hate",
+          "kind": "raid",
+          "difficulty": 1,
+          "label": "Awakened",
+          "seen": 1
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "group",
+          "difficulty": 0,
+          "label": "Normal",
+          "seen": 1
+        },
+        {
+          "zone": "The Plane of Fear",
+          "kind": "group",
+          "difficulty": null,
+          "label": null,
+          "seen": 1
+        },
+        {
+          "zone": "The Castle of Mistmoore",
+          "kind": "raid",
+          "difficulty": 4,
+          "label": "Refined",
+          "seen": 1
+        }
+      ]
+    }
+  ]
+}

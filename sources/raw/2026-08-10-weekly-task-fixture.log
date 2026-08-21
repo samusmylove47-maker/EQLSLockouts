@@ -1,0 +1,86 @@
+# EQLS Lockouts — redacted fixture, built by analysis/make-fixture.js
+#
+# Verbatim excerpts from the owner's own EverQuest Legends logs. Every line
+# below is exactly as the client wrote it. Nothing has been rewritten: lines
+# carrying private conversation were DROPPED WHOLE, because a rewritten line
+# still parses into a fake event.
+#
+# Character: Avenrae, server rivervale. Dropped: 164 private, 30662 unmodelled.
+#
+# CLOCK: stamps are the game client's local wall clock and carry no timezone.
+# The machine that wrote them is set to "Eastern Standard Time"
+# (Windows tz id; UTC-05:00 base, DST active in August, so UTC-04:00 for
+# these lines). Read off the OS on 21 Aug 2026, not asked for and not guessed.
+# Recorded here because every published candidate reset rule is stated in
+# Pacific, and without this the comparison is off by an unknown constant.
+#
+# ENCODING: measured, not assumed. Across all 15 logs (440,214,858 bytes)
+# exactly 9 bytes are >= 0x80, and all 9 are EF BF BD (U+FFFD). Valid UTF-8.
+# Read these files as UTF-8.
+#
+# Lines beginning with # are this header and are not log content.
+
+# --- Nagafen: invite, task assigned, instanced zone-in, kill, task updated, token
+# --- source: eqlog_Avenrae_rivervale.txt  window: [Mon Aug 10 17:14:30] .. [Mon Aug 10 17:28:20]
+# --- 29 private line(s) dropped whole, 12957 unmodelled line(s) dropped whole
+[Mon Aug 10 17:14:34 2026] Lumbarin has asked you to join the instance: Nagafen's Lair - Group 1 (Awakened).        Would you like to join? Accepting will incur you a charge or replay timer.
+[Mon Aug 10 17:14:47 2026] You say, 'Hail, voidling'
+[Mon Aug 10 17:14:48 2026] Voidling says, 'Ah, another who thinks themselves a Legend. Do you truly believe you are immune to the possibility of fracturing space and time and unleashing the Void? Only you can accept the risk and the [danger]...'
+[Mon Aug 10 17:14:48 2026] Voidling says, 'Ah, another who thinks themselves a Legend. Do you truly believe you are immune to the possibility of fracturing space and time and unleashing the Void? Only you can accept the risk and the [danger]...'
+[Mon Aug 10 17:14:49 2026] You say, 'danger'
+[Mon Aug 10 17:14:49 2026] You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.
+[Mon Aug 10 17:14:49 2026] Voidling says, 'Your hubris risks our very reality itself.'
+[Mon Aug 10 17:15:09 2026] You have entered Nagafen's Lair - Group 1 (Awakened).
+[Mon Aug 10 17:18:25 2026] King Tranix pet has been slain by Wambo!
+[Mon Aug 10 17:19:34 2026] King Tranix has been slain by a fire giant warrior!
+[Mon Aug 10 17:20:42 2026] Warlord Skarlon has been slain by Lumbarin!
+[Mon Aug 10 17:25:28 2026] Magus Rokyl has been slain by Lumbarin!
+[Mon Aug 10 17:28:13 2026] Your task 'Potential of the Void - Lord Nagafen - Weekly' has been updated.
+[Mon Aug 10 17:28:13 2026] You have been given: Void-Touched Potential
+[Mon Aug 10 17:28:13 2026] Lord Nagafen has been slain by Wambo!
+
+# --- Lady Vox, same week — third of three tasks, reaching the 3/week cap
+# --- source: eqlog_Avenrae_rivervale.txt  window: [Mon Aug 10 17:48:15] .. [Mon Aug 10 17:56:15]
+# --- 53 private line(s) dropped whole, 8559 unmodelled line(s) dropped whole
+[Mon Aug 10 17:48:20 2026] You say, 'Hail, voidling'
+[Mon Aug 10 17:48:20 2026] Voidling says, 'Ah, another who thinks themselves a Legend. Do you truly believe you are immune to the possibility of fracturing space and time and unleashing the Void? Only you can accept the risk and the [danger]...'
+[Mon Aug 10 17:48:21 2026] You say, 'danger'
+[Mon Aug 10 17:48:21 2026] You have been assigned the task 'Potential of the Void - Lady Vox - Weekly'.
+[Mon Aug 10 17:48:21 2026] Voidling says, 'Your hubris risks our very reality itself.'
+[Mon Aug 10 17:48:24 2026] Voidling says, 'Your hubris risks our very reality itself.'
+[Mon Aug 10 17:48:46 2026] You have entered The Permafrost Caverns - Group.
+[Mon Aug 10 17:50:24 2026] Giant wooly spider has been slain by Lumbarin!
+[Mon Aug 10 17:56:09 2026] Your task 'Potential of the Void - Lady Vox - Weekly' has been updated.
+[Mon Aug 10 17:56:09 2026] You have been given: Void-Touched Potential
+
+# --- Lady Vox RE-ASSIGNED the next day — the far side of the reset bracket
+# --- source: eqlog_Avenrae_rivervale_2026-08-15.txt  window: [Tue Aug 11 20:40:35] .. [Tue Aug 11 20:52:45]
+# --- 81 private line(s) dropped whole, 9122 unmodelled line(s) dropped whole
+[Tue Aug 11 20:40:42 2026] Voidling says, 'Ah, another who thinks themselves a Legend. Do you truly believe you are immune to the possibility of fracturing space and time and unleashing the Void? Only you can accept the risk and the [danger]...'
+[Tue Aug 11 20:40:42 2026] You say, 'Hail, voidling'
+[Tue Aug 11 20:40:43 2026] Voidling says, 'Ah, another who thinks themselves a Legend. Do you truly believe you are immune to the possibility of fracturing space and time and unleashing the Void? Only you can accept the risk and the [danger]...'
+[Tue Aug 11 20:40:44 2026] You say, 'danger'
+[Tue Aug 11 20:40:44 2026] Voidling says, 'Your hubris risks our very reality itself.'
+[Tue Aug 11 20:40:44 2026] You have been assigned the task 'Potential of the Void - Lady Vox - Weekly'.
+[Tue Aug 11 20:40:44 2026] Voidling says, 'Your hubris risks our very reality itself.'
+[Tue Aug 11 20:40:57 2026] You have entered The Permafrost Caverns - Group 1 (Awakened).
+[Tue Aug 11 20:52:36 2026] Your task 'Potential of the Void - Lady Vox - Weekly' has been updated.
+[Tue Aug 11 20:52:36 2026] You have been given: Void-Touched Potential
+[Tue Aug 11 20:52:36 2026] Lady Vox has been slain by Stonewahl!
+
+# --- REFUSED — identical exchange, no task line. Silence is the lockout signal.
+# --- source: eqlog_Avenrae_rivervale.txt  window: [Mon Aug 10 18:05:14] .. [Mon Aug 10 18:05:22]
+# --- 0 private line(s) dropped whole, 14 unmodelled line(s) dropped whole
+[Mon Aug 10 18:05:16 2026] You say, 'Hail, voidling'
+[Mon Aug 10 18:05:16 2026] Voidling says, 'Ah, another who thinks themselves a Legend. Do you truly believe you are immune to the possibility of fracturing space and time and unleashing the Void? Only you can accept the risk and the [danger]...'
+[Mon Aug 10 18:05:17 2026] You say, 'danger'
+[Mon Aug 10 18:05:18 2026] Voidling says, 'Your hubris risks our very reality itself.'
+[Mon Aug 10 18:05:20 2026] Voidling says, 'Your hubris risks our very reality itself.'
+
+# --- Last REFUSED of 10 Aug — the lower bound of the reset bracket
+# --- source: eqlog_Avenrae_rivervale.txt  window: [Mon Aug 10 18:34:48] .. [Mon Aug 10 18:34:58]
+# --- 1 private line(s) dropped whole, 10 unmodelled line(s) dropped whole
+[Mon Aug 10 18:34:51 2026] You say, 'Hail, voidling'
+[Mon Aug 10 18:34:51 2026] Voidling says, 'Ah, another who thinks themselves a Legend. Do you truly believe you are immune to the possibility of fracturing space and time and unleashing the Void? Only you can accept the risk and the [danger]...'
+[Mon Aug 10 18:34:52 2026] You say, 'danger'
+[Mon Aug 10 18:34:53 2026] Voidling says, 'Your hubris risks our very reality itself.'
