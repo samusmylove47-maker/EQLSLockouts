@@ -159,6 +159,23 @@ about ten minutes, once** — because the logs answered most of Phase 0.
 Filters set first, wall clock written beside every capture, a positive control in
 each, and a stated branch for every null result.
 
+**Asked directly on 21 Aug whether the measurements are needed to progress:
+no. Nothing is blocked.** The module is built, tested and complete without them,
+and it is complete *because* it reports a bracket rather than a value — the
+missing measurement is a value it correctly declines to invent, not a hole.
+
+So: **do not make a special trip.** Ordered by value per minute spent, if you are
+logging in anyway:
+
+1. **`/dzlisttimers`** — ten seconds, and the highest payoff-per-second available
+   anywhere in this project. If it returns timers, it may make the entire
+   inference chain unnecessary.
+2. **The D2+ confound break** — free if you are already raiding, and it settles a
+   real ambiguity in the data model that the corpus cannot.
+3. **The Tuesday pair** — the only time-locked item. Next Tuesday is **25 Aug**.
+   Worth doing only if it is convenient; a week's delay costs nothing that is
+   currently blocked.
+
 ---
 
 ### 4. What would make the module awkward for Shara
@@ -207,6 +224,31 @@ from it.
    an epoch and throws with an explanation, because a silent timezone error is
    the failure this whole module exists to avoid.
 
+**UPDATE, 21 Aug — Shara answered, relayed by the owner.** Her words: *"my log
+parser is set up to be last line only, but it was going to be a planned addition
+that the lockout timer tracker have a button to do a one time scan by user
+request of the entire log to check for timers."*
+
+**So integration concern #1 is already on her roadmap — she identified the same
+need independently, before seeing any of this.** That is the concern I ranked as
+the single most important one, and it is closed as a design question. `handleLines()`
+is the bulk path and it is pure, so her button owns the file reading entirely.
+
+I have written `docs/FOR-AURAS.md` with what that scan needs to get right.
+**It is written, not sent** — anything offered to Shara is yours. Three points,
+two of which would produce a *wrong* answer rather than a missing one:
+
+- **Scan the folder, not the newest file.** Measured: the two halves of our only
+  reset measurement are in **different files** — the three Mon 10 Aug grants in
+  `eqlog_Avenrae_rivervale.txt`, the three Tue 11 Aug re-grants in
+  `eqlog_Avenrae_rivervale_2026-08-15.txt`. Scan one file and you see three
+  grants of three different tasks, no repeat, and get a correct `not recorded`
+  off half the evidence.
+- **One engine per character**, because a folder scan picks up every character on
+  the machine and her watcher already hops between them.
+- **It is fast: 434 MB / 5,253,948 lines in 7.0 seconds**, so the button is a few
+  seconds. Stream it rather than `readFileSync` — one of these files is 112 MB.
+
 **Session C's handoff is three days stale** (dated 18 Aug, still reading
 "Standing by for the archive, the plan and her prompt") and **says nothing about
 the lockout commission**. I have not contacted C or Shara — that is C's channel
@@ -214,22 +256,25 @@ and this is a component, not an offer.
 
 ---
 
-### 5. Where my repository should live — a question for you
+### 5. Repository — RESOLVED 21 Aug
 
-Currently `C:\Users\Lindsey\Desktop\EQLSLockouts`, git-initialised, everything
-committed, nothing pushed anywhere. It hands over whole.
+`github.com/samusmylove47-maker/EQLSLockouts`, created by the owner. Pushed to
+branch **`session-d/phase-0`**. Four commits, working tree clean.
 
-**My recommendation: its own repository, not a folder inside `eql-source`.** The
-deliverable is a dependency-free Node module aimed at an MIT Electron app;
-`eql-source` is a Python-built static site. Different toolchain, different
-licence surface, different audience. A separate repo also keeps the routing
-honest — nothing here reaches Shara except through you and C, and nothing reaches
-the site except through you.
+**One thing I have to flag rather than let pass.** I deliberately did not push
+`main`, per the standing restraint. But the repo was empty, and GitHub promotes
+the first branch pushed to an empty repo to be the default — so
+`session-d/phase-0` **is now the default branch**, which is functionally what
+that restraint guards against even though I did not name `main`. I did not
+anticipate it and I am not going to quietly leave it.
 
-**What I need from you:** the name, and whether it goes under
-`samusmylove47-maker`. I have not created anything remote.
+Also: **no pull request can be opened yet**, because a PR needs a base branch and
+`main` does not exist. Two ways out, both yours:
 
----
+- rename the branch to `main` in the GitHub UI (one click), or
+- tell me to push `main` and I will, then open the PR against it.
+
+I have done neither.
 
 ### 6. Where the prompt and the brief are wrong
 
