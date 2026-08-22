@@ -39,9 +39,116 @@
 // not an epoch and must not be displayed or persisted as one.
 //
 // The known cost, stated rather than hidden: across a daylight-saving
-// transition, a civil difference is off by the size of the shift. Every
-// interval this module reports carries `crossesPossibleDstShift` so a caller
-// can refuse to draw it. See CAVEAT_DST.
+// transition, a civil difference is off by the size of the shift. `CAVEAT_DST`
+// is attached to every interval this module reports. `crossesPossibleDstShift`
+// is emitted on each bracket and is **always null**, because this module has no
+// timezone and therefore genuinely cannot decide it — the field exists so a
+// host that DOES know its zone can fill it in, not because we computed it.
+
+// ===========================================================================
+// THE CONTRACT
+// ===========================================================================
+//
+// Everything below is a promise to the host application. Six of these came from
+// Session C, who read a real Electron log-parsing app and listed what a retrofit
+// module has to satisfy. They are written here rather than only in the code that
+// satisfies them, because a constraint honoured in one function and undocumented
+// is a constraint the next edit breaks.
+//
+// 1. INPUT IS THE RAW LINE, PREFIX AND ALL.
+//    Give this module exactly what the tailer emits:
+//        [Wed Aug 19 19:17:52 2026] You say, 'danger'
+//    Do NOT strip the timestamp first. Host parsers commonly strip it as their
+//    first step; here the timestamp IS the measurement, and a stripped line
+//    parses to null rather than failing loudly. Lines the module does not model
+//    are ignored, so it is safe to feed it everything.
+//
+// 2. THE CLOCK IS NEVER READ. `now` IS THE ONLY TIME SOURCE.
+//    No `Date.now()`, no `new Date()`, no timers, no intervals in this file.
+//    Stronger, and this is the property that matters: **`now` does not affect
+//    accumulated state at all.** `applyLine` never sees it. It is an argument to
+//    `project()` only, where it feeds derived views like `hoursAgo`. So replaying
+//    a million lines produces byte-identical state to receiving them live, and a
+//    test asserts it.
+//
+// 3. ONE-SECOND RESOLUTION, AND NO ORDERING WITHIN A SECOND.
+//    The log stamps to the second. Two events sharing a stamp arrive in an order
+//    the log does not guarantee, and **nothing in this module may depend on that
+//    order.**
+//
+//    This is not theoretical. Two sessions on this project were bitten by it
+//    independently, in different codebases: Session C by a mez break and its
+//    wear-off sharing a stamp, and this module by the Voidling's closing line
+//    arriving BEFORE the task line it was being used to terminate:
+//
+//        [Tue Aug 11 20:40:44 2026] You say, 'danger'
+//        [Tue Aug 11 20:40:44 2026] Voidling says, 'Your hubris risks our very reality itself.'
+//        [Tue Aug 11 20:40:44 2026] You have been assigned the task '... Lady Vox - Weekly'.
+//
+//    That produced a false 26-minute reset bracket from a granted task read as a
+//    refusal. The fix was structural, not a patch: `applyLine` classifies
+//    nothing. It records raw observations, and `classifyRequests` decides later
+//    with the whole window visible. **Any future logic that asks "did A happen
+//    before B" must instead ask "did A and B both happen within N seconds".**
+//
+// 4. STATE IS JSON, AND ONLY JSON.
+//    No Map, Set, Date, function, undefined, Infinity or NaN ever enters state.
+//    Those survive every unit test and silently empty or corrupt on the first
+//    reload. State is plain objects, arrays, strings, numbers, booleans and null,
+//    so `JSON.parse(JSON.stringify(state))` is exact. A test asserts the round
+//    trip is deep-equal.
+//
+// 5. NO FILE IS OWNED, NO DEFAULT IS OWNED.
+//    This module never reads or writes anything. It has no config file, no
+//    persistence, and no opinion about where state lives. It hands back a plain
+//    object; the host owns defaults, backfill and migration, because that
+//    ownership living in one place is what lets a host change its schema without
+//    a migration.
+//
+// 6. FEEDING THE SAME LINE TWICE IS SAFE. IT IS IDEMPOTENT.
+//    Stated plainly because "undecided is what hurts": a tailer that re-reads a
+//    tail, a backfill that overlaps the live stream, or the same file arriving
+//    twice under different names all produce **no change in state**. Every
+//    observation is keyed by (timestamp, kind, identity) and a repeat increments
+//    `dropped.duplicate` instead of being recorded. A test feeds the fixture
+//    twice and asserts the state is deep-equal to feeding it once.
+//
+//    Verified by diff, not by assertion: replaying the whole stream changes
+//    exactly ONE key in the entire state object — `dropped.duplicate`, the
+//    counter recording how many repeats were rejected. That counter is supposed
+//    to move. Nothing else does.
+//
+//    Voidling replies are the one thing NOT stored as an event. They are a set
+//    of SECONDS, because one NPC answers several players at once and prints two
+//    lines per exchange, so a list would grow on replay. An earlier revision
+//    exempted them from dedupe and called it a deliberate exception; the
+//    CONTRACT 6 test proved that broke idempotence, and the exception is gone.
+//    Presence is all they are for, and a set is idempotent by construction.
+//
+// 7. ONE STATE PER CHARACTER. THE CHARACTER IS AN INPUT.
+//    `createState(character)` requires the name and refuses to be shared.
+//
+//    **The evidence, because this is a claim about the game and not about the
+//    code:** two characters played simultaneously by one person, grouped, at the
+//    same Voidling, each received their own separate grant of the same task
+//    seconds apart —
+//
+//        [Mon Aug 10 17:14:49 2026]  (Avenrae)  You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.
+//        [Mon Aug 10 17:14:53 2026]  (Shara)    You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.
+//
+//    — and their request histories classify to different totals over the same
+//    period. Merged into one state, those two grants read as one task granted
+//    twice four seconds apart, which this module would report as a four-second
+//    reset bracket. That is not a hypothetical; it is what the first version did.
+//
+//    **The limit of that evidence, stated because it is real:** this shows the
+//    two characters hold INDEPENDENT grant streams. It does not by itself
+//    distinguish per-character from per-account, since both characters may be on
+//    one account or on two and the logs do not say which. The safe claim, and
+//    the one this module acts on, is the narrow one: **grants are tracked per
+//    character, so state must be too.**
+//
+// ===========================================================================
 
 // ---------------------------------------------------------------------------
 // Difficulty grammar
@@ -355,10 +462,19 @@ function applyLine(state, line) {
   }
 
   const civil = civilOf(ev.at);
+  // A Voidling reply is a PRESENCE CONTROL, not an event. It never enters
+  // `events` and never emits a change, because several players share one NPC
+  // and the count is meaningless. It is recorded below as a set of seconds.
+  if (ev.kind === 'voidling-reply') {
+    if (!state.voidlingReplies.includes(civil)) {
+      state.voidlingReplies.push(civil);
+      if (state.voidlingReplies.length > MAX_EVENTS) state.voidlingReplies.shift();
+    }
+    return state;
+  }
+
   const key = dedupeKey(ev, civil);
-  // A Voidling can answer several players in the same second, so its replies
-  // are exempt from dedupe — they are a presence control, not an event count.
-  if (ev.kind !== 'voidling-reply' && state.events.length && state.events.some((e) => e.key === key)) {
+  if (state.events.length && state.events.some((e) => e.key === key)) {
     state.dropped.duplicate++;
     return state;
   }
@@ -396,10 +512,6 @@ function applyLine(state, line) {
   if (ev.kind === 'weekly-request') {
     state.requests.push({ civil, at: ev.at });
     if (state.requests.length > MAX_EVENTS) state.requests.shift();
-  }
-  if (ev.kind === 'voidling-reply') {
-    state.voidlingReplies.push(civil);
-    if (state.voidlingReplies.length > MAX_EVENTS) state.voidlingReplies.shift();
   }
 
   if (ev.kind === 'entered' || ev.kind === 'instance-invite') {
@@ -465,9 +577,16 @@ const NOT_RECORDED = Object.freeze({ provenance: 'not recorded', value: null });
 //
 // Two independent brackets a week apart would let a caller intersect them and
 // narrow the estimate sharply. We report every bracket found so that
-// intersection is the caller's to make, and we say how wide each one is,
-// because a 27-hour bracket does not distinguish a Tuesday 08:00 reset from a
-// Monday 18:00 one and must not be drawn as though it did.
+// intersection is the caller's to make, and `widthHours` is emitted beside every
+// one of them, because a bracket wider than a day cannot distinguish a
+// Tuesday-morning reset from a Monday-evening one and must not be drawn as
+// though it could.
+//
+// No width is quoted in this comment on purpose. An earlier revision said "a
+// 27-hour bracket" here while the measured values were 26.098 and 26.056 — a
+// number typed beside the data it claims to describe, in the one file whose
+// whole doctrine forbids exactly that. The widths live in
+// analysis/findings.json and are regenerated by analysis/derive.js.
 function projectReset(state) {
   const brackets = [];
 

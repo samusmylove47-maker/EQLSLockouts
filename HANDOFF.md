@@ -2,11 +2,173 @@
 
 ## From the Director
 
-*Nothing yet.*
+**Orders of 22 Aug received and applied.** Phase 0 and 1 accepted. Five
+corrections issued — three to himself, two to me. Repository ordered to `main`
+with a PR. `FOR-AURAS.md` to route through Session C, not from me. Tuesday 25 Aug
+the owner measures, my protocol governs. All actioned; see the second report.
 
 ---
 
 ## To the Director
+
+### Second report, 22 Aug 2026
+
+**Everything ordered is done, plus one thing I did not expect: writing the
+contract down immediately broke the module, and that is the best outcome
+available.**
+
+Branch `session-d/phase-0`, PR **#1** open against `main`. **37 tests green** (was
+30). No measurement moved: brackets still 26.098 h and 26.056 h.
+
+---
+
+#### The contract caught a real bug within minutes of being written
+
+You ordered Session C's clause 3 written into the module's contract rather than
+only into the fix. I wrote all six clauses plus per-character, with **one test per
+clause** — and **CONTRACT 6 failed on the first run.**
+
+`voidling-reply` was exempt from dedupe. **I had documented that exemption as
+deliberate and harmless**, in the very paragraph claiming idempotence. It was
+neither: replaying a stream doubled the array, so the module was **not
+idempotent** — aimed squarely at a host whose watcher can re-read a tail and whose
+planned one-time backfill will overlap the live stream.
+
+Voidling replies are now a **set of seconds**. Presence was all they were ever
+for; the count carried no meaning, and a set is idempotent by construction.
+Verified by diff rather than assertion: **replaying the entire 434 MB corpus now
+changes exactly one key — `dropped.duplicate`**, the rejection counter doing its
+job.
+
+**The lesson is yours, not mine: this is the fourth defect on this project found
+by writing a claim down precisely enough to test it.** Session C's constraint list
+did not describe my module; it described what a module would have to be. Checking
+against it found the gap. A prose assurance would not have.
+
+---
+
+#### Correction 4 — you were right that I was wrong, and then you retracted the wrong number
+
+**I ran the join myself rather than take an agent's word, because this is a
+correction to the record.** Both of us are wrong, in opposite directions.
+
+**Mine, retracted:**
+- *"A `(boss, date)` join cannot be done as specified"* — **WRONG.** It runs
+  cleanly through the `mobs` dict keys, exactly as you said.
+- *"0 of 213 fights land in exactly one session"* — **FLATLY WRONG.** 74 do.
+- *"`measured.json` has no `boss` field"* — **upheld.** `grep -F '"boss"'` over
+  `measured.json` returns 0; all 172 records carry a `mobs` dict instead.
+
+**Yours, and this is the part worth having.** Measured, both ways:
+
+| join | exactly one session | several | none | at least one |
+|---|---|---|---|---|
+| case-sensitive | 74 | 123 | 16 | **197** |
+| case-insensitive | 79 | 132 | 2 | **211** |
+
+**Your retraction ran backwards. 211 was the correct number and 197 is the
+artifact.** The 14-fight gap is pure capitalisation: `raids-measured.json` stores
+`a dracoliche` and `the Hand of Veeshan`, while `measured.json` upper-cases the
+first letter of every `mobs` key. Only 2 of the 16 case-sensitive misses are
+genuine. **You conceded 211 and retreated to 197, which is the worse figure.**
+
+**But both numbers answer the wrong question, and this is the real correction to
+the original ruling.** 197 and 211 count fights matching **at least one** session.
+Neither is the count of fights pinned to a clock window — that is **79**. And the
+original rescue promised *"sub-hour bounds … median 44 minutes."* Measured, the
+single-match session window has **median 265 minutes** (290 case-insensitive),
+min 8, max 290. **Not sub-hour. Four and a half hours.**
+
+So the rescue exists, and it is roughly a third as broad and six times as coarse
+as advertised. **Two fixes make it worth having**, if Session A ever wants fight
+clocks on the raid pages:
+- **Normalise case on both sides of the join**, or it silently drops 14 of 213.
+- **Widen the key.** `boss + date + observers + difficulty` reaches **128 of 213**
+  uniquely and collapses the residual candidate-window spread from a median of 31
+  minutes to a median of 1. Both files already carry `difficulty`, and
+  `observers` matches `character`.
+
+**None of this touches the lockout work**, and I want to be explicit rather than
+let a correction look like a setback: **fight timing was never the route to the
+reset.** The task and hail lines carry their own second-resolution timestamps
+directly. This is a Session A question about raid pages, not a Session D one.
+
+**Two genuine misses are data defects, not join failures**, and somebody should
+look: High Priest M\`kari on 12 Aug and Lord Nagafen on 10 Aug are recorded as
+raid fights on dates where `measured.json` has no session listing that mob, and
+both dates are inside its coverage.
+
+---
+
+#### The `grantsTotal` / `requestsGranted` discrepancy — resolved, and it was a naming trap
+
+**Neither number is wrong. They count different things**, and the old names hid
+that, so your reading was the fair one.
+
+- `itemsGivenTotal` (was `grantsTotal`) — **every** `You have been given: <item>`
+  line, any item.
+- `requestsGranted` — only **cadence-labelled weekly task** grants.
+
+Shara's 24 = 6 Void-Touched Potential + 9 Hamed's Ring of Tears + 9 Talisman of
+Kejaar Kerrath, the last two from the **non-cadence repeatable tasks** she ran on
+13 Aug. Avenrae never ran those, so his two figures coincide at 6 and 6 — **which
+is exactly what made the pair look like a contradiction rather than two different
+measurements.**
+
+Renamed, and the reconciliation is written into `analysis/derive.js` where the
+field is produced, so it is found by anyone who reads the number.
+
+---
+
+#### Correction 5 — applied, and the fault class swept
+
+The typed `"27-hour bracket"` is gone from `lockoutCore.js`. **No width is quoted
+there now at all**, because the honest fix is not to correct the number but to
+stop carrying one: the widths live in `analysis/findings.json` and are
+regenerated. The comment now says why, so the next person does not re-add it.
+
+A sweep of the whole tree for the same fault class is running; I will report it
+here rather than wait to be asked.
+
+---
+
+#### Repository, and Session C
+
+**`main` pushed at `7ce49ac`** — the Phase 0/1 state you audited and accepted —
+**and set as default.** This turn's work is on `session-d/phase-0` as
+[PR #1](https://github.com/samusmylove47-maker/EQLSLockouts/pull/1). **I do not
+merge it.**
+
+**`docs/FOR-AURAS.md` has not been sent and will not be sent by me.** It now also
+answers Session C's six constraints point by point, including the bug clause 6
+found, since that bug was aimed at the exact watcher behaviour they flagged.
+
+**Session C — it is ready and it is yours to carry.** The three findings that
+matter are: scan the folder rather than the newest file (the two halves of our
+only reset measurement live in *different files*), one engine per character, and
+434 MB / 5,253,948 lines in 7.0 seconds so stream it rather than `readFileSync`.
+Two of those three would produce a **wrong** answer rather than a missing one.
+
+---
+
+#### Tuesday 25 Aug
+
+Protocol unchanged in scope and still costed at ten minutes, ordered by
+value-per-minute: `/dzlisttimers` first, then the Voidling hail, then the Tuesday
+pair, then the D2+ confound break if they are raiding anyway.
+
+**Your accented-character test is added as step 1b** and costs five seconds:
+`/say café — naïve “quotes” résumé`. Log bytes `C3 A9` for the `é` means the
+client writes UTF-8; a lone `E9` means Windows-1252. That closes what the corpus
+provably cannot, because its only non-ASCII content is the replacement character
+itself.
+
+**And the line holds:** the module ships no reset constant, and a test fails if
+one is added.
+
+---
+
+### First report, 21 Aug 2026 — accepted, retained for the record
 
 ### How to read this from cloud, and what you cannot check
 
@@ -269,7 +431,12 @@ character straddling a poll boundary decodes to U+FFFD. Not biting today.
 
 ---
 
-### 5. Repository — resolved, with one thing I have to flag
+### 5. Repository — SUPERSEDED 22 Aug, see the second report
+
+> **Stale as written.** `main` now exists at `7ce49ac` and is the default branch;
+> PR #1 is open against it. The paragraph below saying no PR can be opened was
+> true on 21 Aug and is not true now. Left in place rather than deleted, because
+> the reasoning is what the ruling responded to.
 
 `github.com/samusmylove47-maker/EQLSLockouts`, created by the owner. Pushed to
 **`session-d/phase-0`**. Working tree clean, 30 tests green.

@@ -13,7 +13,7 @@
         "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs",
         "bytes": 33721238,
         "lines": 428682,
-        "eventsAdded": 143
+        "eventsAdded": 88
       },
       {
         "file": "eqlog_Avenrae_rivervale_2026-08-15.txt",
@@ -21,7 +21,7 @@
         "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs",
         "bytes": 92384005,
         "lines": 1117985,
-        "eventsAdded": 278
+        "eventsAdded": 159
       },
       {
         "file": "eqlog_Avenrae_rivervale_2026-08-17.txt",
@@ -29,7 +29,7 @@
         "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs",
         "bytes": 29825171,
         "lines": 354786,
-        "eventsAdded": 80
+        "eventsAdded": 58
       },
       {
         "file": "eqlog_Shara_rivervale3.txt",
@@ -45,7 +45,7 @@
         "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs",
         "bytes": 25768683,
         "lines": 312149,
-        "eventsAdded": 121
+        "eventsAdded": 78
       },
       {
         "file": "eqlog_Shara_rivervale_2026-08-14.txt",
@@ -61,7 +61,7 @@
         "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs",
         "bytes": 112024239,
         "lines": 1340004,
-        "eventsAdded": 383
+        "eventsAdded": 219
       },
       {
         "file": "eqlog_Shara_rivervale_2026-08-16.txt",
@@ -69,7 +69,7 @@
         "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs",
         "bytes": 7032878,
         "lines": 88772,
-        "eventsAdded": 20
+        "eventsAdded": 14
       },
       {
         "file": "eqlog_Shara_rivervale.txt",
@@ -109,7 +109,7 @@
         "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source",
         "bytes": 25768683,
         "lines": 312149,
-        "eventsAdded": 43
+        "eventsAdded": 0
       },
       {
         "file": "eqlog_Shara_rivervale_2026-08-17.txt",
@@ -117,7 +117,7 @@
         "dir": "C:\\Users\\Lindsey\\Desktop\\EQL Source",
         "bytes": 3992759,
         "lines": 51109,
-        "eventsAdded": 24
+        "eventsAdded": 20
       },
       {
         "file": "eqlog_Shara_rivervale_2026-08-18.txt",
@@ -205,8 +205,8 @@
           ]
         }
       ],
-      "grantsTotal": 6,
-      "grantsByItem": {
+      "itemsGivenTotal": 6,
+      "itemsGivenByItem": {
         "Void-Touched Potential": 6
       },
       "voidTokenGrants": [
@@ -636,8 +636,8 @@
           ]
         }
       ],
-      "grantsTotal": 24,
-      "grantsByItem": {
+      "itemsGivenTotal": 24,
+      "itemsGivenByItem": {
         "Void-Touched Potential": 6,
         "Hamed's Ring of Tears": 9,
         "Talisman of Kejaar Kerrath": 9

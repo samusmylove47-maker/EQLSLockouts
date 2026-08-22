@@ -399,3 +399,137 @@ test('with no refusal after the last grant, the period is "not recorded"', () =>
   assert.equal(p.provenance, 'not recorded');
   assert.match(p.reason, /nothing bounds the period/);
 });
+
+// ---------------------------------------------------------------------------
+// THE CONTRACT — one test per clause. See the CONTRACT block in lockoutCore.js.
+// ---------------------------------------------------------------------------
+
+test('CONTRACT 1: the raw line with its prefix is the input', () => {
+  // Exactly what the host tailer emits, prefix and all.
+  const ev = core.parseLine("[Wed Aug 19 19:17:52 2026] You say, 'danger'");
+  assert.equal(ev.kind, 'weekly-request');
+  // A pre-stripped line must not silently half-work.
+  assert.equal(core.parseLine("You say, 'danger'"), null);
+});
+
+test('CONTRACT 2: `now` does not affect accumulated state — replay equals live', () => {
+  // The property that makes a backfill of a million lines trustworthy: state is
+  // a function of the lines alone. If `now` leaked into it, replaying history
+  // would disagree with having received it live, and the disagreement would be
+  // invisible.
+  const a = core.applyLines(core.createState('Avenrae'), fixtureLines);
+  const b = core.applyLines(core.createState('Avenrae'), fixtureLines);
+  assert.deepEqual(a, b);
+
+  const early = core.project(a, { year: 2026, month: 8, day: 12, hour: 0, minute: 0, second: 0 });
+  const late = core.project(b, { year: 2030, month: 1, day: 1, hour: 0, minute: 0, second: 0 });
+  // State itself is untouched by projecting at wildly different `now`s.
+  assert.deepEqual(a, b);
+  // And the parts that are not time-relative agree regardless of `now`.
+  assert.deepEqual(early.reset.brackets, late.reset.brackets);
+  assert.deepEqual(early.instances, late.instances);
+});
+
+test('CONTRACT 3: no behaviour depends on ordering within one second', () => {
+  // The same five lines, shuffled within their shared second, must classify
+  // identically. This is the generalisation of the bug that produced a false
+  // bracket: it is not enough that the one known ordering works.
+  const sameSecond = [
+    "[Tue Aug 11 20:40:42 2026] You say, 'Hail, voidling'",
+    "[Tue Aug 11 20:40:43 2026] Voidling says, 'Ah, ... the [danger]...'",
+    "[Tue Aug 11 20:40:44 2026] You say, 'danger'",
+    "[Tue Aug 11 20:40:44 2026] Voidling says, 'Your hubris risks our very reality itself.'",
+    "[Tue Aug 11 20:40:44 2026] You have been assigned the task 'Potential of the Void - Lady Vox - Weekly'.",
+  ];
+  const tail = sameSecond.slice(2);
+  const permutations = [
+    [tail[0], tail[1], tail[2]],
+    [tail[0], tail[2], tail[1]],
+    [tail[2], tail[0], tail[1]],
+    [tail[1], tail[0], tail[2]],
+    [tail[2], tail[1], tail[0]],
+    [tail[1], tail[2], tail[0]],
+  ];
+  const results = permutations.map((perm) => {
+    const st = core.applyLines(core.createState('Avenrae'), [sameSecond[0], sameSecond[1], ...perm]);
+    return core.classifyRequests(st);
+  });
+  for (const r of results) {
+    assert.equal(r.length, 1, 'one attempt regardless of order');
+    assert.equal(r[0].result, 'granted', 'granted regardless of order');
+    assert.equal(r[0].boss, 'Lady Vox');
+  }
+});
+
+test('CONTRACT 4: state contains nothing that JSON cannot represent', () => {
+  const st = core.applyLines(core.createState('Avenrae'), fixtureLines);
+
+  // Deep structural walk: anything that is not a plain object, array, string,
+  // number, boolean or null is a reload bug waiting to happen.
+  const offenders = [];
+  (function walk(v, path) {
+    if (v === null) return;
+    const t = typeof v;
+    if (t === 'string' || t === 'boolean') return;
+    if (t === 'number') {
+      if (!Number.isFinite(v)) offenders.push(`${path}: non-finite number ${v}`);
+      return;
+    }
+    if (t === 'undefined') { offenders.push(`${path}: undefined`); return; }
+    if (t === 'function') { offenders.push(`${path}: function`); return; }
+    if (v instanceof Date) { offenders.push(`${path}: Date`); return; }
+    if (v instanceof Map) { offenders.push(`${path}: Map`); return; }
+    if (v instanceof Set) { offenders.push(`${path}: Set`); return; }
+    if (Array.isArray(v)) { v.forEach((x, i) => walk(x, `${path}[${i}]`)); return; }
+    if (Object.getPrototypeOf(v) !== Object.prototype) {
+      offenders.push(`${path}: exotic object ${Object.getPrototypeOf(v)?.constructor?.name}`);
+      return;
+    }
+    for (const [k, x] of Object.entries(v)) walk(x, `${path}.${k}`);
+  })(st, 'state');
+
+  assert.deepEqual(offenders, [], 'state must be plain JSON');
+  assert.deepEqual(JSON.parse(JSON.stringify(st)), st, 'round trip must be exact');
+});
+
+test('CONTRACT 5: the module touches no file and owns no default', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'lockoutCore.js'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  for (const banned of ['fs.', 'readFile', 'writeFile', 'process.env', 'require(']) {
+    assert.ok(!src.includes(banned), `core must not reference ${banned}`);
+  }
+});
+
+test('CONTRACT 6: feeding the same line twice is safe — idempotent', () => {
+  // "Undecided is what hurts." So this is decided, and enforced.
+  const once = core.applyLines(core.createState('Avenrae'), fixtureLines);
+  const twice = core.applyLines(core.createState('Avenrae'), [...fixtureLines, ...fixtureLines]);
+
+  // dropped.duplicate is expected to differ — that is the counter doing its job.
+  const strip = (s) => { const c = JSON.parse(JSON.stringify(s)); delete c.dropped; return c; };
+  assert.deepEqual(strip(twice), strip(once), 'replaying the whole stream changes nothing');
+  assert.ok(twice.dropped.duplicate > 0, 'and the duplicates are counted, not silently ignored');
+
+  // The realistic case: a tailer re-reading an overlapping tail.
+  const overlap = core.applyLines(core.createState('Avenrae'), fixtureLines);
+  core.applyLines(overlap, fixtureLines.slice(-20));
+  assert.deepEqual(strip(overlap), strip(once), 'an overlapping tail changes nothing');
+
+  // And the projection is identical, which is what the host actually renders —
+  // apart from `dropped`, which is the rejection counter and SHOULD differ.
+  // Verified by diff: `dropped` is the only key in the whole state object that
+  // changes when the stream is replayed.
+  const pOnce = core.project(once, NOW);
+  const pTwice = core.project(twice, NOW);
+  assert.deepEqual({ ...pTwice, dropped: null }, { ...pOnce, dropped: null });
+  assert.equal(pTwice.dropped.duplicate, 18, 'the fixture holds 18 dedupable observations');
+});
+
+test('CONTRACT 7: the character is an input and state refuses to be shared', () => {
+  assert.throws(() => core.createState(), /character name is required/);
+  assert.throws(() => core.createState(''), /character name is required/);
+  assert.equal(core.characterFromLogFilename('eqlog_Avenrae_rivervale.txt'), 'Avenrae');
+  assert.equal(core.characterFromLogFilename('C:/x/eqlog_Shara_rivervale_2026-08-14b.txt'), 'Shara');
+  assert.equal(core.characterFromLogFilename('not-a-log.txt'), null);
+  assert.equal(core.createState('Avenrae').character, 'Avenrae');
+});
