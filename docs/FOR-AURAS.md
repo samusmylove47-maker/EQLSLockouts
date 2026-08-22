@@ -62,6 +62,44 @@ no need to scan twice; the live tailer takes over from the end of the file.
 
 ---
 
+## The six constraints — answered, and one of them found a bug
+
+Session C read the app's live tree and listed six things a retrofit module has to
+satisfy. They are now **THE CONTRACT** at the top of `src/lockoutCore.js`, with
+one test per clause. Answering them here too, briefly:
+
+1. **Raw line, prefix and all.** `handleLine(line)` takes exactly what the
+   watcher emits, `[Wed Aug 19 19:17:52 2026] <text>`. Same signature as
+   `BuffEngine.handleLine`. **Do not strip the timestamp first** — here it is the
+   measurement, not noise.
+2. **The clock is never read; `now` is the only time source.** Stronger than
+   asked: `now` does not touch accumulated state at all. `applyLine` never sees
+   it. So replaying 1.5M lines produces byte-identical state to receiving them
+   live, and a test asserts it.
+3. **One-second resolution, no ordering within a second.** Nothing depends on the
+   order of two events sharing a stamp. `applyLine` classifies nothing; it
+   records, and `classifyRequests` decides later with the whole window visible.
+   A test shuffles all six orderings of a same-second exchange and requires the
+   same answer. **This is the constraint that bit us both** — a mez break and its
+   wear-off for you, the Voidling's closing line arriving before the task line
+   for me.
+4. **State is JSON and only JSON.** A structural walk in the test set fails on
+   any Map, Set, Date, function, `undefined` or non-finite number reaching state.
+5. **No file owned, no default owned.** The core references no `fs`, no
+   `require`, no `process.env`. Defaults, backfill and migration stay yours.
+6. **Feeding the same line twice is safe — yes, idempotent.**
+
+**Constraint 6 caught a real bug, and it is worth knowing about because it was
+aimed straight at your watcher.** Voidling replies were exempt from dedupe, and I
+had documented that exemption as deliberate and harmless. It was not: replaying a
+stream doubled the array. Against a watcher that can re-read a tail, and a
+one-time backfill that will overlap the live stream, that would have drifted
+silently. They are now a set of seconds — idempotent by construction, and
+presence was all they were ever for.
+
+Replaying the whole 434 MB corpus now changes exactly one key: `dropped.duplicate`,
+the counter recording how many repeats were rejected.
+
 ## Shape
 
 ```js
