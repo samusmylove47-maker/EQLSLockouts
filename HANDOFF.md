@@ -431,7 +431,12 @@ character straddling a poll boundary decodes to U+FFFD. Not biting today.
 
 ---
 
-### 5. Repository — resolved, with one thing I have to flag
+### 5. Repository — SUPERSEDED 22 Aug, see the second report
+
+> **Stale as written.** `main` now exists at `7ce49ac` and is the default branch;
+> PR #1 is open against it. The paragraph below saying no PR can be opened was
+> true on 21 Aug and is not true now. Left in place rather than deleted, because
+> the reasoning is what the ruling responded to.
 
 `github.com/samusmylove47-maker/EQLSLockouts`, created by the owner. Pushed to
 **`session-d/phase-0`**. Working tree clean, 30 tests green.
