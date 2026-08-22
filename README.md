@@ -4,7 +4,7 @@ A dependency-free parsing core that reads EverQuest Legends' own weekly-task
 lines out of a combat log and reports raid lockout state — **measuring** the
 reset instead of assuming it.
 
-    node --test test/lockout.test.js     # 30 tests
+    node --test test/lockout.test.js     # the suite; count is not typed here
     node analysis/derive.js              # re-derive every figure from the logs
     node analysis/hails.js               # classify every Voidling exchange
     node analysis/make-fixture.js        # rebuild the redacted fixture

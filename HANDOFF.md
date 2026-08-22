@@ -11,6 +11,120 @@ the owner measures, my protocol governs. All actioned; see the second report.
 
 ## To the Director
 
+### Third report, 22 Aug 2026 — the sweeps landed, and they are not flattering
+
+**Four more defects in my own work, one of which inverts a claim I wrote for
+Shara, and one of which is a clearance I asserted without searching.** All fixed,
+all regression-tested. **38 tests green.** No measurement moved: brackets still
+26.098 h and 26.056 h.
+
+#### 1. THE LOGS ARE CRLF. I said LF, in the integration notes.
+
+Every line of all 15 files ends `0D 0A`. `docs/EVIDENCE.md` said the exact
+opposite, and so did the note written for Shara.
+
+**How I got it wrong is the useful part: my hexdump was piped through `grep`,
+which strips the file's line terminator and appends its own LF. I hexdumped my
+instrument's output and read it as the file.** That is the fourth self-inflicted
+measurement error on this project and the same shape as the other three.
+
+Raw bytes, direct from the file this time: `... 2e 0d 0a 5b 53 75 6e ...`
+
+**And it was a live bug, not just a wrong sentence.** The parser rejected any
+CR-terminated line — and rejected it **silently**: `TS_RE` still matched, because
+`.` matches CR, so the CR rode along inside the message and every anchored shape
+regex failed on its `$`. The line was dropped, `dropped.unstamped` was *not*
+incremented because the stamp parsed fine, and **the module would have reported
+"no lockouts, ever" with a clean diagnostic.**
+
+It never bit us only because `readline({crlfDelay: Infinity})` and Shara's
+`split()` on a CRLF-or-LF pattern both strip CR first. **Luck, not design.**
+A host that splits on a bare LF alone would have got a silent, total false
+negative. Fixed, with a test that feeds the whole fixture CRLF-terminated and
+requires identical state.
+
+#### 2. My per-character evidence was refuted 3–0, and the disproof was in our logs
+
+I wrote into the module header that the observation supports "per character, not
+per account", hedged with "the logs do not say which".
+
+**The logs say exactly which, and I had not searched.**
+
+```
+eqlog_Avenrae_rivervale.txt   Your total time entitled on this account is approximately 0 years, 12 days.
+eqlog_Shara_rivervale_*.txt   Your total time entitled on this account is approximately 0 years, 9 days.
+```
+
+**Two different values, two different accounts.** So Avenrae and Shara each
+getting their own grant says *nothing* about per-character versus per-account —
+two accounts get two grants under either rule. The observation never had the
+power to distinguish them.
+
+**The hedge is the worse half.** "The logs do not say which" is a clearance
+asserted without a string, which is the exact fault I have been enforcing on
+everyone else all week.
+
+CONTRACT 7 now says what is true: **per-character state is a claim about our
+data, not about the game** — a log file belongs to one character, a tailer hops
+between them, and merging fabricated a four-second bracket. Whether the *game*
+scopes per character or per account is **not recorded**, and settling it needs
+two characters on one account, which this corpus does not contain.
+
+#### 3. The positive control proves less than I said
+
+The Voidling answers every player who hails it, zone-wide. Measured: **123 of 195
+closing lines have no first-person `danger` in the preceding five seconds**, and
+only 35 of 63 own-`danger` says draw a same-second reply.
+
+So the control proves **the channel is showing NPC dialogue**. It does **not**
+prove the Voidling answered *me*. That is still exactly the control the design
+needs — the hazard is a chat filter hiding system text, and any Voidling line
+disproves that — but it is not evidence a given exchange completed, and I had
+written it as though it were. Corrected in the module, the evidence ledger and
+the Auras notes.
+
+#### 4. A silent double-count above the dedupe horizon
+
+`events` is capped at 5,000, so duplicate suppression only sees that far back.
+Replay a longer stream and the old keys are gone: repeats are accepted as new and
+**`dropped.duplicate` still reads 0**. Reachable in roughly four months at the
+measured event rate.
+
+Silent double-counting with a clean diagnostic is the worst failure this module
+can have, so it is now a visible counter: `dropped.beyondDedupeHorizon`. The
+observation is still recorded — discarding real data would be worse — but a host
+can now see that idempotence is no longer promised and rebuild from the log.
+
+#### One correction I am NOT accepting
+
+The sweep reported that "every grant landed at D0 or D1" is wrong, on the grounds
+that zero grants landed at a *stated* D0. **I checked, and the sweep read only
+the zone-in line.** The game stated the difficulty in the invite, 37 and 32
+seconds earlier for the same instance:
+
+```
+[Mon Aug 10 17:34:00 2026] ... join the instance: The Ruins of Old Paineel - Group 0 (Normal).
+[Mon Aug 10 17:34:48 2026] You have entered The Ruins of Old Paineel - Group.
+```
+
+The claim stands. **But there is a real defect underneath it**, which the sweep
+found by accident: the invite and the zone-in produce **two instance records for
+one instance** — one at D0, one at null — inflating `instances` by 2 for Avenrae
+and 3 for Shara. They are now flagged `difficultyStated: false` rather than
+merged, because merging would be inference; `instances` is an upper bound on
+distinct instances, and now says so.
+
+#### Also done
+
+`THRESHOLDS` is exported, so the five behaviour-changing constants are published
+rather than hidden (Session C's constraint 5, the half I had not met). The typed
+`440,214,858` byte total is out of the generated fixture header — a figure typed
+into an artifact whose whole point is that it is generated. Stale "30 tests"
+counts are gone from README and the verification appendix; a dated report may
+keep its number, a live one may not.
+
+---
+
 ### Second report, 22 Aug 2026
 
 **Everything ordered is done, plus one thing I did not expect: writing the
@@ -202,7 +316,7 @@ https://raw.githubusercontent.com/samusmylove47-maker/EQLSLockouts/session-d/pha
 | `docs/FOR-AURAS.md` | integration notes — **written, not sent** |
 | `src/lockoutCore.js` | the deliverable. Zero `require`s |
 | `src/lockoutEngine.js` | optional adapter |
-| `test/lockout.test.js` | 30 tests, all green |
+| `test/lockout.test.js` | the suite, all green — count not typed here, it goes stale |
 | `analysis/findings.json` | **generated.** Every figure in this file is read out of it |
 | `analysis/derive.js`, `hails.js`, `make-fixture.js`, `group-entries.js` | the scripts that produce it |
 | `sources/raw/2026-08-10-weekly-task-fixture.log` | 87 lines, redacted, generated |
@@ -449,7 +563,7 @@ character straddling a poll boundary decodes to U+FFFD. Not biting today.
 > the reasoning is what the ruling responded to.
 
 `github.com/samusmylove47-maker/EQLSLockouts`, created by the owner. Pushed to
-**`session-d/phase-0`**. Working tree clean, 30 tests green.
+**`session-d/phase-0`**. Working tree clean, suite green. *(That said 30 on 21 Aug; a typed count in a dated report is fine, a typed count presented as current is not.)*
 
 **I did not push `main`. But the repo was empty, and GitHub promotes the first
 branch pushed to an empty repo to be the default — so `session-d/phase-0` is now
@@ -605,7 +719,7 @@ reported is what found the real mechanism.
 1. Read the **87-line fixture** first. Both outcomes of the signal are in it.
 2. `analysis/findings.json` holds every figure quoted here. If a number in this
    file is not in that one, I typed it and you should challenge it.
-3. `test/lockout.test.js` — 30 tests. `NO RESET DAY IS EVER EMITTED` and
+3. `test/lockout.test.js` — run it rather than trust a count here. `NO RESET DAY IS EVER EMITTED` and
    `A FILTERED CHANNEL YIELDS unknown, NEVER a false lockout` are the two that
    encode the doctrine.
 4. **Zero-`require` check — use `grep -n 'require *(' src/lockoutCore.js`, which
