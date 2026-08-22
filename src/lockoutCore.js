@@ -85,8 +85,7 @@
 //        [Tue Aug 11 20:40:44 2026] Voidling says, 'Your hubris risks our very reality itself.'
 //        [Tue Aug 11 20:40:44 2026] You have been assigned the task '... Lady Vox - Weekly'.
 //
-//    That produced a false 26-minute reset bracket from a granted task read as a
-//    refusal. The fix was structural, not a patch: `applyLine` classifies
+//    That produced a false reset bracket from a granted task read as a refusal. The fix was structural, not a patch: `applyLine` classifies
 //    nothing. It records raw observations, and `classifyRequests` decides later
 //    with the whole window visible. **Any future logic that asks "did A happen
 //    before B" must instead ask "did A and B both happen within N seconds".**
@@ -128,25 +127,36 @@
 // 7. ONE STATE PER CHARACTER. THE CHARACTER IS AN INPUT.
 //    `createState(character)` requires the name and refuses to be shared.
 //
-//    **The evidence, because this is a claim about the game and not about the
-//    code:** two characters played simultaneously by one person, grouped, at the
-//    same Voidling, each received their own separate grant of the same task
-//    seconds apart —
+//    **THIS IS A CLAIM ABOUT OUR DATA, NOT ABOUT THE GAME.** An earlier revision
+//    of this comment argued the lockout is "per character, not per account". An
+//    adversarial pass refuted that unanimously, and the fact that kills it is in
+//    our own logs:
 //
-//        [Mon Aug 10 17:14:49 2026]  (Avenrae)  You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.
-//        [Mon Aug 10 17:14:53 2026]  (Shara)    You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.
+//        eqlog_Avenrae_rivervale.txt      Your total time entitled on this account is approximately 0 years, 12 days.
+//        eqlog_Shara_rivervale_*.txt      Your total time entitled on this account is approximately 0 years, 9 days.
 //
-//    — and their request histories classify to different totals over the same
-//    period. Merged into one state, those two grants read as one task granted
-//    twice four seconds apart, which this module would report as a four-second
-//    reset bracket. That is not a hypothetical; it is what the first version did.
+//    **Two different values means two different accounts.** So the fact that
+//    Avenrae and Shara each received their own grant of the same task, seconds
+//    apart at the same Voidling, says NOTHING about per-character versus
+//    per-account — two accounts would each get a grant under either rule. The
+//    observation had no power to distinguish them and should never have been
+//    offered as though it did.
 //
-//    **The limit of that evidence, stated because it is real:** this shows the
-//    two characters hold INDEPENDENT grant streams. It does not by itself
-//    distinguish per-character from per-account, since both characters may be on
-//    one account or on two and the logs do not say which. The safe claim, and
-//    the one this module acts on, is the narrow one: **grants are tracked per
-//    character, so state must be too.**
+//    Worse, the hedge attached to it said "the logs do not say which". The logs
+//    say exactly which, in the game's own /played output, and nobody had
+//    searched. That is a clearance asserted without a string, which is the fault
+//    this project exists to catch.
+//
+//    **The real reason for per-character state is operational and sufficient:**
+//    a log file belongs to one character, a host tailer follows whichever file
+//    changed last and therefore hops between them, and merging two characters'
+//    observation streams fabricates measurements. Not hypothetically — the first
+//    version of this module reported a FOUR-SECOND reset bracket built from
+//    Avenrae's grant at 17:14:49 and Shara's at 17:14:53.
+//
+//    Whether the game scopes lockouts per character or per account is
+//    **not recorded**, and settling it needs two characters on ONE account,
+//    which this corpus does not contain.
 //
 // ===========================================================================
 
@@ -195,6 +205,20 @@ const TS_RE = /^\[([A-Za-z]{3}) ([A-Za-z]{3}) {1,2}(\d{1,2}) (\d{2}):(\d{2}):(\d
 // a line can arrive mid-write, and multi-line lore text has no stamp.
 function splitStamp(line) {
   if (typeof line !== 'string') return null;
+  // STRIP A TRAILING CR. The logs are CRLF — measured, every line of all 15
+  // files — and a host that splits on '\n' alone (a very common idiom) hands us
+  // lines ending in '\r'.
+  //
+  // Without this the failure is silent and total: TS_RE still matches, because
+  // `.` matches CR, so the CR rides along inside `message` and every anchored
+  // shape regex below fails on its `$`. The line is dropped, `dropped.unstamped`
+  // is NOT incremented because the stamp parsed fine, and the module reports
+  // "no lockouts, ever" with a clean diagnostic. That is the exact failure this
+  // project exists to catch — a false negative that looks like a real one.
+  //
+  // It has never bitten us only because `readline({crlfDelay: Infinity})` and
+  // the host's `split(/\r\n|\n/)` both strip CR first. That is luck, not design.
+  if (line.charCodeAt(line.length - 1) === 13) line = line.slice(0, -1);
   const m = TS_RE.exec(line);
   if (!m) return null;
   const month = MONTHS[m[2]];
@@ -283,6 +307,19 @@ const TASK_NAME_RE = /^(.+?) - (.+) - ([A-Za-z]+)$/;
 // control built into the mechanic. An exchange with no Voidling line nearby is
 // reported as UNKNOWN, never as a refusal, so a filtered channel cannot be
 // mistaken for a lockout.
+//
+// BE PRECISE ABOUT WHAT THE CONTROL PROVES, because an audit found the obvious
+// reading is too strong. **It proves the channel is showing NPC dialogue. It
+// does NOT prove the Voidling answered ME.** The NPC replies to every player who
+// hails it, zone-wide: measured, 123 of 195 closing lines in the corpus have no
+// first-person `danger` within the preceding five seconds at all, and only 35 of
+// 63 own-`danger` says draw a reply in the same second (19 at +1s, 2 at +2s,
+// 2 at +4s, 5 never within 5s).
+//
+// That is still exactly the control this needs — the failure being guarded
+// against is a chat filter hiding system text, and any Voidling line disproves
+// that. But it is not proof that a given exchange completed, and it must not be
+// written up as though it were.
 const SELF_DANGER_RE = /^You say, 'danger'$/;
 const VOIDLING_RE = /^Voidling says, '/;
 const VOIDLING_CLOSING_RE = /^Voidling says, 'Your hubris risks our very reality itself\.'$/;
@@ -440,7 +477,7 @@ function createState(character) {
     events: [],
     firstSeen: null,
     lastSeen: null,
-    dropped: { unstamped: 0, duplicate: 0 },
+    dropped: { unstamped: 0, duplicate: 0, beyondDedupeHorizon: 0 },
   };
 }
 
@@ -477,6 +514,24 @@ function applyLine(state, line) {
   if (state.events.length && state.events.some((e) => e.key === key)) {
     state.dropped.duplicate++;
     return state;
+  }
+
+  // THE DEDUPE HORIZON, and why it is a counter rather than a silent cap.
+  //
+  // `events` is bounded at MAX_EVENTS, so duplicate suppression can only see
+  // that far back. Replay a stream longer than the bound and the oldest keys
+  // have already been trimmed: the repeats are accepted as new, and
+  // `dropped.duplicate` still reads 0. Silent double-counting with a clean
+  // diagnostic is the worst failure this module can have, and an audit found it
+  // reachable in roughly four months at the measured event rate.
+  //
+  // So: an observation older than the oldest key we still hold is counted.
+  // It is still RECORDED — discarding real data would be worse — but
+  // `dropped.beyondDedupeHorizon > 0` tells a host "you fed me something from
+  // before my memory; I can no longer promise idempotence, rebuild from the
+  // log." Visible beats silent.
+  if (state.events.length >= MAX_EVENTS && civil < state.events[0].civil) {
+    state.dropped.beyondDedupeHorizon++;
   }
 
   if (state.firstSeen === null || civil < state.firstSeen) state.firstSeen = civil;
@@ -522,6 +577,15 @@ function applyLine(state, line) {
         group: ev.group,
         difficulty: ev.difficulty,
         difficultyLabel: ev.difficultyLabel,
+        // Whether the GAME stated a difficulty on the line that produced this
+        // record. A `- Group` zone-in with no index is a real instance whose
+        // difficulty this line did not state — and the invite for that same
+        // instance, seconds earlier, usually did state it. So a record with
+        // difficultyStated:false may be the SAME instance as a stated one in the
+        // same zone. We do not merge them, because merging would be inference;
+        // we flag it, so `instances` is read as an upper bound on distinct
+        // instances rather than a count of them.
+        difficultyStated: ev.difficulty !== null,
         seen: 0,
       });
       rec.seen++;
@@ -895,7 +959,20 @@ function fromCivil(civil) {
   };
 }
 
+// The thresholds that change behaviour, exported so a host can read them rather
+// than discover them. This module owns no config file and takes no options —
+// these are constants, published so the numbers are not hidden. If a host needs
+// them different, that is a conversation, not a setting.
+const THRESHOLDS = Object.freeze({
+  GRANT_WINDOW_MS,          // how long after `danger` a grant still counts
+  CONTROL_BEFORE_MS,        // how far back a Voidling line satisfies the control
+  CONTROL_AFTER_MS,
+  COLLAPSE_MS,              // repeated `danger` inside this is one attempt
+  MAX_EVENTS,               // dedupe horizon, in observations
+});
+
 module.exports = {
+  THRESHOLDS,
   // parsing
   parseLine,
   splitStamp,

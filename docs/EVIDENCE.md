@@ -16,7 +16,23 @@ about 3×.** Everything below is de-duplicated.
 whole corpus; all 9 are `EF BF BD` (U+FFFD REPLACEMENT CHARACTER), a well-formed
 UTF-8 three-byte sequence. `iconv -f UTF-8 -t UTF-8` exits 0 on all 15 files. The
 cp1252 signature bytes `0x92 0x93 0x94 0x96 0xA0 0x85 0xE9` return **0** matching
-lines. Line endings are **LF**, not CRLF.
+lines.
+
+**Line endings are CRLF.** Measured: every line of all 15 files carries `0D 0A`.
+An earlier revision of this file asserted the opposite, and the mistake is worth
+recording because the instrument caused it — the "hexdump" that established it
+was piped through `grep`, which strips the file's terminator and appends its own
+LF. **It measured grep's output, not the file.** The raw bytes are
+`... 2e 0d 0a 5b 53 75 6e ...` — `.` CR LF `[Sun`.
+
+The parser strips a trailing CR. Before it did, a CR-terminated line parsed to
+**null silently**: the timestamp still matched, so `dropped` stayed clean and the
+module would have reported no lockouts ever. It never bit us only because
+`readline({crlfDelay: Infinity})` and the host's `split(/
+
+|
+/)` both strip
+CR first — luck, not design.
 
 *Second layer, which is not settled:* U+FFFD is the fossil of a decode that
 already lost a byte. So "UTF-8 is the right decoder for the bytes on disk" is
@@ -87,6 +103,11 @@ exist". All searches are over the 15 files above unless stated.
 - `grep -i "lockout"` → 104 hits, `grep -i "locked out"` → 32 hits (raw, so
   inflated by file duplication). **Every one is player chat. Filtering out the
   chat verbs leaves zero system lines.**
+- `grep -F "entitled on this account"` over the corpus returns **two distinct
+  values** — 12 days for Avenrae, 9 days for Shara. **They are on different
+  accounts.** Recorded because an earlier claim rested on the opposite
+  assumption, and because it means this corpus **cannot** settle whether the
+  lockout is scoped per character or per account.
 - Only **two** system line shapes containing the word "task" exist in the whole
   corpus: `You have been assigned the task '...'.` and `Your task '...' has been
   updated.` There is **no** completion line, removal line, expiry line, failure

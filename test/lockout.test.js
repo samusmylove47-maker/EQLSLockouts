@@ -412,6 +412,30 @@ test('CONTRACT 1: the raw line with its prefix is the input', () => {
   assert.equal(core.parseLine("You say, 'danger'"), null);
 });
 
+test('CONTRACT 1: a CR-terminated line parses — the logs are CRLF', () => {
+  // MEASURED: every line of all 15 log files is CRLF-terminated. An earlier
+  // revision of docs/EVIDENCE.md asserted the opposite, because the hexdump
+  // that "established" it was piped through grep, which strips the file's
+  // terminator and appends its own LF. The instrument was measured, not the file.
+  //
+  // A host that splits on '\n' alone hands us lines ending in '\r'. Before the
+  // fix those parsed to null SILENTLY — the stamp matched, so `dropped` stayed
+  // clean and the module reported no lockouts ever.
+  for (const line of [
+    "[Mon Aug 10 17:14:49 2026] You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.\r",
+    "[Mon Aug 10 17:14:49 2026] You say, 'danger'\r",
+    "[Mon Aug 10 17:28:13 2026] You have been given: Void-Touched Potential\r",
+    "[Mon Aug 10 17:15:09 2026] You have entered Nagafen's Lair - Group 1 (Awakened).\r",
+    "[Mon Aug 10 17:14:48 2026] Voidling says, 'Ah, ... the [danger]...'\r",
+  ]) {
+    assert.ok(core.parseLine(line), `CR-terminated line must parse: ${JSON.stringify(line.slice(26, 60))}`);
+  }
+  // And a CRLF-fed stream must produce the same state as an LF-fed one.
+  const lf = core.applyLines(core.createState('Avenrae'), fixtureLines);
+  const crlf = core.applyLines(core.createState('Avenrae'), fixtureLines.map((l) => l + '\r'));
+  assert.deepEqual(crlf, lf, 'CRLF and LF input must produce identical state');
+});
+
 test('CONTRACT 2: `now` does not affect accumulated state — replay equals live', () => {
   // The property that makes a backfill of a million lines trustworthy: state is
   // a function of the lines alone. If `now` leaked into it, replaying history

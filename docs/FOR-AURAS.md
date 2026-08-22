@@ -100,6 +100,31 @@ presence was all they were ever for.
 Replaying the whole 434 MB corpus now changes exactly one key: `dropped.duplicate`,
 the counter recording how many repeats were rejected.
 
+## Two measurements that affect your tailer directly
+
+**The logs are CRLF, not LF.** Every line of all 15 files ends `0D 0A`. An
+earlier version of these notes said LF, and it was wrong — the hexdump that
+"established" it was piped through `grep`, which strips the file's terminator and
+appends its own. It measured the instrument, not the file.
+
+Your `split(/
+|
+/)` already handles it correctly, so nothing on your side
+changes. It matters for two other reasons: a host that splits on `'
+'` alone
+would hand this module lines with a trailing CR, which used to parse to **null
+silently** (the timestamp matched, so the diagnostics stayed clean); and it means
+every line boundary in the file is two bytes, which is worth knowing when reading
+at byte offsets.
+
+**And a precision on the positive control**, because the obvious reading is too
+strong. The Voidling's closing line proves **the channel is showing NPC
+dialogue** — it does not prove the Voidling answered *you*. It replies to every
+player who hails it, zone-wide: 123 of 195 closing lines in our corpus have no
+first-person `danger` in the preceding five seconds. That is still the control we
+need, since the risk being guarded against is a chat filter hiding system text.
+It is not evidence that a particular exchange completed.
+
 ## Shape
 
 ```js

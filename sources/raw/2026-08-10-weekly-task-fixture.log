@@ -14,9 +14,15 @@
 # Recorded here because every published candidate reset rule is stated in
 # Pacific, and without this the comparison is off by an unknown constant.
 #
-# ENCODING: measured, not assumed. Across all 15 logs (440,214,858 bytes)
-# exactly 9 bytes are >= 0x80, and all 9 are EF BF BD (U+FFFD). Valid UTF-8.
-# Read these files as UTF-8.
+# ENCODING: measured, not assumed. Across all 15 logs, exactly 9 bytes are
+# >= 0x80, and all 9 are EF BF BD (U+FFFD). Valid UTF-8. Read as UTF-8.
+# The corpus byte total is NOT quoted here: an earlier revision typed
+# 440,214,858 into this generated artifact and the measured sum is
+# 433,914,867. A figure typed into a file whose whole point is that it is
+# generated is the fault this project exists to catch. See analysis/findings.json.
+#
+# LINE ENDINGS: the source logs are CRLF. This fixture is written LF and
+# .gitattributes keeps it that way; the parser strips a trailing CR either way.
 #
 # Lines beginning with # are this header and are not log content.
 

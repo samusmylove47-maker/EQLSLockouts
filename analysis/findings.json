@@ -162,7 +162,8 @@
       },
       "dropped": {
         "unstamped": 16,
-        "duplicate": 0
+        "duplicate": 0,
+        "beyondDedupeHorizon": 0
       },
       "tasks": [
         {
@@ -528,7 +529,8 @@
       },
       "dropped": {
         "unstamped": 14,
-        "duplicate": 235
+        "duplicate": 235,
+        "beyondDedupeHorizon": 0
       },
       "tasks": [
         {
