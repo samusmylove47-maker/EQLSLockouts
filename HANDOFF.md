@@ -17,8 +17,18 @@ the owner measures, my protocol governs. All actioned; see the second report.
 contract down immediately broke the module, and that is the best outcome
 available.**
 
-Branch `session-d/phase-0`, PR **#1** open against `main`. **37 tests green** (was
-30). No measurement moved: brackets still 26.098 h and 26.056 h.
+**MERGED 22 Aug.** The owner merged PR #1; `main` is at `7543767` and carries all
+of it. `session-d/phase-0` is merged and left in place as ordered; new work is on
+`session-d/phase-2`. **37 tests green** (was 30). No measurement moved: brackets
+still 26.098 h and 26.056 h.
+
+**Three sweeps were still running when this was written and are not folded in
+yet** — the typed-number fault class across the whole tree, an adversarial audit
+of the module against all six constraints, and a full same-second ordering
+inventory from the corpus. They are alive, not lost. **This section will be
+updated with their results whether or not they are flattering**, and if any of
+them contradicts something above, the correction lands here rather than in a
+reply.
 
 ---
 
