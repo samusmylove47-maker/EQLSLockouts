@@ -108,8 +108,18 @@ function logFiles() {
         assignments: t.assignments.map((a) => core.formatCivil(a.at)),
         completions: t.completions.map((c) => core.formatCivil(c.at)),
       })),
-      grantsTotal: view.grants.total,
-      grantsByItem: view.grants.items.reduce((acc, g) => {
+      // NAMED itemsGiven*, NOT grants*. The Director read `grantsTotal: 24`
+      // beside `requestsGranted: 6` and could not reconcile them, which is a
+      // fair reading of the old names. They count different things:
+      //   itemsGivenTotal  — EVERY "You have been given: <item>" line, any item
+      //   requestsGranted  — only cadence-labelled WEEKLY TASK grants
+      // Shara's 24 is 6 Void-Touched Potential + 9 Hamed's Ring of Tears +
+      // 9 Talisman of Kejaar Kerrath, the last two from the non-cadence
+      // repeatable tasks she ran on 13 Aug. Avenrae did not run those, so hers
+      // is 6 and the two numbers coincide — which is what made the pair look
+      // like a contradiction rather than two different measurements.
+      itemsGivenTotal: view.grants.total,
+      itemsGivenByItem: view.grants.items.reduce((acc, g) => {
         acc[g.item] = (acc[g.item] || 0) + 1;
         return acc;
       }, {}),

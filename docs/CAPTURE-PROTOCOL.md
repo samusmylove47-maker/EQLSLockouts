@@ -72,6 +72,35 @@ Also try, ten seconds each, and write the exact response for each:
 
 ---
 
+## Step 1b — one accented character. Five seconds, closes a question open for weeks.
+
+**Type exactly:** `/say café — naïve “quotes” résumé`
+
+Then move on. That is the whole step.
+
+**What it settles.** We measured the corpus and it is UTF-8: exactly 9 bytes ≥
+0x80 in 434 MB, all of them `EF BF BD` (U+FFFD). But **U+FFFD is the residue of a
+decode that already threw a byte away.** So "UTF-8 is the right decoder for the
+bytes on disk" is settled, while "what the client originally emitted" is not, and
+**cannot be settled from a corpus whose only non-ASCII content is the replacement
+character itself.**
+
+One line with a real accented character in it decides it permanently:
+
+- log bytes `C3 A9` for the `é` → the client writes **UTF-8**
+- log bytes `E9` alone → the client writes **Windows-1252**
+
+Any accented character will do; the line above just gets several classes at once
+(accented vowels, a dash, curly quotes). It does not matter what it says, and it
+does not need to be in a public channel — `/say` in an empty zone is fine.
+
+**Why it matters beyond tidiness:** the host app decodes `utf8` and reads at byte
+offsets, so a multi-byte character straddling a read boundary would corrupt a
+line. Today that is untestable because no such character has ever been logged.
+This makes it testable.
+
+---
+
 ## Step 2 — the one observation that resolves the reset rule
 
 **This is the whole sitting. Everything else is optional.**
