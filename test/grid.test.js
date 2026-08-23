@@ -24,6 +24,24 @@ const ROSTER_EVIDENCE = JSON.parse(
   fs.readFileSync(path.join(__dirname, '..', 'sources', 'raw', 'roster-evidence.json'), 'utf8')
 );
 
+// A constructed state needs realistic COVERAGE, not just the interesting lines.
+// The grid treats a hole longer than a raid as "not looked", so a fixture made
+// of three lines days apart is — correctly — mostly unobserved. `heartbeat`
+// fills a range with ordinary stamped lines, the way a running client does.
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function heartbeat(fromDay, toDay, month = 8, year = 2026) {
+  const out = [];
+  for (let d = fromDay; d <= toDay; d++) {
+    for (const h of [1, 7, 13, 19]) {
+      const dt = new Date(Date.UTC(year, month - 1, d, h, 0, 0));
+      const p = (n) => String(n).padStart(2, '0');
+      out.push(`[${DAYS[dt.getUTCDay()]} ${MONTHS[month - 1]} ${p(d)} ${p(h)}:00:00 ${year}] You have entered Nektulos Forest.`);
+    }
+  }
+  return out;
+}
+
 // A Friday. The most recent Tuesday before it is 18 Aug.
 const NOW = { year: 2026, month: 8, day: 21, hour: 18, minute: 0, second: 0 };
 
@@ -153,15 +171,15 @@ test('GRID: a kill at a stated difficulty completes exactly that cell', () => {
   const st = core.createState('Avenrae');
   core.applyLines(st, [
     // Coverage must start on or before the boundary Tuesday (18 Aug) and run to `now`.
-    '[Mon Aug 17 09:00:00 2026] You have entered Nektulos Forest.',
+    ...heartbeat(17, 21),
     '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 3 (Fused).',
     '[Wed Aug 19 20:30:00 2026] Innoruuk, the Prince of Hate has been slain by Jrhx!',
-    '[Fri Aug 21 18:00:00 2026] You have entered Nektulos Forest.',
+
   ]);
   const row = core.projectGrid(st, NOW).cells.filter((c) => c.label === 'Innoruuk');
   assert.equal(row.find((c) => c.difficulty === 3).state, 'completed');
   for (const d of [0, 1, 2, 4]) {
-    assert.equal(row.find((c) => c.difficulty === d).state, 'available',
+    assert.equal(row.find((c) => c.difficulty === d).state, 'open',
       `D${d} must stay open — completing one tier does not complete the row`);
   }
 });
@@ -171,10 +189,10 @@ test('GRID: a bare "- Group" kill lands in unknown, NEVER in the D0 cell', () =>
   // for eight such fights and is wrong to; this module refuses to.
   const st = core.createState('Avenrae');
   core.applyLines(st, [
-    '[Mon Aug 17 09:00:00 2026] You have entered Nektulos Forest.',
+    ...heartbeat(17, 21),
     '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Fear - Group.',
     '[Wed Aug 19 20:30:00 2026] You have slain Cazic-Thule!',
-    '[Fri Aug 21 18:00:00 2026] You have entered Nektulos Forest.',
+
   ]);
   const row = core.projectGrid(st, NOW).cells.filter((c) => c.label === 'Cazic Thule');
   assert.equal(row.filter((c) => c.state === 'completed').length, 0,
@@ -186,13 +204,13 @@ test('GRID: a bare "- Group" kill lands in unknown, NEVER in the D0 cell', () =>
 test('GRID: an open-world kill resolves no cell', () => {
   const st = core.createState('Avenrae');
   core.applyLines(st, [
-    '[Mon Aug 17 09:00:00 2026] You have entered The Plane of Sky.',
+    ...heartbeat(17, 21),
     '[Wed Aug 19 20:30:00 2026] Lady Vox has been slain by X!',
-    '[Fri Aug 21 18:00:00 2026] You have entered The Plane of Sky.',
+
   ]);
   assert.equal(st.kills[0].instanced, false, 'a bare zone name is the open world');
   const row = core.projectGrid(st, NOW).cells.filter((c) => c.label === 'Lady Vox');
-  for (const c of row) assert.equal(c.state, 'available');
+  for (const c of row) assert.equal(c.state, 'open');
 });
 
 test('GRID: a kill on the boundary day is unknown, not completed', () => {
@@ -201,10 +219,10 @@ test('GRID: a kill on the boundary day is unknown, not completed', () => {
   // still do — the dangerous direction for a tool that exists to prevent that.
   const st = core.createState('Avenrae');
   core.applyLines(st, [
-    '[Mon Aug 17 09:00:00 2026] You have entered Nektulos Forest.',
+    ...heartbeat(17, 21),
     '[Tue Aug 18 12:00:00 2026] You have entered The Permafrost Caverns - Group 2 (Adaptive).',
     '[Tue Aug 18 12:30:00 2026] Lady Vox has been slain by X!',
-    '[Fri Aug 21 18:00:00 2026] You have entered Nektulos Forest.',
+
   ]);
   const cell = core.projectGrid(st, NOW).cells.find((c) => c.label === 'Lady Vox' && c.difficulty === 2);
   assert.equal(cell.state, 'unknown');
@@ -216,10 +234,10 @@ test('GRID: an invite never sets the current instance — only a zone-in does', 
   // presence would attribute a later kill to an instance never entered.
   const st = core.createState('Avenrae');
   core.applyLines(st, [
-    '[Mon Aug 17 09:00:00 2026] You have entered Nektulos Forest.',
+    ...heartbeat(17, 21),
     "[Wed Aug 19 20:00:00 2026] Lumbarin has asked you to join the instance: The Plane of Hate - Group 4 (Refined).        Would you like to join? Accepting will incur you a charge or replay timer.",
     '[Wed Aug 19 20:30:00 2026] Innoruuk, the Prince of Hate has been slain by Jrhx!',
-    '[Fri Aug 21 18:00:00 2026] You have entered Nektulos Forest.',
+
   ]);
   assert.equal(st.kills[0].instanced, false, 'a declined-or-unentered invite grants no difficulty');
   const row = core.projectGrid(st, NOW).cells.filter((c) => c.label === 'Innoruuk');
@@ -232,10 +250,10 @@ test('GRID: the instance SHAPE is recorded on a completion', () => {
   // stays answerable rather than being silently decided.
   const st = core.createState('Avenrae');
   core.applyLines(st, [
-    '[Mon Aug 17 09:00:00 2026] You have entered Nektulos Forest.',
+    ...heartbeat(17, 21),
     '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate 4 (Refined).',
     '[Wed Aug 19 20:30:00 2026] Innoruuk, the Prince of Hate has been slain by Jrhx!',
-    '[Fri Aug 21 18:00:00 2026] You have entered Nektulos Forest.',
+
   ]);
   const cell = core.projectGrid(st, NOW).cells.find((c) => c.label === 'Innoruuk' && c.difficulty === 4);
   assert.equal(cell.state, 'completed');
@@ -259,10 +277,10 @@ test('GRID: on the boundary day itself, both hypotheses are evaluated', () => {
   // raided all week. Safe direction, but an assumption dressed as a fact.
   const st = core.createState('Avenrae');
   core.applyLines(st, [
-    '[Mon Aug 10 09:00:00 2026] You have entered Nektulos Forest.',
+    ...heartbeat(10, 18),
     '[Thu Aug 13 20:00:00 2026] You have entered The Plane of Hate - Group 3 (Fused).',
     '[Thu Aug 13 20:30:00 2026] Innoruuk, the Prince of Hate has been slain by Jrhx!',
-    '[Tue Aug 18 14:00:00 2026] You have entered Nektulos Forest.',
+
   ]);
 
   // Asked about Tuesday 18th: if the reset has happened, the Thursday kill is
@@ -289,11 +307,11 @@ test('a non-zone "You have entered" must NOT clear the instance', () => {
   // difficulty. One real raid, dropped by a message about levitation.
   const st = core.createState('Avenrae');
   core.applyLines(st, [
-    '[Mon Aug 17 09:00:00 2026] You have entered Nektulos Forest.',
+    ...heartbeat(17, 21),
     '[Wed Aug 19 18:05:40 2026] You have entered The Ruins of Old Paineel - Group 1 (Awakened).',
     '[Wed Aug 19 18:05:40 2026] You have entered an area where levitation effects do not function.',
     '[Wed Aug 19 18:11:22 2026] Master Yael has been slain by Cavity!',
-    '[Fri Aug 21 18:00:00 2026] You have entered Nektulos Forest.',
+
   ]);
   assert.equal(st.kills.length, 1);
   assert.equal(st.kills[0].instanced, true, 'the instance must survive the levitation notice');
@@ -325,12 +343,96 @@ test('two different bosses in the same second are both recorded', () => {
   // forgetting a raid.
   const st = core.createState('Avenrae');
   core.applyLines(st, [
-    '[Mon Aug 17 09:00:00 2026] You have entered Nektulos Forest.',
+    ...heartbeat(17, 21),
     '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 2 (Adaptive).',
     '[Wed Aug 19 20:30:00 2026] Innoruuk, the Prince of Hate has been slain by X!',
     '[Wed Aug 19 20:30:00 2026] Lady Vox has been slain by X!',
-    '[Fri Aug 21 18:00:00 2026] You have entered Nektulos Forest.',
+
   ]);
   assert.equal(st.kills.length, 2, 'both kills survive');
   assert.deepEqual(st.kills.map((k) => k.boss).sort(), ['Innoruuk, the Prince of Hate', 'Lady Vox']);
+});
+
+test('COVERAGE: a hole in the MIDDLE of the period is not_looked, not open', () => {
+  // Endpoint checking is not enough. This record starts before the boundary and
+  // ends after `now`, but is missing the two days containing the reset. Reading
+  // "open" off that would be the comfortable lie.
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [...heartbeat(14, 16), ...heartbeat(20, 21)]);
+  const grid = core.projectGrid(st, NOW);
+  assert.equal(grid.period.coverageSpansPeriod, false);
+  assert.ok(grid.period.coverageHoles.length > 0, 'the hole must be reported');
+  assert.equal(grid.openCount, 0);
+  assert.equal(grid.notLookedCount, 25);
+  assert.match(grid.cells[0].because, /no record of/);
+});
+
+test('COVERAGE: an ordinary overnight gap is tolerated but still REPORTED', () => {
+  // The owner confirmed on 23 Aug that logging is sometimes off, so a gap is
+  // NOT assumed empty. But treating every night as missing coverage would make
+  // the tool useless. So: gaps under the 24 h judgement threshold are tolerated
+  // for cell state, and every one of them is still listed.
+  const st = core.createState('Avenrae');
+  core.applyLines(st, heartbeat(17, 21));
+  const grid = core.projectGrid(st, NOW);
+  assert.equal(grid.period.coverageSpansPeriod, true);
+  assert.deepEqual(grid.period.coverageHoles, [], 'no gap exceeds the threshold');
+  assert.ok(grid.period.coverageGaps.length > 0, 'but the nightly gaps ARE reported');
+  assert.ok(grid.period.coverageGaps.every((g) => g.tolerated));
+  assert.ok(grid.openCount > 0);
+  assert.match(grid.period.coverageAssumption, /not logging/);
+  assert.equal(grid.period.coverageGapToleranceHours, 24);
+});
+
+test('REPEATS: a second kill at the same tier is recorded, never counted', () => {
+  // Measured: Avenrae killed Innoruuk at D4 on 12, 15 AND 16 Aug — one
+  // character, one tier, one week. A kill proves completion, not consumption.
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Wed Aug 19 20:30:00 2026] Innoruuk, the Prince of Hate has been slain by X!',
+    '[Thu Aug 20 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Thu Aug 20 20:30:00 2026] Innoruuk, the Prince of Hate has been slain by X!',
+  ]);
+  const cell = core.projectGrid(st, NOW).cells.find((c) => c.label === 'Innoruuk' && c.difficulty === 4);
+  assert.equal(cell.state, 'completed');
+  assert.equal(cell.repeatKills, 1, 'the repeat is recorded');
+  assert.match(cell.because, /kill at D4 on 2026-08-19/, 'the FIRST completion is the one reported');
+  assert.match(cell.because, /not counted/);
+});
+
+test('EVIDENCE: completed is observed, open is inferred, and the grid says so', () => {
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Wed Aug 19 20:30:00 2026] Innoruuk, the Prince of Hate has been slain by X!',
+  ]);
+  const grid = core.projectGrid(st, NOW);
+  const done = grid.cells.find((c) => c.state === 'completed');
+  const open = grid.cells.find((c) => c.state === 'open');
+  assert.equal(done.evidence, 'observed');
+  assert.match(open.evidence, /inferred/);
+  assert.match(grid.period.evidenceNote, /OBSERVED/);
+  assert.match(grid.period.evidenceNote, /proves completion, not/);
+});
+
+test('THE WEEKLY TASK IS NOT PER BOSS — it is the first three raids of the week', () => {
+  // The owner, 23 Aug 2026: "these are only given to the player for the first 3
+  // raids you complete each week." I had reported the opposite — that Innoruuk
+  // and Cazic-Thule "have no Voidling weekly" — reading a property of our
+  // sample as a property of the game.
+  //
+  // Measured, and it fits exactly: Avenrae's week of 11 Aug holds 18 roster
+  // boss kills against 3 task grants and 3 tokens.
+  assert.equal(core.ROSTER.filter((r) => r.weeklyTaskObserved).length, 3,
+    'three bosses were observed carrying a weekly IN OUR CORPUS');
+  // The field must not be named or read as a claim about the boss.
+  for (const r of core.ROSTER) {
+    assert.ok(!('weeklyTask' in r), 'the old, wrong field name must be gone');
+    assert.equal(typeof r.weeklyTaskObserved, 'boolean');
+  }
+  const grid = core.projectGrid(core.applyLines(core.createState('Avenrae'), heartbeat(17, 21)), NOW);
+  assert.equal(grid.cells.filter((c) => c.weeklyTaskObserved).length, 15);
 });

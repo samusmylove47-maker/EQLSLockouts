@@ -463,12 +463,50 @@ const YOU_SLEW_RE = /^You have slain (.+?)!$/;
 //
 // A test asserts every key matches at least one boss string seen in real data,
 // so a typo fails the build instead of rendering as an empty row.
+// THE WEEKLY TASK IS NOT PER BOSS. It is the first three raids of the week.
+//
+// The owner, first-hand, 23 Aug 2026:
+//
+//   "Potential of the Void — these are only given to the player for the first 3
+//    raids you complete each week. You may only ever carry 3 of them."
+//
+// **This overturns a reading I published an hour earlier.** Our corpus contains
+// weekly tasks for only Lady Vox, Lord Nagafen and Master Yael, and I reported
+// that as a property of those bosses — that Innoruuk and Cazic-Thule "have no
+// Voidling weekly". Wrong. Those three are simply the raids that happened to be
+// done first in the weeks we hold. Any raid can carry the task; only the first
+// three in a week do.
+//
+// Measured, and it fits exactly. Per character, per week beginning Tuesday:
+//
+//   Avenrae, week of 11 Aug:  18 roster boss kills, 3 task grants, 3 tokens
+//   Shara,   week of 11 Aug:  16 roster boss kills, 3 task grants, 3 tokens
+//   Both, week of 4 Aug:       7 roster boss kills, 3 task grants, 3 tokens
+//
+// Eighteen raids, three tokens. The cap is on the token, not on the boss.
+//
+// TWO CONSEQUENCES, and both matter more than the correction itself:
+//
+// 1. A REFUSED VOIDLING HAIL MEANS "YOU HAVE USED YOUR THREE THIS WEEK", NOT
+//    "THIS BOSS IS LOCKED". Every refusal in our corpus follows three grants in
+//    the same week. The refusal is a signal about the CAP, and reading it as a
+//    per-boss lockout would be wrong.
+//
+// 2. THE 25-CELL GRID AND THE TOKEN CAP ARE DIFFERENT SYSTEMS. The grid tracks
+//    one completion per boss per tier per week — the owner's model, 25 cells.
+//    The token tracks the first three raids of the week — one counter, three
+//    deep. A boss can be open on the grid while the token cap is spent, and the
+//    module must never let one answer the other.
+//
+// `weeklyTask` below therefore records only what our corpus HAPPENED to observe,
+// and is not a claim about the boss.
+const WEEKLY_TASK_IS_PER_BOSS = false;
 const ROSTER = Object.freeze([
-  { key: 'Lady Vox', label: 'Lady Vox' },
-  { key: 'Lord Nagafen', label: 'Lord Nagafen' },
-  { key: 'Master Yael', label: 'Master Yael' },
-  { key: 'Innoruuk, the Prince of Hate', label: 'Innoruuk' },
-  { key: 'Cazic-Thule', label: 'Cazic Thule' },
+  { key: 'Lady Vox', label: 'Lady Vox', weeklyTaskObserved: true },
+  { key: 'Lord Nagafen', label: 'Lord Nagafen', weeklyTaskObserved: true },
+  { key: 'Master Yael', label: 'Master Yael', weeklyTaskObserved: true },
+  { key: 'Innoruuk, the Prince of Hate', label: 'Innoruuk', weeklyTaskObserved: false },
+  { key: 'Cazic-Thule', label: 'Cazic Thule', weeklyTaskObserved: false },
 ].map(Object.freeze));
 
 // ---------------------------------------------------------------------------
@@ -585,7 +623,12 @@ function createState(character, opts) {
     // The bosses whose kills are recorded. `parseLine` stays open to every
     // name; this is the only place a roster narrows anything, and it is
     // overridable so the host is not stuck with ours.
-    roster: roster.map((r) => ({ key: r.key, label: r.label })),
+    roster: roster.map((r) => ({
+      key: r.key,
+      label: r.label,
+      // Observed in OUR corpus; not a property of the boss. See the note above.
+      weeklyTaskObserved: r.weeklyTaskObserved === true,
+    })),
     // Kills of roster bosses, each carrying the instance it happened in.
     kills: [],
     // The instance most recently entered, so a kill can be attributed to a
@@ -606,13 +649,52 @@ function createState(character, opts) {
     voidlingReplies: [],
     // Ordered log of what was observed, for provenance. Bounded — see `applyLine`.
     events: [],
+    // The dedupe index, SEPARATE from `events` and far larger.
+    //
+    // These were one array once, and that was a real bug rather than a tidiness
+    // problem: `events` is bounded at MAX_EVENTS for memory, and when the bound
+    // was reached the oldest keys fell out of the dedupe index with them. Replay
+    // a corpus longer than the bound — which the owner's own 12 Shara files
+    // are — and the early observations are accepted a second time. Measured
+    // before the fix: every 10 Aug task assignment recorded TWICE and the
+    // Void-Touched Potential count read 9 instead of 6.
+    //
+    // A plain object, not a Set, because state must survive JSON round-tripping.
+    seen: {},
+    seenCount: 0,
     firstSeen: null,
     lastSeen: null,
+    // Contiguous runs of observed log time. A gap longer than SPAN_GAP_MS
+    // starts a new span. This is how a HOLE IN THE MIDDLE of the record is
+    // made visible: checking only firstSeen and lastSeen would report full
+    // coverage for a log that is missing the two days containing the reset.
+    spans: [],
     dropped: { unstamped: 0, duplicate: 0, beyondDedupeHorizon: 0 },
   };
 }
 
 const MAX_EVENTS = 5000;
+// The dedupe index is deliberately far larger than the provenance log. The
+// owner's own corpus produces ~12k observations for one character, so a bound
+// of 5000 was actively corrupting counts.
+const MAX_SEEN = 200000;
+
+// Drops the oldest half of the dedupe index when it overflows, so the horizon
+// recedes rather than the index being cleared outright.
+function pruneSeen(state) {
+  const entries = Object.entries(state.seen).sort((a, b) => a[1] - b[1]);
+  const keep = entries.slice(Math.floor(entries.length / 2));
+  const next = {};
+  for (const [k, v] of keep) next[k] = v;
+  state.seen = next;
+  state.seenCount = keep.length;
+}
+
+function oldestSeen(state) {
+  let min = Infinity;
+  for (const k in state.seen) if (state.seen[k] < min) min = state.seen[k];
+  return min;
+}
 
 // Applies one raw line. Mutates and returns `state` — cheap, and the caller
 // owns the object. Returns the same state unchanged for lines we do not model.
@@ -622,10 +704,17 @@ const MAX_EVENTS = 5000;
 // eqlog_*.txt was modified most recently" will hop between those files and
 // replay the same moment twice. Counting one kill as two would corrupt every
 // interval this module reports.
+const SPAN_GAP_MS = 30 * 60 * 1000;
+
 function applyLine(state, line) {
+  // EVERY stamped line extends coverage, not just the ones we model. Coverage
+  // is about what we were in a position to see, and we saw every line.
+  const stamped = typeof line === 'string' && line.length ? splitStamp(line) : null;
+  if (stamped) noteCoverage(state, civilOf(stamped.at));
+
   const ev = parseLine(line);
   if (!ev) {
-    if (typeof line === 'string' && line.length && !splitStamp(line)) state.dropped.unstamped++;
+    if (typeof line === 'string' && line.length && !stamped) state.dropped.unstamped++;
     return state;
   }
 
@@ -642,12 +731,19 @@ function applyLine(state, line) {
   }
 
   const key = dedupeKey(ev, civil);
-  if (state.events.length && state.events.some((e) => e.key === key)) {
+  // Older states persisted before `seen` existed still carry only `events`.
+  if (!state.seen) { state.seen = {}; state.seenCount = 0; }
+  if (Object.prototype.hasOwnProperty.call(state.seen, key)) {
     state.dropped.duplicate++;
     return state;
   }
+  state.seen[key] = civil;
+  state.seenCount++;
+  if (state.seenCount > MAX_SEEN) pruneSeen(state);
 
-  // THE DEDUPE HORIZON, and why it is a counter rather than a silent cap.
+  // THE DEDUPE HORIZON. Now genuinely remote rather than four months away: the
+  // index holds MAX_SEEN observations, not MAX_EVENTS, and the counter below
+  // still fires if it is ever exceeded.
   //
   // `events` is bounded at MAX_EVENTS, so duplicate suppression can only see
   // that far back. Replay a stream longer than the bound and the oldest keys
@@ -661,7 +757,7 @@ function applyLine(state, line) {
   // `dropped.beyondDedupeHorizon > 0` tells a host "you fed me something from
   // before my memory; I can no longer promise idempotence, rebuild from the
   // log." Visible beats silent.
-  if (state.events.length >= MAX_EVENTS && civil < state.events[0].civil) {
+  if (state.seenCount >= MAX_SEEN && civil < oldestSeen(state)) {
     state.dropped.beyondDedupeHorizon++;
   }
 
@@ -766,6 +862,29 @@ function applyLine(state, line) {
   }
 
   return state;
+}
+
+// Extends the observation spans. Lines usually arrive in order; a line that
+// arrives out of order (two log files fed back to front) is merged rather than
+// starting a spurious span.
+function noteCoverage(state, civil) {
+  const spans = state.spans;
+  for (const sp of spans) {
+    if (civil >= sp.from - SPAN_GAP_MS && civil <= sp.to + SPAN_GAP_MS) {
+      if (civil < sp.from) sp.from = civil;
+      if (civil > sp.to) sp.to = civil;
+      return;
+    }
+  }
+  spans.push({ from: civil, to: civil });
+  spans.sort((a, b) => a.from - b.from);
+  // Merge any spans the new one bridged.
+  for (let i = spans.length - 1; i > 0; i--) {
+    if (spans[i].from - spans[i - 1].to <= SPAN_GAP_MS) {
+      spans[i - 1].to = Math.max(spans[i - 1].to, spans[i].to);
+      spans.splice(i, 1);
+    }
+  }
 }
 
 function dedupeKey(ev, civil) {
@@ -1096,14 +1215,59 @@ function projectGrid(state, now) {
 
   const coverageStart = state.firstSeen;
   const coverageEnd = state.lastSeen;
-  // Coverage must span from the boundary to `now`. A gap at either end means a
-  // kill could have happened unobserved, and that is `not_looked`, not
-  // `available`.
+
+  // THE GAPS THAT MATTER, and the assumption underneath them.
+  //
+  // Endpoint coverage is not enough. A record that starts before the boundary
+  // and ends after `now` can still be missing the two days in the middle that
+  // contain the reset, and reporting `open` off that is the comfortable lie
+  // this tool exists not to tell.
+  //
+  // An earlier revision of this comment asserted that a gap in the log means
+  // the client was not running, so no raid happened in it. **The owner told us
+  // on 23 Aug 2026, first-hand, that they may have had logging switched off
+  // during exactly such a gap.** So the assumption is false, and it was the
+  // load-bearing one: a gap can hide a raid that really happened.
+  //
+  // The module cannot tell "not playing" from "not logging" — nothing in the
+  // file distinguishes them. So it does the only honest thing: it REPORTS every
+  // gap, and treats a large one as `not_looked` rather than `open`.
+  //
+  // THE THRESHOLD IS A JUDGEMENT, NOT A MEASUREMENT, and is labelled as one.
+  // 24 hours separates the case we know about — a 36.6 h hole across the reset,
+  // which the owner confirms was probably logging-off — from ordinary daily
+  // gaps of 7 to 18 hours in the same record. A caller who wants to be stricter
+  // has `coverageHoles` and can decide for itself; nothing is hidden either way.
+  const PERIOD_GAP_TOLERANCE_MS = 24 * 60 * 60 * 1000;
+  // Gaps at or above this are always listed, even when tolerated, so a run of
+  // small holes cannot add up to a missing evening without anyone seeing it.
+  const GAP_REPORT_MS = 60 * 60 * 1000;
+
+  const periodFrom = boundaryDayStart;
+  const periodTo = nowCivil;
+  const relevant = (state.spans || [])
+    .filter((sp) => sp.to >= periodFrom && sp.from <= periodTo)
+    .sort((a, b) => a.from - b.from);
+
+  const allGaps = [];
+  let cursor = periodFrom;
+  for (const sp of relevant) {
+    if (sp.from > cursor + GAP_REPORT_MS) {
+      allGaps.push({ from: cursor, to: sp.from, hours: (sp.from - cursor) / 3600000 });
+    }
+    cursor = Math.max(cursor, sp.to);
+  }
+  if (periodTo > cursor + GAP_REPORT_MS) {
+    allGaps.push({ from: cursor, to: periodTo, hours: (periodTo - cursor) / 3600000 });
+  }
+  // The ones big enough to change the answer.
+  const holes = allGaps.filter((g) => g.to - g.from > PERIOD_GAP_TOLERANCE_MS);
+
   const spans =
     coverageStart !== null &&
     coverageEnd !== null &&
-    coverageStart <= boundaryDayStart &&
-    coverageEnd >= nowCivil;
+    relevant.length > 0 &&
+    holes.length === 0;
 
   // IS `now` ITSELF ON THE BOUNDARY DAY? Then the period start is ambiguous.
   //
@@ -1131,15 +1295,39 @@ function projectGrid(state, now) {
       const period = mine.filter((k) => k.civil >= dayEnd);
       const onDay = mine.filter((k) => k.civil >= from && k.civil < dayEnd);
       const unstated = period.filter((k) => k.instanced && !k.difficultyStated);
-      const done = period.filter((k) => k.difficultyStated && k.difficulty === d);
-      if (done.length) return { s: 'completed', done, why: `kill at D${d} on ${formatCivil(done[done.length - 1].at)}` };
+      const done = period
+        .filter((k) => k.difficultyStated && k.difficulty === d)
+        .sort((a, b) => a.civil - b.civil);
+      if (done.length) {
+        // A KILL PROVES COMPLETION, NOT CONSUMPTION.
+        //
+        // Measured, one character, one week, one tier: Avenrae killed
+        // Innoruuk at D4 on 12, 15 AND 16 Aug 2026 — inside the week beginning
+        // Tue 11 Aug, every one in a group instance. So a boss can be killed
+        // again after the weekly is done, which the 28 Jul patch note supports:
+        // a locked-out kill still pays a guaranteed drop.
+        //
+        // The grid therefore marks the FIRST completion of the period and
+        // leaves the repeats alone. It does not count them, does not treat them
+        // as a second completion, and does not read a repeat as evidence that
+        // the lockout had cleared.
+        const first = done[0];
+        return {
+          s: 'completed',
+          done,
+          first,
+          repeats: done.length - 1,
+          why: `kill at D${d} on ${formatCivil(first.at)}` +
+               (done.length > 1 ? ` (and ${done.length - 1} later kill(s) this period, not counted)` : ''),
+        };
+      }
       if (unstated.length) {
-        return { s: 'unknown', done, why: `${unstated.length} kill(s) this period at a difficulty the game did not state` };
+        return { s: 'unknown', done, repeats: 0, why: `${unstated.length} kill(s) this period at a tier the game did not state` };
       }
       if (onDay.length) {
-        return { s: 'unknown', done, why: `${onDay.length} kill(s) on ${RESET_RULE.weekdayName} itself; the reset hour is not recorded` };
+        return { s: 'unknown', done, repeats: 0, why: `${onDay.length} kill(s) on ${RESET_RULE.weekdayName} itself; the reset hour is not recorded` };
       }
-      return { s: 'available', done, why: 'no kill observed since the reset, and coverage spans the period' };
+      return { s: 'open', done, repeats: 0, why: 'no kill observed since the reset, and coverage spans the period' };
     };
 
     for (let d = 0; d < DIFFICULTY_LABELS.length; d++) {
@@ -1150,7 +1338,11 @@ function projectGrid(state, now) {
       let because;
       if (!spans) {
         cellState = 'not_looked';
-        because = coverageStart === null ? 'no lines seen at all' : 'coverage does not span this period';
+        because = coverageStart === null
+          ? 'no lines seen at all'
+          : holes.length
+            ? `no record of ${holes.map((h) => `${h.hours.toFixed(1)}h`).join(' + ')} inside this period`
+            : 'coverage does not span this period';
       } else if (h1.s === h2.s) {
         cellState = h1.s;
         because = h1.why;
@@ -1164,10 +1356,25 @@ function projectGrid(state, now) {
       cells.push({
         boss: entry.key,
         label: entry.label,
+        // Whether a weekly task for this boss was ever seen in our corpus. NOT
+        // a claim that the boss can or cannot carry one — the task goes to the
+        // first three raids of the week, whichever they are.
+        weeklyTaskObserved: entry.weeklyTaskObserved === true,
         difficulty: d,
         difficultyLabel: DIFFICULTY_LABELS[d],
         state: cellState,
         because,
+        // WHAT KIND OF FACT THIS IS. `completed` is OBSERVED — a kill line, in
+        // the log, at that tier, in this period. `open` is INFERRED, and only
+        // under the one-completion-per-tier-per-week model the owner supplied:
+        // it means "no kill seen", which is evidence of absence only because
+        // coverage spans the period. `unknown` and `not_looked` are neither.
+        evidence: cellState === 'completed' ? 'observed'
+          : cellState === 'open' ? 'inferred from the one-per-week model'
+          : 'not established',
+        // Later kills of the same boss at the same tier in the same period.
+        // Recorded, never counted: a kill proves completion, not consumption.
+        repeatKills: h1.repeats || 0,
         // Which instance shape the completion happened in. Recorded but NOT used
         // to split the grid: whether a kill in `- Group N` and a kill in
         // `Zone N` share one lock is unmeasured, so the grid keeps the owner's
@@ -1184,14 +1391,46 @@ function projectGrid(state, now) {
       boundaryDay: formatCivil(fromCivil(boundaryDayStart)).slice(0, 10),
       boundaryWeekday: RESET_RULE.weekdayName,
       hourKnown: false,
+      // Stated once, at the top of the projection, so a caller cannot render
+      // the grid without it being available to render alongside.
+      evidenceNote:
+        '"completed" is OBSERVED: a kill line at that tier in this period. ' +
+        '"open" is INFERRED from the one-completion-per-tier-per-week model ' +
+        'model — it means no kill was seen, which counts as evidence of absence ' +
+        'only because coverage spans the period. A kill proves completion, not ' +
+        'consumption: repeats are recorded and not counted.',
       nowIsOnBoundaryDay: onBoundaryDay,
       coverageSpansPeriod: spans,
+      // Stretches of the period we have no record of, longer than a raid takes.
+      // Empty means the period is fully observed. Non-empty is exactly why the
+      // cells read not_looked rather than open.
+      // Gaps large enough to change a cell to not_looked.
+      coverageHoles: holes.map((h) => ({
+        from: formatCivil(fromCivil(h.from)),
+        to: formatCivil(fromCivil(h.to)),
+        hours: Number(h.hours.toFixed(2)),
+      })),
+      // EVERY gap of an hour or more, tolerated ones included. Listed so a run
+      // of small holes cannot quietly add up to a missing raid night.
+      coverageGaps: allGaps.map((h) => ({
+        from: formatCivil(fromCivil(h.from)),
+        to: formatCivil(fromCivil(h.to)),
+        hours: Number(h.hours.toFixed(2)),
+        tolerated: h.to - h.from <= PERIOD_GAP_TOLERANCE_MS,
+      })),
+      coverageAssumption:
+        'A gap cannot be told apart from "not playing" or "not logging" — the ' +
+        'file records neither. The owner confirmed on 23 Aug 2026 that logging ' +
+        'was probably off during one such gap, so gaps are NOT assumed empty. ' +
+        'Gaps over 24 h make a cell not_looked; that threshold is a judgement, ' +
+        'not a measurement, and every gap is listed in coverageGaps regardless.',
+      coverageGapToleranceHours: 24,
       coverageFrom: coverageStart === null ? null : formatCivil(fromCivil(coverageStart)),
       coverageTo: coverageEnd === null ? null : formatCivil(fromCivil(coverageEnd)),
     },
     // OPEN FIRST. This ordering is the feature.
-    open: by('available'),
-    openCount: by('available').length,
+    open: by('open'),
+    openCount: by('open').length,
     uncertain: by('unknown'),
     uncertainCount: by('unknown').length,
     notLooked: by('not_looked'),

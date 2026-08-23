@@ -1,0 +1,665 @@
+{
+  "label": "before",
+  "characters": {
+    "Avenrae": {
+      "asOf": "2026-08-22 23:07:43",
+      "cells": [
+        {
+          "key": "Lady Vox D0",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Lady Vox D1",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Lady Vox D2",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Lady Vox D3",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Lady Vox D4",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Lord Nagafen D0",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Lord Nagafen D1",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Lord Nagafen D2",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Lord Nagafen D3",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Lord Nagafen D4",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Master Yael D0",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Master Yael D1",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Master Yael D2",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Master Yael D3",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Master Yael D4",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Innoruuk D0",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Innoruuk D1",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Innoruuk D2",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Innoruuk D3",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Innoruuk D4",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Cazic Thule D0",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Cazic Thule D1",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Cazic Thule D2",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Cazic Thule D3",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        },
+        {
+          "key": "Cazic Thule D4",
+          "state": "not_looked",
+          "because": "no record of 36.6h inside this period"
+        }
+      ],
+      "kills": [
+        {
+          "boss": "Lord Nagafen",
+          "at": "2026-08-10 17:28:13",
+          "zone": "Nagafen's Lair",
+          "shape": "group",
+          "difficulty": 1,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Master Yael",
+          "at": "2026-08-10 17:38:07",
+          "zone": "The Ruins of Old Paineel",
+          "shape": "group",
+          "difficulty": null,
+          "difficultyStated": false
+        },
+        {
+          "boss": "Lady Vox",
+          "at": "2026-08-10 17:56:10",
+          "zone": "The Permafrost Caverns",
+          "shape": "group",
+          "difficulty": null,
+          "difficultyStated": false
+        },
+        {
+          "boss": "Master Yael",
+          "at": "2026-08-10 18:11:22",
+          "zone": "The Ruins of Old Paineel",
+          "shape": "group",
+          "difficulty": 1,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Master Yael",
+          "at": "2026-08-10 18:21:26",
+          "zone": "The Ruins of Old Paineel",
+          "shape": "group",
+          "difficulty": 2,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Master Yael",
+          "at": "2026-08-10 18:32:12",
+          "zone": "The Ruins of Old Paineel",
+          "shape": "group",
+          "difficulty": 3,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Master Yael",
+          "at": "2026-08-10 18:45:14",
+          "zone": "The Ruins of Old Paineel",
+          "shape": "group",
+          "difficulty": 4,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Lady Vox",
+          "at": "2026-08-11 20:52:36",
+          "zone": "The Permafrost Caverns",
+          "shape": "group",
+          "difficulty": 1,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Lady Vox",
+          "at": "2026-08-11 21:11:28",
+          "zone": "The Permafrost Caverns",
+          "shape": "group",
+          "difficulty": 2,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Lady Vox",
+          "at": "2026-08-11 21:34:01",
+          "zone": "The Permafrost Caverns",
+          "shape": "group",
+          "difficulty": 3,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Lord Nagafen",
+          "at": "2026-08-11 21:59:50",
+          "zone": "Nagafen's Lair",
+          "shape": "group",
+          "difficulty": 1,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Lord Nagafen",
+          "at": "2026-08-11 22:25:51",
+          "zone": "Nagafen's Lair",
+          "shape": "group",
+          "difficulty": 2,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Master Yael",
+          "at": "2026-08-11 22:45:11",
+          "zone": "The Ruins of Old Paineel",
+          "shape": "group",
+          "difficulty": 1,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Master Yael",
+          "at": "2026-08-11 22:55:06",
+          "zone": "The Ruins of Old Paineel",
+          "shape": "group",
+          "difficulty": 2,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Cazic-Thule",
+          "at": "2026-08-12 14:13:56",
+          "zone": "The Plane of Fear",
+          "shape": "group",
+          "difficulty": 2,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Innoruuk, the Prince of Hate",
+          "at": "2026-08-12 20:41:32",
+          "zone": "The Plane of Hate",
+          "shape": "group",
+          "difficulty": 4,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Innoruuk, the Prince of Hate",
+          "at": "2026-08-12 21:19:53",
+          "zone": "The Plane of Hate",
+          "shape": "group",
+          "difficulty": 3,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Cazic-Thule",
+          "at": "2026-08-12 22:01:01",
+          "zone": "The Plane of Fear",
+          "shape": "group",
+          "difficulty": 4,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Cazic-Thule",
+          "at": "2026-08-12 22:32:22",
+          "zone": "The Plane of Fear",
+          "shape": "group",
+          "difficulty": 3,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Lord Nagafen",
+          "at": "2026-08-12 22:49:32",
+          "zone": "Nagafen's Lair",
+          "shape": "group",
+          "difficulty": 4,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Lord Nagafen",
+          "at": "2026-08-12 23:04:25",
+          "zone": "Nagafen's Lair",
+          "shape": "group",
+          "difficulty": 3,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Innoruuk, the Prince of Hate",
+          "at": "2026-08-15 18:02:54",
+          "zone": "The Plane of Hate",
+          "shape": "group",
+          "difficulty": 4,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Innoruuk, the Prince of Hate",
+          "at": "2026-08-15 18:45:21",
+          "zone": "The Plane of Hate",
+          "shape": "group",
+          "difficulty": 3,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Innoruuk, the Prince of Hate",
+          "at": "2026-08-16 19:50:29",
+          "zone": "The Plane of Hate",
+          "shape": "group",
+          "difficulty": 1,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Innoruuk, the Prince of Hate",
+          "at": "2026-08-16 23:00:04",
+          "zone": "The Plane of Hate",
+          "shape": "group",
+          "difficulty": 4,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Cazic-Thule",
+          "at": "2026-08-19 12:49:53",
+          "zone": "The Rathe Mountains",
+          "shape": "raid",
+          "difficulty": 3,
+          "difficultyStated": true
+        }
+      ],
+      "openCount": 0,
+      "completedCount": 0
+    },
+    "Shara": {
+      "asOf": "2026-08-18 14:30:58",
+      "cells": [
+        {
+          "key": "Lady Vox D0",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"unknown\" if it has not"
+        },
+        {
+          "key": "Lady Vox D1",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"unknown\" if it has not"
+        },
+        {
+          "key": "Lady Vox D2",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"unknown\" if it has not"
+        },
+        {
+          "key": "Lady Vox D3",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"unknown\" if it has not"
+        },
+        {
+          "key": "Lady Vox D4",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"unknown\" if it has not"
+        },
+        {
+          "key": "Lord Nagafen D0",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"unknown\" if it has not"
+        },
+        {
+          "key": "Lord Nagafen D1",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"unknown\" if it has not"
+        },
+        {
+          "key": "Lord Nagafen D2",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"unknown\" if it has not"
+        },
+        {
+          "key": "Lord Nagafen D3",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"completed\" if it has not"
+        },
+        {
+          "key": "Lord Nagafen D4",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"completed\" if it has not"
+        },
+        {
+          "key": "Master Yael D0",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"unknown\" if it has not"
+        },
+        {
+          "key": "Master Yael D1",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"unknown\" if it has not"
+        },
+        {
+          "key": "Master Yael D2",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"unknown\" if it has not"
+        },
+        {
+          "key": "Master Yael D3",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"unknown\" if it has not"
+        },
+        {
+          "key": "Master Yael D4",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"unknown\" if it has not"
+        },
+        {
+          "key": "Innoruuk D0",
+          "state": "open",
+          "because": "no kill observed since the reset, and coverage spans the period"
+        },
+        {
+          "key": "Innoruuk D1",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"completed\" if it has not"
+        },
+        {
+          "key": "Innoruuk D2",
+          "state": "open",
+          "because": "no kill observed since the reset, and coverage spans the period"
+        },
+        {
+          "key": "Innoruuk D3",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"completed\" if it has not"
+        },
+        {
+          "key": "Innoruuk D4",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"completed\" if it has not"
+        },
+        {
+          "key": "Cazic Thule D0",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"unknown\" if it has not"
+        },
+        {
+          "key": "Cazic Thule D1",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"unknown\" if it has not"
+        },
+        {
+          "key": "Cazic Thule D2",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"completed\" if it has not"
+        },
+        {
+          "key": "Cazic Thule D3",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"completed\" if it has not"
+        },
+        {
+          "key": "Cazic Thule D4",
+          "state": "unknown",
+          "because": "today is Tuesday and the reset hour is not recorded, so it is unknown whether the turnover has happened yet: \"open\" if it has, \"completed\" if it has not"
+        }
+      ],
+      "kills": [
+        {
+          "boss": "Lord Nagafen",
+          "at": "2026-08-10 17:28:13",
+          "zone": "Nagafen's Lair",
+          "shape": "group",
+          "difficulty": 1,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Master Yael",
+          "at": "2026-08-10 17:38:07",
+          "zone": "The Ruins of Old Paineel",
+          "shape": "group",
+          "difficulty": null,
+          "difficultyStated": false
+        },
+        {
+          "boss": "Lady Vox",
+          "at": "2026-08-10 17:56:09",
+          "zone": "The Permafrost Caverns",
+          "shape": "group",
+          "difficulty": null,
+          "difficultyStated": false
+        },
+        {
+          "boss": "Master Yael",
+          "at": "2026-08-10 18:11:22",
+          "zone": "The Ruins of Old Paineel",
+          "shape": "group",
+          "difficulty": 1,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Master Yael",
+          "at": "2026-08-10 18:21:25",
+          "zone": "The Ruins of Old Paineel",
+          "shape": "group",
+          "difficulty": 2,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Master Yael",
+          "at": "2026-08-10 18:32:11",
+          "zone": "The Ruins of Old Paineel",
+          "shape": "group",
+          "difficulty": 3,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Master Yael",
+          "at": "2026-08-10 18:45:13",
+          "zone": "The Ruins of Old Paineel",
+          "shape": "group",
+          "difficulty": 4,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Lady Vox",
+          "at": "2026-08-11 20:52:37",
+          "zone": "The Permafrost Caverns",
+          "shape": "group",
+          "difficulty": 1,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Lady Vox",
+          "at": "2026-08-11 21:11:28",
+          "zone": "The Permafrost Caverns",
+          "shape": "group",
+          "difficulty": 2,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Lady Vox",
+          "at": "2026-08-11 21:34:01",
+          "zone": "The Permafrost Caverns",
+          "shape": "group",
+          "difficulty": 3,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Lord Nagafen",
+          "at": "2026-08-11 21:59:51",
+          "zone": "Nagafen's Lair",
+          "shape": "group",
+          "difficulty": 1,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Lord Nagafen",
+          "at": "2026-08-11 22:25:52",
+          "zone": "Nagafen's Lair",
+          "shape": "group",
+          "difficulty": 2,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Master Yael",
+          "at": "2026-08-11 22:45:11",
+          "zone": "The Ruins of Old Paineel",
+          "shape": "group",
+          "difficulty": 1,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Master Yael",
+          "at": "2026-08-11 22:55:07",
+          "zone": "The Ruins of Old Paineel",
+          "shape": "group",
+          "difficulty": 2,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Cazic-Thule",
+          "at": "2026-08-12 14:13:54",
+          "zone": "The Plane of Fear",
+          "shape": "group",
+          "difficulty": 2,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Innoruuk, the Prince of Hate",
+          "at": "2026-08-12 20:41:32",
+          "zone": "The Plane of Hate",
+          "shape": "group",
+          "difficulty": 4,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Innoruuk, the Prince of Hate",
+          "at": "2026-08-12 21:19:52",
+          "zone": "The Plane of Hate",
+          "shape": "group",
+          "difficulty": 3,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Cazic-Thule",
+          "at": "2026-08-12 22:01:01",
+          "zone": "The Plane of Fear",
+          "shape": "group",
+          "difficulty": 4,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Cazic-Thule",
+          "at": "2026-08-12 22:32:21",
+          "zone": "The Plane of Fear",
+          "shape": "group",
+          "difficulty": 3,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Lord Nagafen",
+          "at": "2026-08-12 22:49:31",
+          "zone": "Nagafen's Lair",
+          "shape": "group",
+          "difficulty": 4,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Lord Nagafen",
+          "at": "2026-08-12 23:04:24",
+          "zone": "Nagafen's Lair",
+          "shape": "group",
+          "difficulty": 3,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Innoruuk, the Prince of Hate",
+          "at": "2026-08-16 19:50:29",
+          "zone": "The Plane of Hate",
+          "shape": "group",
+          "difficulty": 1,
+          "difficultyStated": true
+        },
+        {
+          "boss": "Cazic-Thule",
+          "at": "2026-08-17 17:39:06",
+          "zone": "The Plane of Fear",
+          "shape": "group",
+          "difficulty": null,
+          "difficultyStated": false
+        }
+      ],
+      "openCount": 2,
+      "completedCount": 0
+    }
+  }
+}
