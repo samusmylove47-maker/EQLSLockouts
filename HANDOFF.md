@@ -11,6 +11,229 @@ the owner measures, my protocol governs. All actioned; see the second report.
 
 ## To the Director
 
+### Fifth report, 23 Aug 2026 — Innoruuk day, and two owner corrections that moved the ground
+
+**First, a correction to you: the 23 Aug grid order DID reach me. It is what
+PR #3 was, and you merged it.** The grid, the roster keyed on the game's string
+with its assert test, the four cell states, bare `- Group` to `unknown` and never
+D0, `RESET_RULE` as one attributed field with `hour: null`, the amended
+reset-constant test, `projectReset` as corroboration, no countdown, the demo with
+the not_looked posture, the full per-character replay, `main` pushed, the typed
+"27-hour" gone, FOR-AURAS flagged for Session C — **all shipped and merged.**
+Only what follows is new.
+
+**64 tests green.** Branch `session-d/innoruuk`.
+
+---
+
+#### The owner corrected me twice mid-turn, and both corrections mattered
+
+**1. "I may have temporarily disabled my logs during that period of time."**
+
+I had written into the module that a gap in the log means the client was not
+running, therefore no raid happened in it. The owner supplied a first-hand
+counterexample. Gaps are no longer assumed empty; the threshold is labelled a
+**judgement, not a measurement**; every gap over an hour is listed whether
+tolerated or not.
+
+**2. "Potential of the Void — these are only given to the player for the first 3
+raids you complete each week. You may only ever carry 3 of them."**
+
+**This overturns a finding I had written an hour earlier.** I reported that
+Innoruuk and Cazic-Thule "have no Voidling weekly", reading a property of our
+sample as a property of the game. Wrong. The task goes to whichever three raids
+you do first; Vox, Nagafen and Yael are simply the ones that came first in the
+weeks we hold.
+
+Measured, per character, per week beginning Tuesday — and it fits exactly:
+
+| | roster boss kills | task grants | tokens |
+|---|---|---|---|
+| Avenrae, week of 11 Aug | **18** | 3 | 3 |
+| Shara, week of 11 Aug | **16** | 3 | 3 |
+| both, week of 4 Aug | 7 | 3 | 3 |
+
+**Eighteen raids, three tokens.** The cap is on the token, not the boss.
+
+**Two consequences, and they are larger than the correction.**
+
+- **A refused Voidling hail means "you have spent your three this week", not
+  "this boss is locked".** Every refusal in our corpus follows three grants in
+  the same week. Our headline signal is a **cap** signal, and reading it as a
+  per-boss lockout would have been a category error.
+- **The grid and the token cap are different systems.** The grid tracks one
+  completion per boss per tier per week — 25 cells. The token tracks the first
+  three raids of the week — one counter, three deep. A boss can be open on the
+  grid while the cap is spent, and the module must never let one answer the
+  other. Written into the roster comment so it cannot be forgotten.
+
+---
+
+#### A defect that was corrupting data right now, not in four months
+
+I shipped `dropped.beyondDedupeHorizon` last turn as a counter for a latent
+problem, estimated four months away. **It was already firing, and it was wrong
+about the data.**
+
+Reading all twelve of Shara's files: `events` hit its 5,000 cap,
+`beyondDedupeHorizon` fired **2,911 times**, and the effect was not subtle —
+**every 10 Aug task assignment recorded twice, and the Void-Touched Potential
+count read 9 instead of 6.** The 3-per-week cap analysis above would have been
+impossible to see through it.
+
+Cause: `events` was serving as both the provenance log and the dedupe index under
+one bound. They are now separate — a hash index of 200,000 against a provenance
+log of 5,000. After the fix both characters read exactly 3 grants and 3 tokens
+per week, which is what let the owner's rule be confirmed at all.
+
+---
+
+#### Your alternative explanation is dead, measured
+
+You offered two readings of Innoruuk D4 recurring inside one week: repeatable
+once locked, **or** two pooled characters. It is not the second.
+
+**Avenrae alone killed Innoruuk at D4 on 12, 15 AND 16 Aug**, all inside the week
+beginning Tue 11 Aug, every one a group instance. D3 twice as well.
+
+So a kill proves completion, not consumption. The grid marks the **first**
+completion of the period, records repeats in `repeatKills`, counts none of them,
+and every cell carries `evidence`: `completed` is **observed**, `open` is
+**inferred from the one-per-week model**.
+
+---
+
+#### Your reference grid: your open column is exactly right, your completed column is not
+
+You said if our numbers differ, ours win. They differ, and here is why.
+
+**Your 15 of 25 reproduces exactly** from `raids-measured.json` when bare
+`- Group` is held as tier-not-stated — which also identifies your one unresolved
+kill as idx 48, Cazic-Thule, 17 Aug, `The Plane of Fear - Group`.
+
+**And our naive grid reproduces it too** — per character and pooled, all three
+land on 15/10. So the merged archive did not damage this week's roster count.
+
+**But all three are wrong the same way, and it is the boundary Tuesday.** Seven
+of the fifteen completions rest entirely on kills made on **Tue 11 Aug after
+20:52** — the boundary day itself, whose turnover hour has never been measured.
+Lady Vox D1/D2/D3, Lord Nagafen D1/D2, Master Yael D1/D2. If the reset was
+earlier that day they are done; if later they belong to the previous week and are
+open now. Both fit the log.
+
+**Our module already refuses them**, via the two-hypothesis boundary-day logic,
+and lands on **8 completed** for Avenrae — independently reproducing the
+corrected figure:
+
+```
+  Avenrae — week beginning Tue 11 Aug, asked as of 2026-08-17
+  8 completed · 4 open · 13 uncertain · 0 not looked
+
+  boss            D0  D1  D2  D3  D4
+  Lady Vox         ?   ?   ?   ?   ?
+  Lord Nagafen     ?   ?   ?  ##  ##
+  Master Yael      ?   ?   ?   ?   ?
+  Innoruuk         .  ##   .  ##  ##
+  Cazic Thule      .   .  ##  ##  ##
+```
+
+**Your OPEN set is exactly right** — the same ten cells, cell for cell. It is
+only the completed column that over-claims.
+
+---
+
+#### Three things about `raids-measured.json` that Session A should have before "fixing" it
+
+1. **The eight bare-`- Group` rows are not fabricated.** The difficulty is taken
+   from the **invite line**, which states it 35 seconds before the zone-in:
+   `Avenrae has asked you to join the instance: The Plane of Fear - Group 0 (Normal).`
+   then `You have entered The Plane of Fear - Group.` Both facets are real; the
+   file picked one and ours picks the other. Ours is right for "what the game
+   stated on the line that recorded the kill", but the invite is genuine evidence
+   and should not be deleted.
+2. **The larger contamination, which was not in your note: 98 of 213 rows carry
+   difficulty 0, and 90 of those are OPEN-WORLD kills** — bare zone name,
+   `group_instance: false` — also filed as difficulty 0. **Not one row in that
+   file is a game-stated index-0 instance.** Clearance: a search for
+   `You have entered <Zone> 0 (...)` across all 15 logs returns **0**; every
+   instance string in the corpus carries index 1–4. **The D0 column is a bucket,
+   not a tier.** None of the 90 is a roster boss, so this grid is untouched — but
+   anything else reading that column is reading a bucket.
+3. **Pooling manufactures confidence rather than wrong kills.** Separated, Shara
+   reads 25 not_looked for that week on a genuine 24.51-hour blind spot
+   (14 Aug 23:59 → 16 Aug 00:30). Pooled, she borrows Avenrae's coverage and
+   those cells become "open". Wrong kills would be easier to spot than this.
+
+**And you have data we cannot see**: three roster rows dated 18–19 Aug for
+Avenrae have no counterpart in any log we hold. Clearance: a roster-boss slain
+line stamped Tue 18 or Wed 19 Aug returns 0 across all 15 files.
+
+---
+
+#### I had been reading stale logs
+
+The archives under `state/logs/` end **17 Aug**. The live file is at
+`<install>\Logs\eqlog_Avenrae_rivervale.txt`, 36 MB, covering **19–22 Aug**.
+`capture.js` reads the live file plus the archives; every earlier analysis of
+mine used the archives alone and was blind to the last five days.
+
+---
+
+#### The before-capture is taken, and it is honest rather than pretty
+
+`captures/before.txt`, committed. **Avenrae reads 25 not_looked** on one hole:
+
+```
+  period       : since Tuesday 2026-08-18  (reset hour NOT RECORDED)
+  coverage     : 2026-08-09 15:11:05 .. 2026-08-22 23:07:43
+  spans period : false
+     HOLE      : 2026-08-18 00:00:00 .. 2026-08-19 12:36:33  (36.61 h unobserved)
+```
+
+That is the very window the owner says logging was off. The empty state is the
+tool refusing to guess about 36 hours it cannot see, with the owner independently
+naming the cause — which is a better demonstration of the four states than a
+green cell would have been.
+
+**Also relevant to tonight, given correction 2 above:** the Innoruuk raid will
+produce a weekly task line **only if it is among the owner's first three raids
+this week.** If it is the fourth, there will be no task and no token, and that
+absence means nothing about lockouts.
+
+---
+
+#### What the after-capture needs
+
+```
+node capture.js after
+```
+
+It diffs against the committed `before`, printing which cells changed and the
+exact new kill lines with zone and tier.
+
+**Read this before expecting a green cell.** On Avenrae the 36.61-hour hole still
+sits across the boundary Tuesday, so cells stay `not_looked` and the diff will
+show the new kill **without** flipping one to `completed`. That is correct and I
+will not fake around it. The honest demo is the NEW KILL line appearing with its
+shape and tier, beside the hole that stops us claiming more.
+
+**If a cell must go green tonight, the raid needs to be on a character whose log
+covers Tue 18 Aug onward.** Yours to decide; I have asked the owner for nothing.
+
+---
+
+#### One correction to your tasking, and one to mine
+
+- **Filenames are rotation-END dates, not content dates.** The Sat 15 Aug
+  18:02:54 Innoruuk kill lives in `..._2026-08-17.txt`.
+- **History settles the shape question further than either of us said.**
+  `You have entered The Plane of Hate 4 (Refined).` — the bare raid shape —
+  occurs 7 times and has never once produced an Innoruuk kill, while all six
+  Innoruuk kills are `- Group N`. Tonight does not resolve a coin-flip; it tests
+  **whether a bare-shape Innoruuk kill is possible at all.**
+
+---
+
 ### Fourth report, 23 Aug 2026 — the grid is built, and the corpus found three more defects
 
 **Everything ordered is done.** Branch `session-d/grid`, PR open against `main`.

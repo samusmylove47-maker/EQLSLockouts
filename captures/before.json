@@ -650,62 +650,6 @@
           "difficultyStated": true
         },
         {
-          "boss": "Lord Nagafen",
-          "at": "2026-08-10 17:28:13",
-          "zone": "Nagafen's Lair",
-          "shape": "group",
-          "difficulty": 1,
-          "difficultyStated": true
-        },
-        {
-          "boss": "Master Yael",
-          "at": "2026-08-10 17:38:07",
-          "zone": "The Ruins of Old Paineel",
-          "shape": "group",
-          "difficulty": null,
-          "difficultyStated": false
-        },
-        {
-          "boss": "Lady Vox",
-          "at": "2026-08-10 17:56:09",
-          "zone": "The Permafrost Caverns",
-          "shape": "group",
-          "difficulty": null,
-          "difficultyStated": false
-        },
-        {
-          "boss": "Master Yael",
-          "at": "2026-08-10 18:11:22",
-          "zone": "The Ruins of Old Paineel",
-          "shape": "group",
-          "difficulty": 1,
-          "difficultyStated": true
-        },
-        {
-          "boss": "Master Yael",
-          "at": "2026-08-10 18:21:25",
-          "zone": "The Ruins of Old Paineel",
-          "shape": "group",
-          "difficulty": 2,
-          "difficultyStated": true
-        },
-        {
-          "boss": "Master Yael",
-          "at": "2026-08-10 18:32:11",
-          "zone": "The Ruins of Old Paineel",
-          "shape": "group",
-          "difficulty": 3,
-          "difficultyStated": true
-        },
-        {
-          "boss": "Master Yael",
-          "at": "2026-08-10 18:45:13",
-          "zone": "The Ruins of Old Paineel",
-          "shape": "group",
-          "difficulty": 4,
-          "difficultyStated": true
-        },
-        {
           "boss": "Cazic-Thule",
           "at": "2026-08-17 17:39:06",
           "zone": "The Plane of Fear",

@@ -417,3 +417,22 @@ test('EVIDENCE: completed is observed, open is inferred, and the grid says so', 
   assert.match(grid.period.evidenceNote, /OBSERVED/);
   assert.match(grid.period.evidenceNote, /proves completion, not/);
 });
+
+test('THE WEEKLY TASK IS NOT PER BOSS — it is the first three raids of the week', () => {
+  // The owner, 23 Aug 2026: "these are only given to the player for the first 3
+  // raids you complete each week." I had reported the opposite — that Innoruuk
+  // and Cazic-Thule "have no Voidling weekly" — reading a property of our
+  // sample as a property of the game.
+  //
+  // Measured, and it fits exactly: Avenrae's week of 11 Aug holds 18 roster
+  // boss kills against 3 task grants and 3 tokens.
+  assert.equal(core.ROSTER.filter((r) => r.weeklyTaskObserved).length, 3,
+    'three bosses were observed carrying a weekly IN OUR CORPUS');
+  // The field must not be named or read as a claim about the boss.
+  for (const r of core.ROSTER) {
+    assert.ok(!('weeklyTask' in r), 'the old, wrong field name must be gone');
+    assert.equal(typeof r.weeklyTaskObserved, 'boolean');
+  }
+  const grid = core.projectGrid(core.applyLines(core.createState('Avenrae'), heartbeat(17, 21)), NOW);
+  assert.equal(grid.cells.filter((c) => c.weeklyTaskObserved).length, 15);
+});

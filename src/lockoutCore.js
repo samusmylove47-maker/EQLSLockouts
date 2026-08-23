@@ -463,12 +463,50 @@ const YOU_SLEW_RE = /^You have slain (.+?)!$/;
 //
 // A test asserts every key matches at least one boss string seen in real data,
 // so a typo fails the build instead of rendering as an empty row.
+// THE WEEKLY TASK IS NOT PER BOSS. It is the first three raids of the week.
+//
+// The owner, first-hand, 23 Aug 2026:
+//
+//   "Potential of the Void — these are only given to the player for the first 3
+//    raids you complete each week. You may only ever carry 3 of them."
+//
+// **This overturns a reading I published an hour earlier.** Our corpus contains
+// weekly tasks for only Lady Vox, Lord Nagafen and Master Yael, and I reported
+// that as a property of those bosses — that Innoruuk and Cazic-Thule "have no
+// Voidling weekly". Wrong. Those three are simply the raids that happened to be
+// done first in the weeks we hold. Any raid can carry the task; only the first
+// three in a week do.
+//
+// Measured, and it fits exactly. Per character, per week beginning Tuesday:
+//
+//   Avenrae, week of 11 Aug:  18 roster boss kills, 3 task grants, 3 tokens
+//   Shara,   week of 11 Aug:  16 roster boss kills, 3 task grants, 3 tokens
+//   Both, week of 4 Aug:       7 roster boss kills, 3 task grants, 3 tokens
+//
+// Eighteen raids, three tokens. The cap is on the token, not on the boss.
+//
+// TWO CONSEQUENCES, and both matter more than the correction itself:
+//
+// 1. A REFUSED VOIDLING HAIL MEANS "YOU HAVE USED YOUR THREE THIS WEEK", NOT
+//    "THIS BOSS IS LOCKED". Every refusal in our corpus follows three grants in
+//    the same week. The refusal is a signal about the CAP, and reading it as a
+//    per-boss lockout would be wrong.
+//
+// 2. THE 25-CELL GRID AND THE TOKEN CAP ARE DIFFERENT SYSTEMS. The grid tracks
+//    one completion per boss per tier per week — the owner's model, 25 cells.
+//    The token tracks the first three raids of the week — one counter, three
+//    deep. A boss can be open on the grid while the token cap is spent, and the
+//    module must never let one answer the other.
+//
+// `weeklyTask` below therefore records only what our corpus HAPPENED to observe,
+// and is not a claim about the boss.
+const WEEKLY_TASK_IS_PER_BOSS = false;
 const ROSTER = Object.freeze([
-  { key: 'Lady Vox', label: 'Lady Vox' },
-  { key: 'Lord Nagafen', label: 'Lord Nagafen' },
-  { key: 'Master Yael', label: 'Master Yael' },
-  { key: 'Innoruuk, the Prince of Hate', label: 'Innoruuk' },
-  { key: 'Cazic-Thule', label: 'Cazic Thule' },
+  { key: 'Lady Vox', label: 'Lady Vox', weeklyTaskObserved: true },
+  { key: 'Lord Nagafen', label: 'Lord Nagafen', weeklyTaskObserved: true },
+  { key: 'Master Yael', label: 'Master Yael', weeklyTaskObserved: true },
+  { key: 'Innoruuk, the Prince of Hate', label: 'Innoruuk', weeklyTaskObserved: false },
+  { key: 'Cazic-Thule', label: 'Cazic Thule', weeklyTaskObserved: false },
 ].map(Object.freeze));
 
 // ---------------------------------------------------------------------------
@@ -585,7 +623,12 @@ function createState(character, opts) {
     // The bosses whose kills are recorded. `parseLine` stays open to every
     // name; this is the only place a roster narrows anything, and it is
     // overridable so the host is not stuck with ours.
-    roster: roster.map((r) => ({ key: r.key, label: r.label })),
+    roster: roster.map((r) => ({
+      key: r.key,
+      label: r.label,
+      // Observed in OUR corpus; not a property of the boss. See the note above.
+      weeklyTaskObserved: r.weeklyTaskObserved === true,
+    })),
     // Kills of roster bosses, each carrying the instance it happened in.
     kills: [],
     // The instance most recently entered, so a kill can be attributed to a
@@ -606,6 +649,19 @@ function createState(character, opts) {
     voidlingReplies: [],
     // Ordered log of what was observed, for provenance. Bounded — see `applyLine`.
     events: [],
+    // The dedupe index, SEPARATE from `events` and far larger.
+    //
+    // These were one array once, and that was a real bug rather than a tidiness
+    // problem: `events` is bounded at MAX_EVENTS for memory, and when the bound
+    // was reached the oldest keys fell out of the dedupe index with them. Replay
+    // a corpus longer than the bound — which the owner's own 12 Shara files
+    // are — and the early observations are accepted a second time. Measured
+    // before the fix: every 10 Aug task assignment recorded TWICE and the
+    // Void-Touched Potential count read 9 instead of 6.
+    //
+    // A plain object, not a Set, because state must survive JSON round-tripping.
+    seen: {},
+    seenCount: 0,
     firstSeen: null,
     lastSeen: null,
     // Contiguous runs of observed log time. A gap longer than SPAN_GAP_MS
@@ -618,6 +674,27 @@ function createState(character, opts) {
 }
 
 const MAX_EVENTS = 5000;
+// The dedupe index is deliberately far larger than the provenance log. The
+// owner's own corpus produces ~12k observations for one character, so a bound
+// of 5000 was actively corrupting counts.
+const MAX_SEEN = 200000;
+
+// Drops the oldest half of the dedupe index when it overflows, so the horizon
+// recedes rather than the index being cleared outright.
+function pruneSeen(state) {
+  const entries = Object.entries(state.seen).sort((a, b) => a[1] - b[1]);
+  const keep = entries.slice(Math.floor(entries.length / 2));
+  const next = {};
+  for (const [k, v] of keep) next[k] = v;
+  state.seen = next;
+  state.seenCount = keep.length;
+}
+
+function oldestSeen(state) {
+  let min = Infinity;
+  for (const k in state.seen) if (state.seen[k] < min) min = state.seen[k];
+  return min;
+}
 
 // Applies one raw line. Mutates and returns `state` — cheap, and the caller
 // owns the object. Returns the same state unchanged for lines we do not model.
@@ -654,12 +731,19 @@ function applyLine(state, line) {
   }
 
   const key = dedupeKey(ev, civil);
-  if (state.events.length && state.events.some((e) => e.key === key)) {
+  // Older states persisted before `seen` existed still carry only `events`.
+  if (!state.seen) { state.seen = {}; state.seenCount = 0; }
+  if (Object.prototype.hasOwnProperty.call(state.seen, key)) {
     state.dropped.duplicate++;
     return state;
   }
+  state.seen[key] = civil;
+  state.seenCount++;
+  if (state.seenCount > MAX_SEEN) pruneSeen(state);
 
-  // THE DEDUPE HORIZON, and why it is a counter rather than a silent cap.
+  // THE DEDUPE HORIZON. Now genuinely remote rather than four months away: the
+  // index holds MAX_SEEN observations, not MAX_EVENTS, and the counter below
+  // still fires if it is ever exceeded.
   //
   // `events` is bounded at MAX_EVENTS, so duplicate suppression can only see
   // that far back. Replay a stream longer than the bound and the oldest keys
@@ -673,7 +757,7 @@ function applyLine(state, line) {
   // `dropped.beyondDedupeHorizon > 0` tells a host "you fed me something from
   // before my memory; I can no longer promise idempotence, rebuild from the
   // log." Visible beats silent.
-  if (state.events.length >= MAX_EVENTS && civil < state.events[0].civil) {
+  if (state.seenCount >= MAX_SEEN && civil < oldestSeen(state)) {
     state.dropped.beyondDedupeHorizon++;
   }
 
@@ -1272,6 +1356,10 @@ function projectGrid(state, now) {
       cells.push({
         boss: entry.key,
         label: entry.label,
+        // Whether a weekly task for this boss was ever seen in our corpus. NOT
+        // a claim that the boss can or cannot carry one — the task goes to the
+        // first three raids of the week, whichever they are.
+        weeklyTaskObserved: entry.weeklyTaskObserved === true,
         difficulty: d,
         difficultyLabel: DIFFICULTY_LABELS[d],
         state: cellState,
