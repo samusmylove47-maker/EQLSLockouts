@@ -22,7 +22,7 @@ const DIRS = [
   'C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs',
   'C:\\Users\\Lindsey\\Desktop\\EQL Source',
 ];
-const MARK = { completed: '##', available: ' .', unknown: ' ?', not_looked: ' -' };
+const MARK = { completed: '##', open: ' .', unknown: ' ?', not_looked: ' -' };
 
 function logFiles() {
   const out = [];

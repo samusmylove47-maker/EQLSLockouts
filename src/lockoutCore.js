@@ -608,6 +608,11 @@ function createState(character, opts) {
     events: [],
     firstSeen: null,
     lastSeen: null,
+    // Contiguous runs of observed log time. A gap longer than SPAN_GAP_MS
+    // starts a new span. This is how a HOLE IN THE MIDDLE of the record is
+    // made visible: checking only firstSeen and lastSeen would report full
+    // coverage for a log that is missing the two days containing the reset.
+    spans: [],
     dropped: { unstamped: 0, duplicate: 0, beyondDedupeHorizon: 0 },
   };
 }
@@ -622,10 +627,17 @@ const MAX_EVENTS = 5000;
 // eqlog_*.txt was modified most recently" will hop between those files and
 // replay the same moment twice. Counting one kill as two would corrupt every
 // interval this module reports.
+const SPAN_GAP_MS = 30 * 60 * 1000;
+
 function applyLine(state, line) {
+  // EVERY stamped line extends coverage, not just the ones we model. Coverage
+  // is about what we were in a position to see, and we saw every line.
+  const stamped = typeof line === 'string' && line.length ? splitStamp(line) : null;
+  if (stamped) noteCoverage(state, civilOf(stamped.at));
+
   const ev = parseLine(line);
   if (!ev) {
-    if (typeof line === 'string' && line.length && !splitStamp(line)) state.dropped.unstamped++;
+    if (typeof line === 'string' && line.length && !stamped) state.dropped.unstamped++;
     return state;
   }
 
@@ -766,6 +778,29 @@ function applyLine(state, line) {
   }
 
   return state;
+}
+
+// Extends the observation spans. Lines usually arrive in order; a line that
+// arrives out of order (two log files fed back to front) is merged rather than
+// starting a spurious span.
+function noteCoverage(state, civil) {
+  const spans = state.spans;
+  for (const sp of spans) {
+    if (civil >= sp.from - SPAN_GAP_MS && civil <= sp.to + SPAN_GAP_MS) {
+      if (civil < sp.from) sp.from = civil;
+      if (civil > sp.to) sp.to = civil;
+      return;
+    }
+  }
+  spans.push({ from: civil, to: civil });
+  spans.sort((a, b) => a.from - b.from);
+  // Merge any spans the new one bridged.
+  for (let i = spans.length - 1; i > 0; i--) {
+    if (spans[i].from - spans[i - 1].to <= SPAN_GAP_MS) {
+      spans[i - 1].to = Math.max(spans[i - 1].to, spans[i].to);
+      spans.splice(i, 1);
+    }
+  }
 }
 
 function dedupeKey(ev, civil) {
@@ -1096,14 +1131,59 @@ function projectGrid(state, now) {
 
   const coverageStart = state.firstSeen;
   const coverageEnd = state.lastSeen;
-  // Coverage must span from the boundary to `now`. A gap at either end means a
-  // kill could have happened unobserved, and that is `not_looked`, not
-  // `available`.
+
+  // THE GAPS THAT MATTER, and the assumption underneath them.
+  //
+  // Endpoint coverage is not enough. A record that starts before the boundary
+  // and ends after `now` can still be missing the two days in the middle that
+  // contain the reset, and reporting `open` off that is the comfortable lie
+  // this tool exists not to tell.
+  //
+  // An earlier revision of this comment asserted that a gap in the log means
+  // the client was not running, so no raid happened in it. **The owner told us
+  // on 23 Aug 2026, first-hand, that they may have had logging switched off
+  // during exactly such a gap.** So the assumption is false, and it was the
+  // load-bearing one: a gap can hide a raid that really happened.
+  //
+  // The module cannot tell "not playing" from "not logging" — nothing in the
+  // file distinguishes them. So it does the only honest thing: it REPORTS every
+  // gap, and treats a large one as `not_looked` rather than `open`.
+  //
+  // THE THRESHOLD IS A JUDGEMENT, NOT A MEASUREMENT, and is labelled as one.
+  // 24 hours separates the case we know about — a 36.6 h hole across the reset,
+  // which the owner confirms was probably logging-off — from ordinary daily
+  // gaps of 7 to 18 hours in the same record. A caller who wants to be stricter
+  // has `coverageHoles` and can decide for itself; nothing is hidden either way.
+  const PERIOD_GAP_TOLERANCE_MS = 24 * 60 * 60 * 1000;
+  // Gaps at or above this are always listed, even when tolerated, so a run of
+  // small holes cannot add up to a missing evening without anyone seeing it.
+  const GAP_REPORT_MS = 60 * 60 * 1000;
+
+  const periodFrom = boundaryDayStart;
+  const periodTo = nowCivil;
+  const relevant = (state.spans || [])
+    .filter((sp) => sp.to >= periodFrom && sp.from <= periodTo)
+    .sort((a, b) => a.from - b.from);
+
+  const allGaps = [];
+  let cursor = periodFrom;
+  for (const sp of relevant) {
+    if (sp.from > cursor + GAP_REPORT_MS) {
+      allGaps.push({ from: cursor, to: sp.from, hours: (sp.from - cursor) / 3600000 });
+    }
+    cursor = Math.max(cursor, sp.to);
+  }
+  if (periodTo > cursor + GAP_REPORT_MS) {
+    allGaps.push({ from: cursor, to: periodTo, hours: (periodTo - cursor) / 3600000 });
+  }
+  // The ones big enough to change the answer.
+  const holes = allGaps.filter((g) => g.to - g.from > PERIOD_GAP_TOLERANCE_MS);
+
   const spans =
     coverageStart !== null &&
     coverageEnd !== null &&
-    coverageStart <= boundaryDayStart &&
-    coverageEnd >= nowCivil;
+    relevant.length > 0 &&
+    holes.length === 0;
 
   // IS `now` ITSELF ON THE BOUNDARY DAY? Then the period start is ambiguous.
   //
@@ -1131,15 +1211,39 @@ function projectGrid(state, now) {
       const period = mine.filter((k) => k.civil >= dayEnd);
       const onDay = mine.filter((k) => k.civil >= from && k.civil < dayEnd);
       const unstated = period.filter((k) => k.instanced && !k.difficultyStated);
-      const done = period.filter((k) => k.difficultyStated && k.difficulty === d);
-      if (done.length) return { s: 'completed', done, why: `kill at D${d} on ${formatCivil(done[done.length - 1].at)}` };
+      const done = period
+        .filter((k) => k.difficultyStated && k.difficulty === d)
+        .sort((a, b) => a.civil - b.civil);
+      if (done.length) {
+        // A KILL PROVES COMPLETION, NOT CONSUMPTION.
+        //
+        // Measured, one character, one week, one tier: Avenrae killed
+        // Innoruuk at D4 on 12, 15 AND 16 Aug 2026 — inside the week beginning
+        // Tue 11 Aug, every one in a group instance. So a boss can be killed
+        // again after the weekly is done, which the 28 Jul patch note supports:
+        // a locked-out kill still pays a guaranteed drop.
+        //
+        // The grid therefore marks the FIRST completion of the period and
+        // leaves the repeats alone. It does not count them, does not treat them
+        // as a second completion, and does not read a repeat as evidence that
+        // the lockout had cleared.
+        const first = done[0];
+        return {
+          s: 'completed',
+          done,
+          first,
+          repeats: done.length - 1,
+          why: `kill at D${d} on ${formatCivil(first.at)}` +
+               (done.length > 1 ? ` (and ${done.length - 1} later kill(s) this period, not counted)` : ''),
+        };
+      }
       if (unstated.length) {
-        return { s: 'unknown', done, why: `${unstated.length} kill(s) this period at a difficulty the game did not state` };
+        return { s: 'unknown', done, repeats: 0, why: `${unstated.length} kill(s) this period at a tier the game did not state` };
       }
       if (onDay.length) {
-        return { s: 'unknown', done, why: `${onDay.length} kill(s) on ${RESET_RULE.weekdayName} itself; the reset hour is not recorded` };
+        return { s: 'unknown', done, repeats: 0, why: `${onDay.length} kill(s) on ${RESET_RULE.weekdayName} itself; the reset hour is not recorded` };
       }
-      return { s: 'available', done, why: 'no kill observed since the reset, and coverage spans the period' };
+      return { s: 'open', done, repeats: 0, why: 'no kill observed since the reset, and coverage spans the period' };
     };
 
     for (let d = 0; d < DIFFICULTY_LABELS.length; d++) {
@@ -1150,7 +1254,11 @@ function projectGrid(state, now) {
       let because;
       if (!spans) {
         cellState = 'not_looked';
-        because = coverageStart === null ? 'no lines seen at all' : 'coverage does not span this period';
+        because = coverageStart === null
+          ? 'no lines seen at all'
+          : holes.length
+            ? `no record of ${holes.map((h) => `${h.hours.toFixed(1)}h`).join(' + ')} inside this period`
+            : 'coverage does not span this period';
       } else if (h1.s === h2.s) {
         cellState = h1.s;
         because = h1.why;
@@ -1168,6 +1276,17 @@ function projectGrid(state, now) {
         difficultyLabel: DIFFICULTY_LABELS[d],
         state: cellState,
         because,
+        // WHAT KIND OF FACT THIS IS. `completed` is OBSERVED — a kill line, in
+        // the log, at that tier, in this period. `open` is INFERRED, and only
+        // under the one-completion-per-tier-per-week model the owner supplied:
+        // it means "no kill seen", which is evidence of absence only because
+        // coverage spans the period. `unknown` and `not_looked` are neither.
+        evidence: cellState === 'completed' ? 'observed'
+          : cellState === 'open' ? 'inferred from the one-per-week model'
+          : 'not established',
+        // Later kills of the same boss at the same tier in the same period.
+        // Recorded, never counted: a kill proves completion, not consumption.
+        repeatKills: h1.repeats || 0,
         // Which instance shape the completion happened in. Recorded but NOT used
         // to split the grid: whether a kill in `- Group N` and a kill in
         // `Zone N` share one lock is unmeasured, so the grid keeps the owner's
@@ -1184,14 +1303,46 @@ function projectGrid(state, now) {
       boundaryDay: formatCivil(fromCivil(boundaryDayStart)).slice(0, 10),
       boundaryWeekday: RESET_RULE.weekdayName,
       hourKnown: false,
+      // Stated once, at the top of the projection, so a caller cannot render
+      // the grid without it being available to render alongside.
+      evidenceNote:
+        '"completed" is OBSERVED: a kill line at that tier in this period. ' +
+        '"open" is INFERRED from the one-completion-per-tier-per-week model ' +
+        'model — it means no kill was seen, which counts as evidence of absence ' +
+        'only because coverage spans the period. A kill proves completion, not ' +
+        'consumption: repeats are recorded and not counted.',
       nowIsOnBoundaryDay: onBoundaryDay,
       coverageSpansPeriod: spans,
+      // Stretches of the period we have no record of, longer than a raid takes.
+      // Empty means the period is fully observed. Non-empty is exactly why the
+      // cells read not_looked rather than open.
+      // Gaps large enough to change a cell to not_looked.
+      coverageHoles: holes.map((h) => ({
+        from: formatCivil(fromCivil(h.from)),
+        to: formatCivil(fromCivil(h.to)),
+        hours: Number(h.hours.toFixed(2)),
+      })),
+      // EVERY gap of an hour or more, tolerated ones included. Listed so a run
+      // of small holes cannot quietly add up to a missing raid night.
+      coverageGaps: allGaps.map((h) => ({
+        from: formatCivil(fromCivil(h.from)),
+        to: formatCivil(fromCivil(h.to)),
+        hours: Number(h.hours.toFixed(2)),
+        tolerated: h.to - h.from <= PERIOD_GAP_TOLERANCE_MS,
+      })),
+      coverageAssumption:
+        'A gap cannot be told apart from "not playing" or "not logging" — the ' +
+        'file records neither. The owner confirmed on 23 Aug 2026 that logging ' +
+        'was probably off during one such gap, so gaps are NOT assumed empty. ' +
+        'Gaps over 24 h make a cell not_looked; that threshold is a judgement, ' +
+        'not a measurement, and every gap is listed in coverageGaps regardless.',
+      coverageGapToleranceHours: 24,
       coverageFrom: coverageStart === null ? null : formatCivil(fromCivil(coverageStart)),
       coverageTo: coverageEnd === null ? null : formatCivil(fromCivil(coverageEnd)),
     },
     // OPEN FIRST. This ordering is the feature.
-    open: by('available'),
-    openCount: by('available').length,
+    open: by('open'),
+    openCount: by('open').length,
     uncertain: by('unknown'),
     uncertainCount: by('unknown').length,
     notLooked: by('not_looked'),

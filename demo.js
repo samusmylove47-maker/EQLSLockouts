@@ -22,7 +22,7 @@ const fs = require('fs');
 const path = require('path');
 const core = require('./src/lockoutCore');
 
-const MARK = { completed: '##', available: ' .', unknown: ' ?', not_looked: ' -' };
+const MARK = { completed: '##', open: ' .', unknown: ' ?', not_looked: ' -' };
 
 function readFixture() {
   return fs
