@@ -9,8 +9,24 @@ and Shara on server rivervale, 04–18 Aug 2026. Only 11 files hold unique conte
 `eqlog_Shara_rivervale3.txt` and `eqlog_Shara_rivervale5.txt` are byte-identical
 across the two directories, `eqlog_Shara_rivervale4.txt` is a byte-prefix of
 `rivervale5.txt`, and `rivervale5.txt` is a byte-prefix of
-`eqlog_Shara_rivervale_2026-08-14b.txt`. **Raw grep counts over-count events by
-about 3×.** Everything below is de-duplicated.
+`eqlog_Shara_rivervale_2026-08-14b.txt`. Everything below is de-duplicated.
+
+**The redundancy is 1.171× by bytes, not "about 3×".** An earlier revision of
+this file said 3×, and that was my error: an agent measured that every kill line
+*on 9–10 Aug* appears three or four times, which is true because those dates fall
+inside the overlapping small files, and I generalised a date-window figure to the
+whole corpus. Measured: 433,914,867 bytes across all 15 files against
+370,669,045 across the canonical 11. The largest file (112 MB) is canonical and
+the redundant ones are small, so the overlap is modest. **Anyone sizing work or
+error bars off "3×" is working from a wrong constant, and it was mine.**
+
+**File-level de-duplication is not sufficient on its own.** Avenrae and Shara
+were grouped, so one game event writes a kill line in *both* characters' logs —
+`You have slain X!` in the lander's and `X has been slain by <lander>!` in the
+other's. De-duplicating by timestamp collapses Innoruuk from 9 lines to 7 events
+and Cazic-Thule from 7 to 6, which then reconciles exactly with
+`raids-measured.json`. Vox, Nagafen and Yael do **not** reconcile at event level
+(6 vs 5, 9 vs 6, 11 vs 8) and that residual is **not explained**.
 
 **Encoding: UTF-8.** Measured, not assumed. Exactly 9 bytes ≥ 0x80 exist in the
 whole corpus; all 9 are `EF BF BD` (U+FFFD REPLACEMENT CHARACTER), a well-formed
@@ -27,12 +43,8 @@ LF. **It measured grep's output, not the file.** The raw bytes are
 
 The parser strips a trailing CR. Before it did, a CR-terminated line parsed to
 **null silently**: the timestamp still matched, so `dropped` stayed clean and the
-module would have reported no lockouts ever. It never bit us only because
-`readline({crlfDelay: Infinity})` and the host's `split(/
-
-|
-/)` both strip
-CR first — luck, not design.
+module would have reported no lockouts ever. It never bit us only because `readline({crlfDelay: Infinity})` and the host's
+split on a CRLF-or-LF pattern both strip CR first — luck, not design.
 
 *Second layer, which is not settled:* U+FFFD is the fossil of a decode that
 already lost a byte. So "UTF-8 is the right decoder for the bytes on disk" is
@@ -141,3 +153,84 @@ verbatim in our own logs** (3527 × 83, 3522 × 1, 3513 × 1), and 3513 is a
 *permission error*, which means a `/dz` command was typed and the server
 answered. The family is live. Whether `/dzlisttimers` specifically returns
 anything is one command away and is step 1 of the capture protocol.
+
+---
+
+## The roster — five bosses, and the traps in their names
+
+| owner's label | the game's string | kills |
+|---|---|---|
+| Lady Vox | `Lady Vox` | 8 |
+| Lord Nagafen | `Lord Nagafen` | 10 |
+| Master Yael | `Master Yael` | 14 |
+| Innoruuk | `Innoruuk, the Prince of Hate` | 9 |
+| Cazic Thule | `Cazic-Thule` | 7 |
+
+Counts are per-character kill records over the corpus, derived by
+`analysis/roster-evidence.js` into the committed `sources/raw/roster-evidence.json`,
+which `test/grid.test.js` asserts against. **A roster typo and a genuinely
+uncompleted raid render identically**, so a typo must fail the build.
+
+**The substring hazard is worse than "imprecise" — it is inverted.**
+`grep -F "Innoruuk has been slain by"` returns **73 hits, and none is the boss**:
+they are `Cleric of Innoruuk` (68), `A Sage of Innoruuk` (4) and
+`A Knight of Innoruuk` (1). The real boss scores **zero** on that search, because
+`Innoruuk, the Prince of Hate has been slain by` does not contain the substring.
+So a naive roster gets 73 false positives *and* misses every real kill. Add
+`Innoruuk\`s Chosen` (49) and the row is meaningless.
+
+Same shape, smaller blast radius, elsewhere: `Cazic` matches `Cazic Cenobite`
+(a Fear trash mob), and `Nagafen` matches both `A priest of Nagafen` and
+`a priest of Nagafen` — a pair differing only in leading case, which is a second
+trap for anyone matching case-insensitively.
+
+`Cazic Thule` without the hyphen **does** occur, 14 times — but none is a kill
+line. They are player chat and one achievement name, `Deity Unlock - Cazic Thule`.
+The mob is hyphenated in 100% of combat lines:
+`grep -F "Cazic Thule has been slain by"` → **0**.
+
+## Kill lines — two shapes, and a search for one misses the other
+
+```
+Innoruuk, the Prince of Hate has been slain by Jrhx!
+You have slain Innoruuk, the Prince of Hate!
+```
+
+The first-person form is what the client writes when the logging character lands
+the killing blow. **8 of the five bosses' kills take that form**, and a parser
+searching only `has been slain by` loses every one.
+
+## "You have entered" is not always a zone
+
+`<install>/eqstr_us.txt` holds exactly three entries beginning `You have entered`:
+
+> `3342 You have entered an area where levitation effects do not function.`
+> `5151 You have entered an Arena (PvP) area.`
+> `5492 You have entered ` — the zone template itself
+
+**This cost a real completion before it was found.** Verbatim:
+
+```
+[Mon Aug 10 18:05:40 2026] You have entered The Ruins of Old Paineel - Group 1 (Awakened).
+[Mon Aug 10 18:05:40 2026] You have entered an area where levitation effects do not function.
+[Mon Aug 10 18:11:22 2026] Master Yael has been slain by Cavity!
+```
+
+The levitation notice parsed as a zone named *an area where levitation effects do
+not function*, which is a bare name, which is the open world — so it cleared the
+instance and that Master Yael kill lost its difficulty. The exclusion list is
+read from the client's table rather than from what we happened to see, because
+the Arena line never occurred in our corpus and would have bitten identically.
+
+## Every roster boss kill in the corpus is in a GROUP instance
+
+Measured across both characters after the fix above: **zero raid-instance
+(`Zone N`) kills, zero open-world kills, zero unattributable kills.** Every one
+of the five bosses died in a `<Zone> - Group N (<Label>)` instance.
+
+That is consistent with the Director's observation that `The Plane of Hate 4
+(Refined)` — the bare `Zone N` shape — holds court fights and never Innoruuk.
+**It does not tell us whether a kill in `- Group N` and one in `Zone N` share a
+lockout**, because our history contains no boss kill in the bare shape at all.
+The grid records the shape on every completion so the question stays answerable,
+and it is on the capture list.
