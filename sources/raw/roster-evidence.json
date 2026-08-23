@@ -1,0 +1,84 @@
+{
+  "generatedBy": "analysis/roster-evidence.js",
+  "note": "Every roster key must have exactBoss > 0 or the roster is wrong. nearMisses are names containing the key that are NOT the boss — the reason the match is exact equality and never substring.",
+  "distinctSlainNames": 748,
+  "roster": [
+    {
+      "key": "Lady Vox",
+      "label": "Lady Vox",
+      "exactKills": 8,
+      "thirdPerson": 5,
+      "firstPerson": 3,
+      "nearMisses": [],
+      "nearMissKills": 0
+    },
+    {
+      "key": "Lord Nagafen",
+      "label": "Lord Nagafen",
+      "exactKills": 10,
+      "thirdPerson": 10,
+      "firstPerson": 0,
+      "nearMisses": [],
+      "nearMissKills": 0
+    },
+    {
+      "key": "Master Yael",
+      "label": "Master Yael",
+      "exactKills": 14,
+      "thirdPerson": 12,
+      "firstPerson": 2,
+      "nearMisses": [],
+      "nearMissKills": 0
+    },
+    {
+      "key": "Innoruuk, the Prince of Hate",
+      "label": "Innoruuk",
+      "exactKills": 9,
+      "thirdPerson": 8,
+      "firstPerson": 1,
+      "nearMisses": [
+        {
+          "name": "Cleric of Innoruuk",
+          "thirdPerson": 68,
+          "firstPerson": 17
+        },
+        {
+          "name": "Innoruuk`s Chosen",
+          "thirdPerson": 39,
+          "firstPerson": 10
+        },
+        {
+          "name": "A Sage of Innoruuk",
+          "thirdPerson": 4,
+          "firstPerson": 0
+        },
+        {
+          "name": "Innoruuk`s Chosen pet",
+          "thirdPerson": 1,
+          "firstPerson": 1
+        },
+        {
+          "name": "A Knight of Innoruuk",
+          "thirdPerson": 1,
+          "firstPerson": 0
+        }
+      ],
+      "nearMissKills": 141
+    },
+    {
+      "key": "Cazic-Thule",
+      "label": "Cazic Thule",
+      "exactKills": 7,
+      "thirdPerson": 4,
+      "firstPerson": 3,
+      "nearMisses": [
+        {
+          "name": "Cazic Cenobite",
+          "thirdPerson": 4,
+          "firstPerson": 5
+        }
+      ],
+      "nearMissKills": 9
+    }
+  ]
+}

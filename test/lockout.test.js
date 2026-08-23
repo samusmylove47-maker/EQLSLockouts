@@ -262,7 +262,9 @@ test('the engine emits change only when a line moves the state', () => {
   let changes = 0;
   eng.on('change', () => changes++);
 
-  eng.handleLine('[Mon Aug 10 17:16:00 2026] A fire giant wizard has been slain by Lumbarin!');
+  // A genuinely unmodelled line. NOT a kill line — kills are modelled now, and
+  // this test previously used one, which is how it caught the change.
+  eng.handleLine('[Mon Aug 10 17:24:10 2026] Lord Nagafen pierces Lumbarin for 87 points of damage.');
   assert.equal(changes, 0, 'an unmodelled line must not emit');
 
   eng.handleLine("[Mon Aug 10 17:14:49 2026] You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.");
@@ -546,7 +548,11 @@ test('CONTRACT 6: feeding the same line twice is safe — idempotent', () => {
   const pOnce = core.project(once, NOW);
   const pTwice = core.project(twice, NOW);
   assert.deepEqual({ ...pTwice, dropped: null }, { ...pOnce, dropped: null });
-  assert.equal(pTwice.dropped.duplicate, 18, 'the fixture holds 18 dedupable observations');
+  // DERIVED, not typed. An earlier revision hard-coded 18 here and went stale
+  // the moment kill lines became events — the same fault this project keeps
+  // finding, sitting in a test whose job is to catch it.
+  assert.equal(pTwice.dropped.duplicate, once.events.length,
+    'every observation from the first pass should be rejected on the second');
 });
 
 test('CONTRACT 7: the character is an input and state refuses to be shared', () => {

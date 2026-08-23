@@ -329,6 +329,42 @@ const VOIDLING_CLOSING_RE = /^Voidling says, 'Your hubris risks our very reality
 // You have entered Nektulos Forest.
 const ENTERED_RE = /^You have entered (.+?)\.$/;
 
+// NOT EVERY "You have entered" IS A ZONE, and treating one as a zone silently
+// destroys the instance context a kill needs.
+//
+// Measured, in the owner's own log:
+//
+//   [Mon Aug 10 18:05:40 2026] You have entered The Ruins of Old Paineel - Group 1 (Awakened).
+//   [Mon Aug 10 18:05:40 2026] You have entered an area where levitation effects do not function.
+//   [Mon Aug 10 18:11:22 2026] Master Yael has been slain by Cavity!
+//
+// The levitation notice parsed as a zone named "an area where levitation
+// effects do not function", which is a bare name, which is the open world — so
+// it cleared the instance and that Master Yael kill lost its difficulty. One
+// real completion, silently dropped, by a message about levitation.
+//
+// The exclusion list is not guesswork from the corpus. It is the COMPLETE set
+// the client can print, read out of the shipped string table
+// `<install>/eqstr_us.txt`, where exactly three entries begin "You have entered":
+//
+//   3342  You have entered an area where levitation effects do not function.
+//   5151  You have entered an Arena (PvP) area.
+//   5492  You have entered            <- the zone template, "You have entered %1."
+//
+// The Arena line never occurred in our corpus and would have bitten identically.
+const NOT_A_ZONE = new Set([
+  'an area where levitation effects do not function',
+  'an Arena (PvP) area',
+]);
+
+// A zone name the client writes always begins with a capital or an article-cap
+// ("The Plane of Sky", "Nagafen's Lair", "Paineel"). Anything starting
+// lower-case is a sentence, not a place. This is a BACKSTOP for a string the
+// next patch adds that we have not seen: such a line is ignored rather than
+// treated as a zone, and flagged, so it surfaces instead of silently clearing
+// the instance the way the levitation notice did.
+const LOOKS_LIKE_A_SENTENCE = /^[a-z]/;
+
 // Lumbarin has asked you to join the instance: Nagafen's Lair - Group 1 (Awakened).        Would you like to join? ...
 // Client string 3527. The run of spaces is the client's, and is matched
 // loosely so a change in its width cannot break the parse.
@@ -390,6 +426,79 @@ function parseInstanceName(name) {
 
 // Parses one raw log line into an event, or null if it is not one we model.
 // Pure: same input, same output, always.
+// KILL LINES. Two shapes, and a search that knows only the first misses real kills.
+//
+//   Innoruuk, the Prince of Hate has been slain by Jrhx!
+//   You have slain Innoruuk, the Prince of Hate!
+//
+// The first-person form is what the client writes when YOU land the killing
+// blow. Measured across the five roster bosses, 8 of their kills take that form,
+// and a parser searching only "has been slain by" loses every one of them.
+//
+// BOTH ARE ANCHORED AT THE START OF THE MESSAGE, and that is load-bearing.
+// `grep -F "Innoruuk has been slain by"` returns 73 hits in our corpus of which
+// NONE are the boss: they are `Cleric of Innoruuk` (68), `A Sage of Innoruuk`
+// (4) and `A Knight of Innoruuk` (1). Add `Innoruuk\`s Chosen` (39+10) and a
+// substring roster over-counts this one boss by roughly fourteen times.
+const SLAIN_BY_RE = /^(.+?) has been slain by (.+?)!$/;
+const YOU_SLEW_RE = /^You have slain (.+?)!$/;
+
+// ---------------------------------------------------------------------------
+// The roster
+// ---------------------------------------------------------------------------
+//
+// Five bosses × five difficulty tiers = 25 cells, one completion per tier per
+// week. Supplied first-hand by the owner, 23 Aug 2026.
+//
+// KEYED ON THE GAME'S STRING; the owner's wording is a display label only. That
+// split is not tidiness — **an unmatched roster row and a genuinely uncompleted
+// raid render identically**, so a typo here would show an empty row forever and
+// look exactly like the thing this tracker exists to warn about. Three of the
+// five needed correcting against real data:
+//
+//   owner wrote     game writes
+//   Innoruuk    ->  Innoruuk, the Prince of Hate
+//   Cazic Thule ->  Cazic-Thule                     (hyphen; "Cazic Thule" returns 0)
+//   Vox / Nagafen / Yael                            exact
+//
+// A test asserts every key matches at least one boss string seen in real data,
+// so a typo fails the build instead of rendering as an empty row.
+const ROSTER = Object.freeze([
+  { key: 'Lady Vox', label: 'Lady Vox' },
+  { key: 'Lord Nagafen', label: 'Lord Nagafen' },
+  { key: 'Master Yael', label: 'Master Yael' },
+  { key: 'Innoruuk, the Prince of Hate', label: 'Innoruuk' },
+  { key: 'Cazic-Thule', label: 'Cazic Thule' },
+].map(Object.freeze));
+
+// ---------------------------------------------------------------------------
+// The reset rule — the ONE place a reset constant is permitted to live
+// ---------------------------------------------------------------------------
+//
+// Everywhere else in this module, a hardcoded reset day is forbidden and a test
+// fails if one appears. This field is the single exception, and it carries its
+// provenance on its face so it can never be mistaken for something we measured.
+//
+// `hour` is **null on purpose**. The owner gave a day, not a time. Inventing an
+// hour to make the arithmetic tidy is exactly the fault this module refuses, so
+// the period boundary is a DAY and everything landing inside that day is
+// reported as ambiguous rather than resolved. See `projectGrid`.
+const RESET_RULE = Object.freeze({
+  weekday: 2,                    // 0 = Sunday, so 2 = Tuesday
+  weekdayName: 'Tuesday',
+  hour: null,                    // not recorded
+  provenance: 'stated',          // NOT 'measured'. We did not observe this.
+  source: 'owner, first-hand, 23 Aug 2026',
+  // Our own measurement, kept beside it so the two can be compared at a glance.
+  // The bracket contains a Tuesday, so the rule is consistent with what we saw;
+  // consistency is not confirmation and the wording stays careful.
+  measuredBracketPacific: 'Mon 10 Aug 15:34 → Tue 11 Aug 17:37 2026',
+  measuredBracketContainsRule: true,
+  note:
+    'A day, not an instant. The hour of the turnover has never been measured, ' +
+    'so a kill on the boundary day itself cannot be assigned to a period.',
+});
+
 function parseLine(line) {
   const split = splitStamp(line);
   if (!split) return null;
@@ -407,7 +516,11 @@ function parseLine(line) {
     return { kind: 'given', at, item: m[1] };
   }
   if ((m = ENTERED_RE.exec(message))) {
-    return { kind: 'entered', at, ...parseInstanceName(m[1]) };
+    const name = m[1];
+    // A non-zone notice must NOT be reported as a zone-in; see NOT_A_ZONE.
+    if (NOT_A_ZONE.has(name)) return { kind: 'not-a-zone', at, text: name };
+    if (LOOKS_LIKE_A_SENTENCE.test(name)) return { kind: 'not-a-zone', at, text: name, unrecognised: true };
+    return { kind: 'entered', at, ...parseInstanceName(name) };
   }
   if ((m = INSTANCE_INVITE_RE.exec(message))) {
     return { kind: 'instance-invite', at, from: m[1], ...parseInstanceName(m[2]) };
@@ -417,6 +530,14 @@ function parseLine(line) {
   }
   if (VOIDLING_RE.test(message)) {
     return { kind: 'voidling-reply', at, closing: VOIDLING_CLOSING_RE.test(message) };
+  }
+  // parseLine stays OPEN TO ANY NAME. Whether a slain thing is a raid boss is a
+  // roster question, decided later; nothing here filters by roster.
+  if ((m = SLAIN_BY_RE.exec(message))) {
+    return { kind: 'kill', at, slain: m[1], killer: m[2], byYou: false };
+  }
+  if ((m = YOU_SLEW_RE.exec(message))) {
+    return { kind: 'kill', at, slain: m[1], killer: null, byYou: true };
   }
   return null;
 }
@@ -449,7 +570,7 @@ const STATE_VERSION = 1;
 // A host that tails "whichever eqlog_*.txt changed last" — which follows the
 // player across character switches — must keep one state per character and
 // route by filename. `characterFromLogFilename` does that parse.
-function createState(character) {
+function createState(character, opts) {
   if (typeof character !== 'string' || !character) {
     throw new TypeError(
       'createState(character): a character name is required. State cannot be ' +
@@ -457,9 +578,19 @@ function createState(character) {
       'own task grant, and merging them fabricates reset brackets.'
     );
   }
+  const roster = (opts && opts.roster) || ROSTER;
   return {
     version: STATE_VERSION,
     character,
+    // The bosses whose kills are recorded. `parseLine` stays open to every
+    // name; this is the only place a roster narrows anything, and it is
+    // overridable so the host is not stuck with ours.
+    roster: roster.map((r) => ({ key: r.key, label: r.label })),
+    // Kills of roster bosses, each carrying the instance it happened in.
+    kills: [],
+    // The instance most recently entered, so a kill can be attributed to a
+    // difficulty. Null means the open world or nothing seen yet.
+    currentInstance: null,
     // One entry per task name, in first-seen order.
     tasks: {},
     // Every `You have been given:` line, so a caller can reconcile against the
@@ -590,6 +721,48 @@ function applyLine(state, line) {
       });
       rec.seen++;
     }
+
+    // Only a ZONE-IN moves the player. An invite is someone else's offer and
+    // may be declined, so it must never set the current instance — doing so
+    // would attribute a later kill to an instance never entered.
+    if (ev.kind === 'entered') {
+      state.currentInstance = ev.instanced
+        ? {
+            zone: ev.zone,
+            group: ev.group,
+            difficulty: ev.difficulty,
+            difficultyLabel: ev.difficultyLabel,
+            difficultyStated: ev.difficulty !== null,
+            enteredCivil: civil,
+          }
+        : null; // a bare zone name is the OPEN WORLD, which is not a grid cell
+    }
+  }
+
+  if (ev.kind === 'kill') {
+    // The roster narrows here and nowhere else. EXACT equality, never substring:
+    // `Cleric of Innoruuk` and `Innoruuk\`s Chosen` are different mobs that a
+    // substring match would score as the boss.
+    const entry = state.roster.find((r) => r.key === ev.slain);
+    if (entry) {
+      const inst = state.currentInstance;
+      state.kills.push({
+        boss: entry.key,
+        civil,
+        at: ev.at,
+        byYou: ev.byYou === true,
+        // Attribution is "the instance most recently entered". Where no
+        // instance has been entered, or the last zone-in was the open world,
+        // this is null and the kill resolves no grid cell.
+        zone: inst ? inst.zone : null,
+        group: inst ? inst.group : null,
+        difficulty: inst ? inst.difficulty : null,
+        difficultyStated: inst ? inst.difficultyStated : false,
+        instanced: Boolean(inst),
+        secondsSinceZoneIn: inst ? (civil - inst.enteredCivil) / 1000 : null,
+      });
+      if (state.kills.length > MAX_EVENTS) state.kills.shift();
+    }
   }
 
   return state;
@@ -602,6 +775,15 @@ function dedupeKey(ev, civil) {
       return `${civil}|${ev.kind}|${ev.task}`;
     case 'given':
       return `${civil}|given|${ev.item}`;
+    case 'kill':
+      // Keyed on the SLAIN NAME, not just the second. Without this the default
+      // key is `<second>|kill`, and two different bosses dying in the same
+      // second collapse into one — a silent lost completion, which for a tool
+      // whose job is "do not forget a raid" is the wrong direction to fail in.
+      // `byYou` is deliberately NOT in the key: one real kill writes the
+      // third-person line in one character's log and the first-person line in
+      // another's, and within a single character's stream only one form appears.
+      return `${civil}|kill|${ev.slain}`;
     case 'weekly-request':
       return `${civil}|request`;
     case 'voidling-reply':
@@ -868,11 +1050,163 @@ function projectPeriod(state) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// The grid — 5 bosses × 5 tiers
+// ---------------------------------------------------------------------------
+//
+// WHAT REMAINS, NOT WHAT IS DONE. The owner's reason for wanting this is worth
+// keeping in front of whoever edits it:
+//
+//   "we humans experience our own form of compression drift, and only remember
+//    that we've done some of those raids, not precisely which ones... The
+//    tracker becomes the human safeguard against forgetting to complete raids
+//    by the reset deadline."
+//
+// So the open cells lead and the completed ones recede. A grid that foregrounds
+// completions is a scoreboard; this is a checklist of what is still owed.
+//
+// FOUR CELL STATES, and the distinction between the last two is the whole point:
+//
+//   completed   a kill observed at that difficulty since the last reset
+//   available   no kill since the reset, AND coverage spans the whole period
+//   unknown     evidence exists that cannot be assigned to this cell — either a
+//               kill at a difficulty the game did not state, or a kill on the
+//               boundary day itself, whose side of the turnover is unknowable
+//               because the reset HOUR has never been measured
+//   not_looked  coverage does not span the period — fresh install, no backfill
+//
+// **`not_looked` must never render as `available`.** "I have not looked" and
+// "you have not done it" are the same picture and different facts, and a fresh
+// install showing 25 available cells would have told the user a comfortable lie.
+//
+// NO COUNTDOWN. `available` is a state, never a time. The owner asked for no
+// countdown and the module could not honestly produce one anyway: the reset
+// hour is not recorded.
+function projectGrid(state, now) {
+  requireCivil(now);
+  const nowCivil = civilOf(now);
+
+  // The period boundary is a DAY, not an instant, because the rule is a day.
+  // Walk back to the most recent RESET_RULE.weekday at or before `now`.
+  const nowDay = Date.UTC(now.year, now.month - 1, now.day);
+  const dow = new Date(nowDay).getUTCDay();
+  const back = (dow - RESET_RULE.weekday + 7) % 7;
+  const boundaryDayStart = nowDay - back * 86400000;
+  const boundaryDayEnd = boundaryDayStart + 86400000;
+
+  const coverageStart = state.firstSeen;
+  const coverageEnd = state.lastSeen;
+  // Coverage must span from the boundary to `now`. A gap at either end means a
+  // kill could have happened unobserved, and that is `not_looked`, not
+  // `available`.
+  const spans =
+    coverageStart !== null &&
+    coverageEnd !== null &&
+    coverageStart <= boundaryDayStart &&
+    coverageEnd >= nowCivil;
+
+  // IS `now` ITSELF ON THE BOUNDARY DAY? Then the period start is ambiguous.
+  //
+  // Because the reset HOUR is not recorded, on Tuesday we do not know whether
+  // the turnover has already happened. Two hypotheses are live:
+  //   H1 — it has: the period began at the start of today
+  //   H2 — it has not: the period is still the one that began last Tuesday
+  // An earlier revision silently assumed H1, which reported "25 still open" on
+  // a Tuesday afternoon for a character who had raided all week. That errs in
+  // the safe direction, but it is an assumption presented as a fact, and this
+  // module does not do that.
+  //
+  // So: evaluate BOTH, and where they disagree the cell is `unknown`.
+  const onBoundaryDay = nowCivil >= boundaryDayStart && nowCivil < boundaryDayEnd;
+  const priorBoundaryStart = boundaryDayStart - 7 * 86400000;
+
+  const cells = [];
+  for (const entry of state.roster) {
+    const mine = state.kills.filter((k) => k.boss === entry.key);
+
+    // Evaluate one hypothesis: what does the grid say if the period began at
+    // `from`? Returns the cell state for difficulty `d`, ignoring coverage.
+    const under = (from, d) => {
+      const dayEnd = from + 86400000;
+      const period = mine.filter((k) => k.civil >= dayEnd);
+      const onDay = mine.filter((k) => k.civil >= from && k.civil < dayEnd);
+      const unstated = period.filter((k) => k.instanced && !k.difficultyStated);
+      const done = period.filter((k) => k.difficultyStated && k.difficulty === d);
+      if (done.length) return { s: 'completed', done, why: `kill at D${d} on ${formatCivil(done[done.length - 1].at)}` };
+      if (unstated.length) {
+        return { s: 'unknown', done, why: `${unstated.length} kill(s) this period at a difficulty the game did not state` };
+      }
+      if (onDay.length) {
+        return { s: 'unknown', done, why: `${onDay.length} kill(s) on ${RESET_RULE.weekdayName} itself; the reset hour is not recorded` };
+      }
+      return { s: 'available', done, why: 'no kill observed since the reset, and coverage spans the period' };
+    };
+
+    for (let d = 0; d < DIFFICULTY_LABELS.length; d++) {
+      const h1 = under(boundaryDayStart, d);
+      const h2 = onBoundaryDay ? under(priorBoundaryStart, d) : h1;
+
+      let cellState;
+      let because;
+      if (!spans) {
+        cellState = 'not_looked';
+        because = coverageStart === null ? 'no lines seen at all' : 'coverage does not span this period';
+      } else if (h1.s === h2.s) {
+        cellState = h1.s;
+        because = h1.why;
+      } else {
+        cellState = 'unknown';
+        because =
+          `today is ${RESET_RULE.weekdayName} and the reset hour is not recorded, so it is ` +
+          `unknown whether the turnover has happened yet: "${h1.s}" if it has, "${h2.s}" if it has not`;
+      }
+
+      cells.push({
+        boss: entry.key,
+        label: entry.label,
+        difficulty: d,
+        difficultyLabel: DIFFICULTY_LABELS[d],
+        state: cellState,
+        because,
+        // Which instance shape the completion happened in. Recorded but NOT used
+        // to split the grid: whether a kill in `- Group N` and a kill in
+        // `Zone N` share one lock is unmeasured, so the grid keeps the owner's
+        // 25 cells and carries the shape so the question stays answerable.
+        shapes: [...new Set(h1.done.map((k) => (k.group ? 'group' : 'raid')))],
+      });
+    }
+  }
+
+  const by = (s) => cells.filter((c) => c.state === s);
+  return {
+    resetRule: RESET_RULE,
+    period: {
+      boundaryDay: formatCivil(fromCivil(boundaryDayStart)).slice(0, 10),
+      boundaryWeekday: RESET_RULE.weekdayName,
+      hourKnown: false,
+      nowIsOnBoundaryDay: onBoundaryDay,
+      coverageSpansPeriod: spans,
+      coverageFrom: coverageStart === null ? null : formatCivil(fromCivil(coverageStart)),
+      coverageTo: coverageEnd === null ? null : formatCivil(fromCivil(coverageEnd)),
+    },
+    // OPEN FIRST. This ordering is the feature.
+    open: by('available'),
+    openCount: by('available').length,
+    uncertain: by('unknown'),
+    uncertainCount: by('unknown').length,
+    notLooked: by('not_looked'),
+    notLookedCount: by('not_looked').length,
+    completed: by('completed'),
+    completedCount: by('completed').length,
+    cells,
+  };
+}
+
 // The per-boss view a UI would show. `now` is REQUIRED and must be a civil
 // timestamp from the same clock that wrote the log — see `civilFromDate` in
 // the adapter. Passing an epoch here is a bug and throws, because a silent
 // timezone error is exactly the failure this module exists to avoid.
-function project(state, now) {
+function requireCivil(now) {
   if (!now || typeof now !== 'object' || typeof now.year !== 'number') {
     throw new TypeError(
       'project(state, now): `now` must be a civil timestamp object ' +
@@ -881,6 +1215,10 @@ function project(state, now) {
       'timezone and will not guess one.'
     );
   }
+}
+
+function project(state, now) {
+  requireCivil(now);
   const nowCivil = civilOf(now);
 
   const bosses = Object.values(state.tasks).map((t) => {
@@ -984,6 +1322,7 @@ module.exports = {
   // projection
   project,
   projectReset,
+  projectGrid,
   projectPeriod,
   classifyRequests,
   // time helpers (pure)
@@ -994,6 +1333,8 @@ module.exports = {
   characterFromLogFilename,
   // tables
   DIFFICULTY_LABELS,
+  ROSTER,
+  RESET_RULE,
   OBSERVED_WEEKLY_BOSSES,
   STATE_VERSION,
   CAVEAT_DST,
