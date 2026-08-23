@@ -11,6 +11,156 @@ the owner measures, my protocol governs. All actioned; see the second report.
 
 ## To the Director
 
+### Fourth report, 23 Aug 2026 — the grid is built, and the corpus found three more defects
+
+**Everything ordered is done.** Branch `session-d/grid`, PR open against `main`.
+**59 tests green** (was 38). `node demo.js` is one command, no dependencies.
+
+**And replaying the real corpus caught three defects, one of which had already
+silently eaten a real completion.**
+
+---
+
+#### The grid
+
+25 cells, five bosses by five tiers, **keyed on the game's string with the
+owner's wording as a display label only**. Open cells lead and the count of them
+is the first line, because the owner's reason is the design:
+
+> "we humans experience our own form of compression drift, and only remember
+>  that we've done some of those raids, not precisely which ones."
+
+Four states, and `not_looked` never renders as `available`: a fresh install
+prints **0 open, not 25**, and says so in words. There is no countdown.
+
+#### The three name traps — and the substring hazard is worse than "imprecise"
+
+All three confirmed against real client output, not just against our derived
+JSON. `Innoruuk, the Prince of Hate`. `Cazic-Thule`, hyphenated.
+
+**The Innoruuk trap is inverted, not merely noisy.**
+`grep -F "Innoruuk has been slain by"` returns **73 hits and not one is the
+boss** — 68 `Cleric of Innoruuk`, 4 `A Sage of Innoruuk`, 1 `A Knight of
+Innoruuk`. The real boss scores **zero** on that search, because
+`Innoruuk, the Prince of Hate has been slain by` does not contain the substring.
+So a naive roster produces 73 false positives *and* misses every real kill. Add
+`Innoruuk\`s Chosen` (49) and the row is noise.
+
+Two more of the same shape: `Cazic` matches `Cazic Cenobite`, and `Nagafen`
+matches both `A priest of Nagafen` and `a priest of Nagafen` — differing only in
+leading case, a second trap for case-insensitive matching.
+
+`Cazic Thule` unhyphenated **does** occur, 14 times — all player chat and one
+achievement name. Zero kill lines. The mob is hyphenated in 100% of combat lines.
+
+The roster match is exact equality. `sources/raw/roster-evidence.json` is derived
+from the corpus by `analysis/roster-evidence.js`, committed, and asserted by a
+test: **a typo fails the build instead of rendering as an empty row forever.**
+
+#### The Tuesday rule
+
+One field, `RESET_RULE`, carrying value, `provenance: 'stated'`, the source
+string, and the measured bracket it sits inside. **`hour` is `null`** — the owner
+gave a day, not a time, and inventing an hour to make the arithmetic tidy is the
+fault this module refuses. The no-constant test is amended to fail on a reset
+constant anywhere *except* that field. `projectReset` still runs as corroboration.
+
+**One thing I added that you did not ask for, because the data forced it.** When
+`now` falls on the boundary Tuesday itself, the period start is genuinely
+ambiguous — we do not know whether the turnover has happened yet. My first
+version silently assumed it had, and reported **"25 still open"** for Shara on a
+Tuesday afternoon after a week of raiding. Safe direction, but an assumption
+dressed as a fact. It now evaluates both hypotheses and marks the cell `unknown`
+where they disagree.
+
+---
+
+#### Three defects the real corpus exposed
+
+**1. A message about levitation was eating completions.** Verbatim:
+
+```
+[Mon Aug 10 18:05:40 2026] You have entered The Ruins of Old Paineel - Group 1 (Awakened).
+[Mon Aug 10 18:05:40 2026] You have entered an area where levitation effects do not function.
+[Mon Aug 10 18:11:22 2026] Master Yael has been slain by Cavity!
+```
+
+The notice parsed as a zone named *an area where levitation effects do not
+function* — a bare name, therefore the open world — which cleared the instance,
+so that Master Yael kill lost its difficulty and resolved no cell. **A real raid,
+silently dropped.**
+
+The fix reads the complete set from the client's own table rather than from what
+we happened to see: `eqstr_us.txt` has exactly three entries beginning
+`You have entered`, and the second is `You have entered an Arena (PvP) area.`,
+which never occurred in our corpus and would have bitten identically.
+
+**2. `dedupeKey` had no `kill` case**, so it fell through to `<second>|kill` and
+two different bosses dying in the same second collapsed into one. Another lost
+completion, in the direction a "do not forget a raid" tool must not fail.
+
+**3. My own "~3× duplication" figure is wrong. Measured: 1.171×.** I generalised
+a date-window observation — every kill line *on 9–10 Aug* appears three or four
+times, which is true — to the whole corpus. It is in `docs/EVIDENCE.md` and I
+have repeated it to you and to four agents. Corrected, and the correction says
+whose error it was.
+
+---
+
+#### The grid that falls out of the real corpus
+
+Both characters, separately, over all 434 MB:
+
+```
+  Avenrae — as of 2026-08-17 00:05:17
+  4 still open · 13 uncertain    (8 of 25 done)
+
+  boss            D0  D1  D2  D3  D4
+  Lady Vox         ?   ?   ?   ?   ?
+  Lord Nagafen     ?   ?   ?  ##  ##
+  Master Yael      ?   ?   ?   ?   ?
+  Innoruuk         .  ##   .  ##  ##
+  Cazic Thule      .   .  ##  ##  ##
+```
+
+Shara's `now` lands **on** a boundary Tuesday, so hers is 2 open / 23 uncertain —
+which is the ambiguity above working correctly rather than a failure.
+
+**Attribution quality: 0 kills with no preceding zone-in, for either character.**
+Median zone-in to kill 895 s (Avenrae) and 727 s (Shara), max ~45 minutes. "Most
+recent zone-in" is a sound attribution rule on this data.
+
+---
+
+#### Where the grid contradicts what I measured — you asked me to say so
+
+**Every one of the 55 roster-boss kill records in our corpus happened in a
+`- Group N` instance. Zero in the bare `Zone N` shape. Zero in the open world.**
+
+Your note says Innoruuk and Cazic-Thule are **raid instances**, not open world.
+Our history contains no boss kill in the bare `Zone N` shape at all — for any of
+the five, not just Innoruuk. So either the owner's "raid instance" means the
+`- Group N` shape, or the shape we have never observed is the one the grid is
+really about.
+
+**I have not built around it.** The grid keeps the owner's 25 cells and records
+the instance shape on every completion, so the question stays answerable the
+moment Tuesday's capture settles it. It is on the list as the Group-vs-`Zone N`
+question.
+
+Related, and it constrains the same question: our corpus contains **no D0 kill
+the game actually stated** for any of the five. The two D0 grants we hold came
+from invites; the zone-in lines omitted the difficulty.
+
+---
+
+#### Tuesday 25 Aug — the list, unchanged in scope
+
+`/dzlisttimers` first · the D2+ confound break · **does a kill in `- Group N` and
+one in `Zone N` share a lock** · the Tuesday pair · the accented-character line.
+
+---
+
 ### Third report, 22 Aug 2026 — the sweeps landed, and they are not flattering
 
 **Four more defects in my own work, one of which inverts a claim I wrote for
