@@ -90,6 +90,73 @@ of the generated page and runs it.
 
 ---
 
+#### The audit of the file I copied — two of its defects were already mine
+
+I had a pass read `sky-ledger.dad68d2b.html` in full and ask what a naive copy
+would miss. It found **two defects I had inherited without noticing**, and both
+are the silent kind.
+
+**1. The offset advanced before the bytes were in the state.** `poll()` did
+`S.offset += end` and *then* decoded and fed. Any throw in decode or feed loses
+those bytes permanently — the offset has already moved past them and nothing
+will ever read them again. In the original there is no `catch` at all, so the
+throw is invisible too. Mine had a `catch`, which made it quieter rather than
+safer.
+
+Fixed: the offset advances **after** the lines are in the state. Feeding twice
+is harmless because the engine is idempotent; losing a kill is not, and this
+tool exists to not lose kills.
+
+**2. `S.polling` guards poll-against-poll, but nothing guarded `setLogSource`
+mutating state underneath an in-flight poll.** Picking a second log during a
+multi-second first pass fed file A's lines into file B's state and left the
+offset pointing into B at A's length. Fixed with an epoch counter checked after
+every `await`, rather than another boolean.
+
+**Also taken from the audit:**
+
+- **Chunked reads.** The original materialises the whole log as one ArrayBuffer,
+  one string and one ~1M-element array, synchronously, on the main thread. The
+  owner's live log is **61 MB and growing**. Reads are now capped at 8 MB per
+  tick, so a first pass takes a few extra seconds instead of freezing the tab.
+- **The "never split a line" invariant has an exception**, which is easy to copy
+  without noticing: when a slice contains no newline at all, a *first* read
+  consumes the unterminated remainder anyway. I had copied the code; the comment
+  now names the exception, because believing an invariant you do not have is
+  worse than not having it.
+- **A cheap byte discriminator** before the timestamp regex — every stamped line
+  begins `[`. **Measured on the live 61 MB log: 1.34 s → 1.23 s, about 8%.**
+  Worth keeping, and worth not overstating: the Sky Ledger reports a much larger
+  win because its parse chain is far heavier, while ours already bails at the
+  timestamp pattern.
+
+**Not adopted, and named rather than silently skipped:** the original has no
+File System Access permission re-prompt and no backgrounding handling. Neither
+applies yet — this page does not persist a handle across reloads — but if it
+ever does, both become live.
+
+---
+
+#### The decode question, extended and sharpened
+
+The measurement now covers the live log too: **494,943,214 bytes across 16
+files, exactly 9 bytes ≥ 0x80, every one part of an `EF BF BD` sequence.** The
+live 61 MB log has **zero**.
+
+And there is an argument I had not made, which the audit supplied:
+**windows-1252 cannot encode U+FFFD at all.** A cp1252 writer meeting a
+character it cannot represent emits `?` (0x3F). The only non-ASCII bytes we hold
+are what a *UTF-8* writer produces — and decoding them as cp1252 is what turns
+them into mojibake, which is the opposite of the direction the Sky Ledger's
+comment describes.
+
+**The claims are not symmetric.** Our position needs no accented name to exist;
+theirs depends on one. The corpus contains none in either encoding, so it still
+cannot disprove their observation — but the one piece of positive evidence in it
+points our way. The page still hardcodes neither.
+
+---
+
 #### One note for Session A's generator
 
 The page **embeds** the engine rather than linking it, so a change to

@@ -332,6 +332,13 @@ const TS_RE = /^\[([A-Za-z]{3}) ([A-Za-z]{3}) {1,2}(\d{1,2}) (\d{2}):(\d{2}):(\d
 // a line can arrive mid-write, and multi-line lore text has no stamp.
 function splitStamp(line) {
   if (typeof line !== 'string') return null;
+  // A CHEAP DISCRIMINATOR BEFORE THE REGEX. Every stamped line begins '[', and
+  // the overwhelming majority of a log is combat and chat that this module does
+  // not model. Testing one character code first avoids running the timestamp
+  // pattern over all of it. Borrowed from the Sky Ledger, which found the same
+  // thing on the same shape of file. `charCodeAt` on an empty string returns
+  // NaN, which fails the comparison, so it doubles as the empty-line guard.
+  if (line.charCodeAt(0) !== 91) return null;   // 91 = '['
   // STRIP A TRAILING CR. The logs are CRLF — measured, every line of all 15
   // files — and a host that splits on '\n' alone (a very common idiom) hands us
   // lines ending in '\r'.
@@ -1721,6 +1728,7 @@ const S = {
   handle: null, offset: 0, character: null, state: null,
   timer: null,
   polling: false,   // never let two reads share one byte offset
+  epoch: 0,         // bumped whenever the log source changes; see poll()
   lastRead: 0,
   decoder: null,    // which decoder actually won, for the provenance panel
 };
@@ -1738,8 +1746,18 @@ const S = {
    itself, well-formed UTF-8 — with zero cp1252 signature bytes anywhere. On
    that evidence UTF-8 is right and windows-1252 is wrong.
 
-   Both observations can be true of different files, and neither corpus can
-   falsify the other. So this does not hardcode either: it TESTS each chunk.
+   The corpus contains no accented NPC name in EITHER encoding, so it cannot
+   disprove their observation — only report that ours does not contain it. But
+   the claims are not symmetric. windows-1252 has no U+FFFD and cannot encode
+   one; a cp1252 writer meeting an unrepresentable character emits '?' (0x3F).
+   The only non-ASCII bytes we hold are EF BF BD, which is what a UTF-8 writer
+   produces. So the single piece of positive evidence points at UTF-8 — and
+   decoding those bytes as cp1252 is what turns them into mojibake, which is the
+   opposite of the direction their comment describes.
+   Extended since to the live 61 MB log: zero bytes >= 0x80 in it at all.
+
+   Their claim still needs an accented name to exist somewhere; ours does not.
+   So this does not hardcode either: it TESTS each chunk.
    Strict UTF-8 throws on a byte sequence that is not valid UTF-8, and
    windows-1252 cannot throw, so the fallback is total. The chunk is always cut
    at the last newline, so no multibyte sequence is ever split across a read. */
@@ -1757,6 +1775,8 @@ function decode(bytes) {
    task grant and merging them fabricates measurements. */
 function setLogSource(handle, filename) {
   if (S.timer) { clearInterval(S.timer); S.timer = null; }
+  // Invalidate any poll already in flight against the previous file.
+  S.epoch++;
   const who = LockoutCore.characterFromLogFilename(filename);
   S.handle = handle;
   S.offset = 0;
@@ -1790,13 +1810,29 @@ async function pickLog() {
   await poll(true);
 }
 
+/* Read at most this much per tick. An audit of the file this was copied from
+   found it materialises the WHOLE log as one ArrayBuffer, one string and one
+   ~1M-element array of substrings, synchronously, on the main thread. The
+   owner's live log is already 61 MB and growing. Chunking costs a few extra
+   ticks on the first pass and keeps the tab responsive instead of freezing it. */
+const MAX_CHUNK = 8 * 1024 * 1024;
+
 async function poll(first) {
   if (!S.handle || S.polling || !S.state) return;
   S.polling = true;
+  /* WHICH LOG THIS READ BELONGS TO.
+     `S.polling` stops two polls sharing an offset, but nothing stopped
+     `setLogSource` from swapping the file and resetting the offset while a poll
+     was awaiting. On a multi-second first pass that fed file A's lines into
+     file B's state and left the offset pointing into B at A's length. The audit
+     found this in the original; it was inherited here and is fixed with an
+     epoch rather than another boolean. */
+  const epoch = S.epoch;
   try {
     let f;
     try { f = await S.handle.getFile(); }
     catch (e) { setStatus("Lost access to the file. Choose it again."); return; }
+    if (epoch !== S.epoch) return;     // a different log was picked mid-read
 
     if (f.size < S.offset) {           // rotated or truncated
       S.offset = 0;
@@ -1808,24 +1844,41 @@ async function poll(first) {
     /* Read BYTES, not text. Decoding first and measuring the result over-counts
        every multibyte character, so the offset runs past the end of the file,
        the next tick reads mid-line, and lines vanish silently. */
-    const buf = new Uint8Array(await f.slice(S.offset).arrayBuffer());
+    const upto = Math.min(f.size, S.offset + MAX_CHUNK);
+    const buf = new Uint8Array(await f.slice(S.offset, upto).arrayBuffer());
+    if (epoch !== S.epoch) return;
+
     let end = buf.length;
     while (end > 0 && buf[end - 1] !== 10) end--;   // never split a line
+    /* The exception, which the original has and which is easy to copy without
+       noticing: if the slice holds no newline at all there is nothing safe to
+       consume. A later tick waits for the line to be finished; the FIRST read
+       takes the unterminated remainder, because a file with no trailing newline
+       would otherwise never be read at all. */
     if (!end) { if (!first) return; end = buf.length; }
-    S.offset += end;
 
     const text = decode(buf.subarray(0, end));
     const lines = text.split(/\r?\n/);
     for (let i = 0; i < lines.length; i++) {
       if (lines[i]) LockoutCore.applyLine(S.state, lines[i]);
     }
+
+    /* ADVANCE THE OFFSET ONLY AFTER THE BYTES ARE ACTUALLY IN THE STATE.
+       The original advances first and has no catch at all, so any throw in
+       decode or feed loses those bytes permanently — the offset has already
+       moved past them and nothing will ever read them again. Feeding twice is
+       harmless here because the engine is idempotent; losing a kill is not. */
+    S.offset += end;
+    if (epoch !== S.epoch) return;
+
     S.lastRead = Date.now();
     render();
+    const more = S.offset < f.size ? "  (still catching up…)" : "";
     setStatus("Following " + (S.handle.name || "your log") + " — leave this open while you play. " +
-              lines.length.toLocaleString() + " lines read just now.");
+              lines.length.toLocaleString() + " lines read just now." + more);
   } catch (e) {
-    /* Keep the loop alive. A throw here used to be the difference between a
-       tail that recovers on the next tick and one that silently stops. */
+    /* Keep the loop alive. A throw here is the difference between a tail that
+       recovers on the next tick and one that silently stops. */
     setStatus("Read failed: " + (e && e.message ? e.message : e) + " — retrying.");
   } finally {
     S.polling = false;

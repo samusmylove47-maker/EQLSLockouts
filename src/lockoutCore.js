@@ -205,6 +205,13 @@ const TS_RE = /^\[([A-Za-z]{3}) ([A-Za-z]{3}) {1,2}(\d{1,2}) (\d{2}):(\d{2}):(\d
 // a line can arrive mid-write, and multi-line lore text has no stamp.
 function splitStamp(line) {
   if (typeof line !== 'string') return null;
+  // A CHEAP DISCRIMINATOR BEFORE THE REGEX. Every stamped line begins '[', and
+  // the overwhelming majority of a log is combat and chat that this module does
+  // not model. Testing one character code first avoids running the timestamp
+  // pattern over all of it. Borrowed from the Sky Ledger, which found the same
+  // thing on the same shape of file. `charCodeAt` on an empty string returns
+  // NaN, which fails the comparison, so it doubles as the empty-line guard.
+  if (line.charCodeAt(0) !== 91) return null;   // 91 = '['
   // STRIP A TRAILING CR. The logs are CRLF — measured, every line of all 15
   // files — and a host that splits on '\n' alone (a very common idiom) hands us
   // lines ending in '\r'.
