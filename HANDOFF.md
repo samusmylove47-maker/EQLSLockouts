@@ -11,6 +11,106 @@ the owner measures, my protocol governs. All actioned; see the second report.
 
 ## To the Director
 
+### Eighth report, 26 Aug 2026 — the row is the raid
+
+Done, and it is a relabelling rather than a rebuild. **Still five rows, five
+tiers, 25 cells.** 77 tests green (was 73). Branch `session-d/raid-rows`.
+
+| what you RUN | row label | what it CONTAINS |
+|---|---|---|
+| `Nagafen's Lair` | Lord Nagafen | Lord Nagafen |
+| `The Permafrost Caverns` | Lady Vox | Lady Vox |
+| `The Ruins of Old Paineel` | Master Yael | Master Yael |
+| `The Plane of Fear` | **Plane of Fear** | Terror, Dread, Fright, a dracoliche, Cazic-Thule |
+| `The Plane of Hate` | **Plane of Hate** | Innoruuk, the Prince of Hate; Maestro of Rancor |
+
+The three single-boss raids are untouched — there the boss name was already the
+right label. Any boss of a raid completes that raid's cell, and the cell records
+**which** boss did it, so a completion reads `Terror at D3 on 2026-08-26` rather
+than just "done". The page tooltip names the row's contents, because a player
+reading "Plane of Fear" should not have to learn which boss we picked to stand
+for it — which was your point.
+
+**Verified over the real corpus: 40 raid-boss kills for Avenrae, up from 25**,
+now that the Fear and Hate bosses are tracked at all. Verified in a real browser:
+killing Terror flips the Plane of Fear D3 cell.
+
+**The boss names are kill-line spellings, not the window's.** The alt+Z window
+writes `Dracoliche`; the game writes `a dracoliche`. All ten are asserted against
+real kills by a test, and `analysis/roster-evidence.js` now reads the live log so
+Terror, Dread, Fright and Maestro of Rancor are covered by it.
+
+---
+
+#### The assumption, stated where the model lives
+
+One cell per raid is right **only if the bosses inside share a lock**. In the
+module, and asserted by a test that fails if the wording goes missing:
+
+> The alt+Z window is CONSISTENT with that and does not prove it: those bosses
+> appeared together after runs that took them together, which is equally what
+> five separate locks started at the same moment would look like.
+>
+> **If they ever diverge, one cell would hide it.** A player who killed Terror
+> but not Cazic-Thule would see one cell, and the cell cannot be half true.
+
+Same shape as the kill-stamping caveat, deliberately. The observation that would
+separate the two models is a run clearing *some* of a zone's bosses followed by
+evidence about the others — **an adversarial pass is searching the corpus for one
+right now**, and whatever it finds lands in `docs/EVIDENCE.md` and here rather
+than being assumed either way.
+
+---
+
+#### The discoverable roster — agreed, and not built
+
+You are right that it waits. If `/dzlisttimers` logs, the Event Name column *is*
+the roster and it discovers itself; anything built now is thrown away. The
+shipped list is the interim and is marked as such in the module.
+
+---
+
+#### One thing I have let ride too long, and should not have
+
+**I do not have the content of "the clause 2 and 4 amendments".** You have listed
+them as outstanding in four consecutive orders and I have carried them forward
+each time without saying that I never received them — which is exactly the
+"write around a gap" failure this project forbids, and I did it four times.
+
+What I hold is Session C's six constraints as you relayed them on 22 Aug, all
+implemented and tested, with clause 6 (idempotence) **closed** — a test feeds the
+fixture twice and requires deep-equal state, and it caught a real bug when it was
+written. **Clause 7 is closed too, this turn's predecessor**: the set of Voidling
+seconds is bounded at 5,000 distinct seconds, and the bound and its cost are both
+stated — a refusal older than that loses its positive control and degrades to
+`unknown`, the safe direction.
+
+**But I have no amendment text for clauses 2 or 4.** Either send it, or tell me
+it was superseded and I will stop listing it. Guessing at it would be worse than
+asking.
+
+---
+
+#### The two captures, still unspent
+
+Both are ten seconds and neither needs a raid.
+
+**1. `/dzlisttimers`**, then `/say timers check done` as the control line. The
+third outcome — nothing printed, but the control line present — is a real
+negative and must not be read as a failed capture.
+
+**2. alt+Z within a minute of entering a fresh instance.** This is the one that
+fixes the absolute period. A single reading gives two equations in three
+unknowns and determines only `B − R = exactly 5d 23h`; read immediately after
+entering, the Replay Timer shows close to its **full** period, which fixes R and
+therefore B with no assumption at all.
+
+That second one matters more than it sounds: 6d versus 6d1h is the difference
+between "available Monday evening" and "available Monday night", and an
+hour-optimistic tracker tells a player a raid is open when it is not.
+
+---
+
 ### Seventh report, 26 Aug 2026 — the alt+Z window, and the anomaly is solved
 
 ## THE ONE INSTRUCTION FOR THE OWNER, at the top as ordered
