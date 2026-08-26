@@ -42,6 +42,79 @@ Terror, Dread, Fright and Maestro of Rancor are covered by it.
 
 ---
 
+#### The verification came back and it caught a live bug in what I had just pushed
+
+**`a dracoliche` as a key was catching 3 of its 11 kills.**
+
+The client capitalises the first character of a line, so the same mob is written
+two ways depending on where it falls in the sentence:
+
+```
+A dracoliche has been slain by Orlando!      8 kills — line-initial, capitalised
+You have slain a dracoliche!                 3 kills — mid-sentence, lowercase
+```
+
+`grep -F "a dracoliche has been slain by"` returns **0** across 16 files.
+`"A dracoliche has been slain by"` returns **8**. My exact-equality match caught
+only the first-person form.
+
+**This is the roster trap, in my own code, an hour after I shipped it** — and it
+fails in the direction that matters: a missed kill renders as a raid still owed.
+Same defect on `the Hand of Veeshan`, where 5 of 8 kills read `The`.
+
+**Fixed by folding case**, which is safe *because* the match is exact equality
+rather than substring: `A priest of Nagafen` and `a priest of Nagafen` are the
+same mob and neither equals `Lord Nagafen`, so the fold cannot collide the way
+`includes()` would. A test asserts no two roster bosses fold together, and
+another feeds both spellings and requires both to match.
+
+**Effect on the real corpus: 43 raid-boss kills for Avenrae, up from 40; Plane of
+Fear from 12 to 15.** The evidence file now records every spelling seen, so a new
+one surfaces instead of silently halving a count.
+
+---
+
+#### Four more things the corpus says that the alt+Z window did not
+
+Measured across 16 files, 6.3M lines, 93 kills of the ten named bosses. All four
+are now in the module beside the list.
+
+**1. Every one of those 93 kills was in a `- Group N` instance.** Zero in the
+bare `Zone N` raid shape, zero open world — and the raid shape of these zones
+*does* occur (14 Fear visits, 5 Hate visits) without producing one of them. So
+**"raid" is the owner's word for the activity, not the client's word for the
+shape**, and nothing keys on the shape believing otherwise.
+
+**2. The Plane of Hate row is incomplete for the raid shape.** Ten further
+raids-measured bosses die inside Plane of Hate instances — but only in the bare
+`Zone N` shape, while Innoruuk and the Maestro appear only in `- Group N`. **The
+two shapes hold different populations.** The alt+Z window was taken after
+Group-shape runs, so it could only ever have shown those two. A Hate row built
+from it describes the group instance and not the raid instance, and which one the
+owner means is not decided anywhere yet. **This is yours to rule on.**
+
+**3. The Plane of Fear row is complete at five.** The only other candidate,
+Phoboplasm, fails on its own evidence: absent from raids-measured.json, and it
+dies up to **five times in one visit** where each of the five dies exactly once.
+A lockout boss dies once.
+
+**4. `singleBoss` is unproven for two of the three.** Every Nagafen's Lair group
+visit also kills King Tranix, Warlord Skarlon and Magus Rokyl; every Permafrost
+visit also kills Giant wooly spider. **None of the four is a boss in
+raids-measured.json** — weak evidence they are not lockout bosses — and we hold
+no alt+Z reading for either zone, which is what would settle it. Only The Ruins
+of Old Paineel is genuinely single: all seven group visits killed Master Yael and
+nothing else.
+
+**A note on the method, because it is the same lesson twice.** The verifying pass
+caught its own instrument first: it had keyed dedupe on `ev.at`, which is an
+object, so `String(at)` was `"[object Object]"` and every kill of a boss by the
+same killer collapsed into one — 73 events instead of 96, plus 16 phantom
+conflicts. It found that, fixed it, and only then reported. That is the discipline
+working at one remove.
+
+---
+
 #### The assumption, stated where the model lives
 
 One cell per raid is right **only if the bosses inside share a lock**. In the

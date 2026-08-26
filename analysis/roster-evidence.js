@@ -65,7 +65,17 @@ function logFiles() {
   const roster = [].concat(...core.RAIDS.map(
     (r) => r.bosses.map((b) => ({ key: b, label: b, raid: r.key }))
   )).map((r) => {
-    const rec = seen.get(r.key) || { thirdPerson: 0, firstPerson: 0 };
+    // Fold case: the client capitalises the first character of a line, so
+    // `a dracoliche` is written `A dracoliche` in every third-person kill. An
+    // exact-case count reported 2 of its 11 kills and made the boss look absent.
+    const rec = [...seen.entries()]
+      .filter(([n]) => core.normaliseBossName(n) === core.normaliseBossName(r.key))
+      .reduce((acc, [, c]) => ({
+        thirdPerson: acc.thirdPerson + c.thirdPerson,
+        firstPerson: acc.firstPerson + c.firstPerson,
+      }), { thirdPerson: 0, firstPerson: 0 });
+    const spellings = [...seen.keys()]
+      .filter((n) => core.normaliseBossName(n) === core.normaliseBossName(r.key));
     // Names that CONTAIN the roster key but are not it. These are why the match
     // must be exact equality: a substring roster would score all of them.
     const nearMisses = [...seen.entries()]
@@ -75,6 +85,9 @@ function logFiles() {
     return {
       key: r.key,
       label: r.label,
+      // Every spelling the game used for this mob. More than one means the
+      // leading-article capitalisation is in play.
+      spellings,
       exactKills: rec.thirdPerson + rec.firstPerson,
       thirdPerson: rec.thirdPerson,
       firstPerson: rec.firstPerson,

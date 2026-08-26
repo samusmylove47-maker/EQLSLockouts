@@ -679,6 +679,37 @@ const WEEKLY_TASK_IS_PER_BOSS = false;
 // This is the same shape as the kill-stamping caveat: the model is the best fit
 // to what we have seen, and the thing it would fail to show is named.
 //
+// FOUR THINGS THE CORPUS SAYS ABOUT THIS LIST THAT THE alt+Z WINDOW DID NOT.
+// Measured across 16 files, 6.3M lines, 93 kills of the ten named bosses.
+//
+// 1. **EVERY ONE OF THOSE KILLS WAS IN A `- Group N` INSTANCE.** Zero in the
+//    bare `Zone N` raid shape, zero in the open world — and the raid shape of
+//    these zones DOES occur in the logs (14 Fear visits, 5 Hate visits) without
+//    producing a single one of them. So "raid" here is the owner's word for the
+//    activity, not the client's word for the instance shape, and nothing in this
+//    module should key on the shape believing otherwise.
+//
+// 2. **THE PLANE OF HATE LIST IS INCOMPLETE FOR THE RAID SHAPE.** Ten further
+//    bosses from raids-measured.json die inside Plane of Hate instances — but
+//    only in the bare `Zone N` shape, and Innoruuk and the Maestro appear only
+//    in `- Group N`. The two shapes hold different populations. The alt+Z window
+//    was taken after Group-shape runs, so it could only ever have shown these
+//    two. **A Hate row built from that window describes the group instance and
+//    not the raid instance**, and that is not yet decided anywhere.
+//
+// 3. **THE PLANE OF FEAR LIST IS COMPLETE AT FIVE.** The only other candidate,
+//    Phoboplasm, fails on its own evidence: it is absent from
+//    raids-measured.json and dies up to FIVE times in one visit, where each of
+//    the five dies exactly once per visit. A lockout boss dies once.
+//
+// 4. **`singleBoss` IS UNPROVEN FOR TWO OF THE THREE.** Every Nagafen's Lair
+//    group visit also kills King Tranix, Warlord Skarlon and Magus Rokyl; every
+//    Permafrost visit also kills Giant wooly spider. None of the four appears as
+//    a boss in raids-measured.json, which is weak evidence they are not lockout
+//    bosses — and we hold no alt+Z reading for either zone, which is what would
+//    settle it. Only The Ruins of Old Paineel is genuinely single: all seven of
+//    its group visits killed Master Yael and nothing else.
+//
 // **NOT A DISCOVERED ROSTER, AND DELIBERATELY NOT YET.** A tracker that learns
 // its raids from observed timer rows beats one that ships a list — but if
 // `/dzlisttimers` logs, the roster discovers itself for free and anything built
@@ -719,10 +750,31 @@ const RAIDS = Object.freeze([
   },
 ].map(Object.freeze));
 
-// Every boss name that belongs to a raid, to the raid that holds it.
+// THE CLIENT CAPITALISES THE FIRST CHARACTER OF A LINE, so a mob whose name
+// begins with a lowercase article appears in TWO spellings:
+//
+//     A dracoliche has been slain by Orlando!     <- 8 kills, sentence-initial
+//     You have slain a dracoliche!                <- 3 kills, mid-sentence
+//
+// Exact equality on `a dracoliche` therefore catches 3 of 11 — and a missed kill
+// renders as a raid still owed, which is the precise failure the roster assert
+// exists to prevent, arriving through capitalisation instead of through a typo.
+// Same defect on `the Hand of Veeshan`: 5 of its kills read `The`.
+//
+// So the match folds case. That is safe HERE and would not be safe for a
+// substring match: `A priest of Nagafen` and `a priest of Nagafen` are the same
+// mob, but neither equals `Lord Nagafen`, so exact-equality-ignoring-case cannot
+// collide the way `includes()` would. A test asserts no two roster bosses
+// collide under the fold.
+function normaliseBossName(name) {
+  return String(name).toLowerCase();
+}
+
+// Every boss name that belongs to a raid, to the raid that holds it, keyed on
+// the folded form so both spellings resolve.
 const RAID_OF_BOSS = Object.freeze(
   RAIDS.reduce((m, r) => {
-    for (const b of r.bosses) m[b] = r.key;
+    for (const b of r.bosses) m[normaliseBossName(b)] = r.key;
     return m;
   }, {})
 );
@@ -1243,7 +1295,10 @@ function applyLine(state, line) {
     // substring: `Cleric of Innoruuk` and `Innoruuk\`s Chosen` are different
     // mobs that a substring match would score as the boss, and `Terror pet` is
     // not Terror.
-    const entry = state.raids.find((r) => r.bosses.indexOf(ev.slain) !== -1);
+    const slainKey = normaliseBossName(ev.slain);
+    const entry = state.raids.find(
+      (r) => r.bosses.some((b) => normaliseBossName(b) === slainKey)
+    );
     if (entry) {
       const inst = state.currentInstance;
       state.kills.push({
@@ -1251,6 +1306,8 @@ function applyLine(state, line) {
         // cell is keyed by the raid; the boss is kept so a completion can say
         // what was killed rather than just that something was.
         raid: entry.key,
+        // The spelling the game actually wrote on this line, not the canonical
+        // one — so a completion can be traced back to its exact log line.
         boss: ev.slain,
         civil,
         at: ev.at,
@@ -1988,6 +2045,7 @@ module.exports = {
   DIFFICULTY_LABELS,
   RAIDS,
   RAID_OF_BOSS,
+  normaliseBossName,
   RESET_RULE,
   LOCKOUT_MODEL,
   REPLAY_MODEL,

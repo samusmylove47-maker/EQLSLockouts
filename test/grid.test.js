@@ -619,6 +619,48 @@ test('RAIDS: a kill records both the raid and the boss', () => {
   assert.equal(st.kills.length, 1);
   assert.equal(st.kills[0].raid, 'The Plane of Hate');
   assert.equal(st.kills[0].boss, 'Maestro of Rancor', 'the boss is kept, not flattened to the raid');
-  assert.equal(core.RAID_OF_BOSS['Maestro of Rancor'], 'The Plane of Hate');
-  assert.equal(core.RAID_OF_BOSS['a dracoliche'], 'The Plane of Fear');
+  // RAID_OF_BOSS is keyed on the FOLDED name, so both spellings resolve.
+  assert.equal(core.RAID_OF_BOSS[core.normaliseBossName('Maestro of Rancor')], 'The Plane of Hate');
+  assert.equal(core.RAID_OF_BOSS[core.normaliseBossName('a dracoliche')], 'The Plane of Fear');
+  assert.equal(core.RAID_OF_BOSS[core.normaliseBossName('A dracoliche')], 'The Plane of Fear');
+});
+
+test('CAPITALISATION: the client capitalises line-initial names, and the match folds case', () => {
+  // THE BUG THIS CAUGHT, in code that had already shipped. The same mob is
+  // written two ways depending on where it falls in the sentence:
+  //     "A dracoliche has been slain by Orlando!"   8 kills, line-initial
+  //     "You have slain a dracoliche!"              3 kills, mid-sentence
+  // Exact-case equality on 'a dracoliche' caught 3 of 11, and a missed kill
+  // renders as a raid still owed — the roster trap arriving through
+  // capitalisation rather than through a typo.
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    '[Wed Aug 12 20:00:00 2026] You have entered The Plane of Fear - Group 3 (Fused).',
+    '[Wed Aug 12 22:31:58 2026] A dracoliche has been slain by Orlando!',
+    '[Wed Aug 12 22:32:58 2026] You have slain a dracoliche!',
+  ]);
+  assert.equal(st.kills.length, 2, 'both spellings must match');
+  assert.deepEqual(st.kills.map((k) => k.boss), ['A dracoliche', 'a dracoliche'],
+    'and each kill keeps the spelling the game actually wrote');
+
+  // The evidence file records every spelling seen, so a new one surfaces.
+  const drac = ROSTER_EVIDENCE.roster.find((r) => r.key === 'a dracoliche');
+  assert.ok(drac.spellings.length > 1, 'both spellings must be recorded in the evidence');
+  assert.ok(drac.exactKills >= 10, `case-folded count should recover the kills, got ${drac.exactKills}`);
+});
+
+test('CAPITALISATION: folding case cannot collide two different raid bosses', () => {
+  // Safe here only because the match is exact equality, not substring.
+  // "A priest of Nagafen" and "a priest of Nagafen" are the same mob, and
+  // neither equals "Lord Nagafen" — which a substring match would have scored.
+  const folded = [].concat(...core.RAIDS.map((r) => r.bosses)).map(core.normaliseBossName);
+  assert.equal(new Set(folded).size, folded.length, 'no two roster bosses may fold together');
+
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    '[Wed Aug 12 20:00:00 2026] You have entered ' + "Nagafen's Lair - Group 1 (Awakened).",
+    '[Wed Aug 12 20:30:00 2026] A priest of Nagafen has been slain by X!',
+    '[Wed Aug 12 20:31:00 2026] a priest of Nagafen has been slain by X!',
+  ]);
+  assert.equal(st.kills.length, 0, 'neither priest is Lord Nagafen');
 });

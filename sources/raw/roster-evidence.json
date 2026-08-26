@@ -5102,6 +5102,9 @@
     {
       "key": "Lord Nagafen",
       "label": "Lord Nagafen",
+      "spellings": [
+        "Lord Nagafen"
+      ],
       "exactKills": 10,
       "thirdPerson": 10,
       "firstPerson": 0,
@@ -5111,6 +5114,9 @@
     {
       "key": "Lady Vox",
       "label": "Lady Vox",
+      "spellings": [
+        "Lady Vox"
+      ],
       "exactKills": 8,
       "thirdPerson": 5,
       "firstPerson": 3,
@@ -5120,6 +5126,9 @@
     {
       "key": "Master Yael",
       "label": "Master Yael",
+      "spellings": [
+        "Master Yael"
+      ],
       "exactKills": 14,
       "thirdPerson": 12,
       "firstPerson": 2,
@@ -5129,6 +5138,9 @@
     {
       "key": "Terror",
       "label": "Terror",
+      "spellings": [
+        "Terror"
+      ],
       "exactKills": 9,
       "thirdPerson": 8,
       "firstPerson": 1,
@@ -5144,6 +5156,9 @@
     {
       "key": "Dread",
       "label": "Dread",
+      "spellings": [
+        "Dread"
+      ],
       "exactKills": 9,
       "thirdPerson": 5,
       "firstPerson": 4,
@@ -5159,6 +5174,9 @@
     {
       "key": "Fright",
       "label": "Fright",
+      "spellings": [
+        "Fright"
+      ],
       "exactKills": 9,
       "thirdPerson": 9,
       "firstPerson": 0,
@@ -5174,8 +5192,12 @@
     {
       "key": "a dracoliche",
       "label": "a dracoliche",
-      "exactKills": 2,
-      "thirdPerson": 0,
+      "spellings": [
+        "A dracoliche",
+        "a dracoliche"
+      ],
+      "exactKills": 10,
+      "thirdPerson": 8,
       "firstPerson": 2,
       "nearMisses": [
         {
@@ -5189,6 +5211,9 @@
     {
       "key": "Cazic-Thule",
       "label": "Cazic-Thule",
+      "spellings": [
+        "Cazic-Thule"
+      ],
       "exactKills": 10,
       "thirdPerson": 6,
       "firstPerson": 4,
@@ -5204,6 +5229,9 @@
     {
       "key": "Innoruuk, the Prince of Hate",
       "label": "Innoruuk, the Prince of Hate",
+      "spellings": [
+        "Innoruuk, the Prince of Hate"
+      ],
       "exactKills": 11,
       "thirdPerson": 10,
       "firstPerson": 1,
@@ -5239,6 +5267,9 @@
     {
       "key": "Maestro of Rancor",
       "label": "Maestro of Rancor",
+      "spellings": [
+        "Maestro of Rancor"
+      ],
       "exactKills": 11,
       "thirdPerson": 11,
       "firstPerson": 0,
