@@ -196,3 +196,24 @@ Nothing but the log, and these notes:
 
 The log holds everything else. **Do not clean anything up** — a line you thought
 was noise is what the last three findings came out of.
+
+---
+
+## Step 1c — alt+Z within a minute of entering an instance. Ten seconds.
+
+**Enter any instance, then immediately press alt+Z and screenshot the
+"Outstanding Instance Timers" list.**
+
+**What it settles.** The window shows a Replay Timer and a set of boss lockouts,
+but two readings at one moment give two equations in three unknowns — both
+periods and the elapsed time — so they determine only the *difference* between
+the periods, which is **exactly 5 days 23 hours**. The absolute periods are not
+determined by any single reading.
+
+Reading the window immediately after entering means the Replay Timer is showing
+almost its **full period**. That fixes it, and the exact difference then fixes
+the lockout period with no assumption at all.
+
+**Why it matters:** the difference between a 6-day and a 6-day-1-hour lockout is
+the difference between "available Monday evening" and "available Monday night",
+and a tracker that is an hour optimistic tells you a raid is open when it is not.

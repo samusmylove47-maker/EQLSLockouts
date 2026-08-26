@@ -89,29 +89,74 @@ You asked me to kill it or explain it before any model rests on it.
 [Tue Aug 25 22:40:33 2026] Avenrae has been removed from The Plane of Fear - Group.
 ```
 
-**The two timers solve each other.** If the Replay Timer's period is one hour,
-`0d:0h:58m:5s` remaining means **1m55s elapsed**. Apply that same elapsed to the
-boss rows: `5d:23h:58m:5s + 1m55s` = **exactly six days**.
+> **CORRECTION, same day, before you act on it.** I first wrote that the two
+> timers "solve each other" and that six days "falls out". **That was wrong as a
+> method, and an adversarial pass caught it.** The corrected version follows; the
+> conclusion that survives is narrower and, I think, better.
 
-A clean whole number falling out of two independent readings is the reason to
-believe it, rather than a preference for round figures. I tried other pairings —
-none of 30m, 90m, 2h or 3h against 5d, 6.5d or 7d produces a whole-number fit.
+**WHAT THE WINDOW ACTUALLY DETERMINES.** Two readings, one moment:
 
-**So: the lockout is six days, the replay timer is one hour, and everything on
-that window was stamped about 1m55s before the screenshot.**
+```
+replay remaining   0d 0h 58m 05s  =      3,485 s
+boss   remaining   5d 23h 58m 05s =    518,285 s
+```
 
-**THE ANSWER TO YOUR ANOMALY: the lockout is not applied at the kill.** Four runs
-spanning 20:31 to 22:37 cannot each stamp their own six-day timer and land
-identically to the second. Whatever moment they share, they share ONE — and that
-conclusion holds no matter when the screenshot was taken, because it depends only
-on all 36 rows agreeing, not on any assumed clock.
+Call the periods R and B and the elapsed time E. Then `R − E = 3485` and
+`B − E = 518285`. **Two equations, three unknowns.** Subtracting cancels E:
 
-**The anchor itself I state more carefully, because I do not know when the
-screenshot was taken.** If it was at ~22:42:28, the common moment is **22:40:33 —
-`Avenrae has been removed from The Plane of Fear - Group.`** That fits, and
-nothing else in the log within minutes of it does. But it is a fit, not a
-measurement, and `LOCKOUT_MODEL.anchorEvent` is therefore **`null` — not
-recorded**. I will not write a preference into the module as a fact.
+```
+B − R = 514,800 s = EXACTLY 5 days 23 hours
+```
+
+**That difference is the measurement.** Exact, a clean whole number, and it holds
+for *every* possible elapsed time — nothing is assumed to get it. It is a better
+finding than the one I claimed, because it does not rest on anything.
+
+**The absolute period is NOT determined.** Six days is the answer *if* the replay
+period is one hour, and every other plausible replay period is equally
+self-consistent to the second:
+
+| replay period | implied elapsed | implied lockout |
+|---|---|---|
+| 1h | 115 s | **6d 0h 0m** |
+| 90m | 1,915 s | 6d 0h 30m |
+| 2h | 3,715 s | 6d 1h 0m |
+| 3h | 7,315 s | 6d 2h 0m |
+
+**And I told you "no other pairing gives a whole number". That was simply
+false** — I tested pairs from a list instead of noticing that B is determined by
+R, so a whole number appears for every round R. The fault is the one this project
+keeps finding in other people's work: **an assumption presented as a derivation.**
+`LOCKOUT_MODEL.days` is now labelled `conditional`, with the condition and the
+alternatives carried beside it.
+
+**WHAT SURVIVES, AND SURVIVES HARD: the common origin.** 14 distinct locks were
+earned across kills spanning **20:54:59 to 22:37:12 — 6,133 seconds**. A timer
+stamped at each kill would render 14 *different* values at any single instant,
+spread across 1h42m. The window shows one value with zero spread. **Per-kill is
+dead**, and it is dead without any assumption about periods or elapsed time.
+
+**Your "the display groups and rounds" alternative is dead too — killed by the
+detail that first looked like a problem.** A display resolving 58m04s from
+58m05s in the same list has one-second fidelity. To collapse a 6,133-second
+spread into one bucket needs granularity of about six hours. It cannot be both.
+
+**THE ANCHOR DOES NOT SURVIVE, and I overstated it.** I wrote that 22:40:33 fits
+and "nothing else in the log within minutes of it does". **That is factually
+wrong** — several lines fit as well, two within twelve seconds, and under a
+2-hour replay period the same reasoning lands on a different real log line
+(`Innoruuk, the Prince of Hate has been slain by Jarektik!` at 21:40:33). The
+screenshot time was never recorded, so the "common instant" was derived from an
+assumed elapsed time and then matched to a salient line: **one free parameter
+fitted to itself.** `anchorEvent` is `null` and now carries that reasoning.
+
+What the log does bound: a lock cannot precede the kill that earns it, so the
+common origin is **at or after 22:37:12**. Beyond that it is silent, and no line
+anywhere in 82 MB announces a timer being granted.
+
+**One more precision.** I said "36 timers". The window is **18 distinct locks
+displayed twice** — 14 boss locks × 2 name-shapes, 4 replay locks × 2. Still
+decisive, but it is 18 independent observations, not 36
 
 **Your point 3 stands and I have made it load-bearing:** if the lockout is
 stamped somewhere other than the kill, a kill-inference tracker is measuring the
@@ -119,6 +164,15 @@ wrong event, and **no volume of kill data would ever reveal it.** That sentence
 is now in the module beside the model.
 
 ---
+
+#### What settles the period, cheaply — add to the same sitting
+
+**Open alt+Z within a minute of entering a fresh instance.** The Replay Timer
+will then read close to its *full* period, which fixes R — and the exact
+difference above fixes B immediately. One reading, no waiting, no raid required.
+
+That is a better use of ten seconds than anything else on the list except
+`/dzlisttimers` itself, and it can be done on the same trip.
 
 #### The three objects, separated and separately labelled
 

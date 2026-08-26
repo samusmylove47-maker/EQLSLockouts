@@ -471,8 +471,43 @@ test('THE LOCKOUT ANCHOR IS NOT RECORDED, and says so', () => {
   // does not start at the kill — but which event it DOES start at is a separate
   // question, and the module must not answer it by preference.
   assert.equal(core.LOCKOUT_MODEL.anchorEvent, null);
-  assert.match(core.LOCKOUT_MODEL.derivation, /6d exactly|6 days/);
-  assert.ok(core.LOCKOUT_MODEL.caveats.length >= 2);
+  assert.match(core.LOCKOUT_MODEL.anchorNote, /not recorded|does not say/i);
+  assert.ok(core.LOCKOUT_MODEL.caveats.length >= 3);
+});
+
+test('THE PERIOD IS CONDITIONAL AND THE DIFFERENCE IS THE MEASUREMENT', () => {
+  // An earlier revision claimed the two timers "solve each other" and that six
+  // days "falls out". They do not and it does not. Two readings give two
+  // equations in THREE unknowns (both periods and the elapsed time); subtracting
+  // cancels the elapsed time and leaves only the DIFFERENCE of the periods.
+  //
+  // That difference is exact and assumption-free. The absolute period is not.
+  const m = core.LOCKOUT_MODEL;
+
+  assert.equal(m.differenceFromReplaySeconds, 514800, 'exactly 5d 23h');
+  assert.equal(m.differenceProvenance, 'observed');
+  // Verified from the two readings rather than trusted:
+  const replayRemaining = 58 * 60 + 5;
+  const bossRemaining = 5 * 86400 + 23 * 3600 + 58 * 60 + 5;
+  assert.equal(bossRemaining - replayRemaining, m.differenceFromReplaySeconds);
+
+  // The period must never be labelled as measured.
+  assert.equal(m.daysProvenance, 'conditional');
+  assert.match(m.condition, /one hour/);
+
+  // And the alternatives must be carried, because "no other value fits" was the
+  // false claim. Each one is self-consistent to the second.
+  assert.ok(m.alternatives.length >= 3);
+  for (const alt of m.alternatives) {
+    const R = { '1h': 3600, '90m': 5400, '2h': 7200, '3h': 10800 }[alt.replayPeriod];
+    assert.ok(R, `unhandled alternative ${alt.replayPeriod}`);
+    const elapsed = R - replayRemaining;
+    assert.ok(elapsed >= 0, `${alt.replayPeriod} would have already expired`);
+    const B = bossRemaining + elapsed;
+    assert.ok(Math.abs(B / 86400 - alt.lockoutDays) < 0.001,
+      `${alt.replayPeriod} implies ${B / 86400} days, not ${alt.lockoutDays}`);
+  }
+  assert.match(m.settledBy, /alt\+Z|Replay Timer/);
 });
 
 test('NAME MAPPING: the window and the kill lines disagree, and only where recorded', () => {

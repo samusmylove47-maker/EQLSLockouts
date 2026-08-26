@@ -719,45 +719,103 @@ const RESET_RULE = Object.freeze({
 
 // OBJECT 2 — the instance loot lockout. A ROLLING TIMER, not a weekday.
 //
-// Read off the client's own window, so this is `observed`, not `stated` and not
-// `inferred`. All 28 boss rows showed 5d:23h:58m:5s.
+// WHAT THE WINDOW ACTUALLY DETERMINES, and it is less than I first claimed.
 //
-// THE PERIOD IS SOLVED, NOT ASSUMED, and the two timers solve each other:
-// if the Replay Timer's period is one hour then 0d:0h:58m:5s means 1m55s has
-// elapsed, and the boss period is therefore 5d23h58m5s + 1m55s = EXACTLY six
-// days. A clean whole number falling out of two independent readings is the
-// reason to believe it rather than a preference for round figures.
+// Two readings, one moment:
+//     replay remaining  0d0h58m05s  =      3,485 s
+//     boss   remaining  5d23h58m05s =    518,285 s
 //
-// `anchorEvent` is deliberately 'not recorded'. All 28 rows read the SAME value
-// to the second, and four raid runs spanning 20:31 to 22:37 cannot each have
-// stamped their own timer and land identically. So the timer does NOT start at
-// the kill — but which event it does start at is a separate question this
-// module will not answer by preference. See docs/EVIDENCE.md.
+// Call the periods R and B and the elapsed time E. Then R − E = 3485 and
+// B − E = 518285. **Two equations, three unknowns.** Subtracting them cancels E
+// entirely:
 //
-// **THIS IS WHY A KILL-INFERENCE TRACKER CAN BE WRONG IN A WAY NO AMOUNT OF
-// KILL DATA WOULD REVEAL.** If the lockout is stamped somewhere other than the
-// kill, a tracker watching kills is measuring the wrong event, and no volume of
-// kills would ever expose it. The grid still reports what it observed — a kill
-// happened — but must not claim to know when the lockout began.
+//     B − R = 514,800 s = EXACTLY 5 days 23 hours
+//
+// **That difference is the measurement.** It is exact, it is a clean whole
+// number, and it holds for every possible elapsed time — nothing was assumed to
+// get it.
+//
+// **The absolute periods are NOT determined, and an earlier revision of this
+// comment said they were.** It claimed the two timers "solve each other" and
+// that six days "falls out". They do not and it does not: six days is the
+// answer *if* the replay period is one hour, and every other plausible replay
+// period is equally self-consistent to the second —
+//
+//     R = 1h   → E = 115 s     → B = 6d 0h 0m
+//     R = 90m  → E = 1,915 s   → B = 6d 0h 30m
+//     R = 2h   → E = 3,715 s   → B = 6d 1h 0m
+//     R = 3h   → E = 7,315 s   → B = 6d 2h 0m
+//
+// The claim that no other pairing gives a whole number was simply false. An
+// adversarial pass caught it, and the fault is the one this project keeps
+// finding in other people's work: an assumption presented as a derivation.
+//
+// So `days` is recorded as CONDITIONAL. `differenceSeconds` is the fact.
 const LOCKOUT_MODEL = Object.freeze({
   kind: 'rolling',
+
+  // THE MEASUREMENT — assumption-free.
+  differenceFromReplaySeconds: 514800,   // exactly 5d 23h
+  differenceProvenance: 'observed',
+
+  // THE PERIOD — conditional, and labelled so it can never be read as measured.
   days: 6,
-  hours: 6 * 24,
+  daysProvenance: 'conditional',
+  condition: 'the Replay Timer period is exactly one hour',
+  alternatives: Object.freeze([
+    { replayPeriod: '1h', lockoutDays: 6 },
+    { replayPeriod: '90m', lockoutDays: 6.0208 },
+    { replayPeriod: '2h', lockoutDays: 6.0417 },
+    { replayPeriod: '3h', lockoutDays: 6.0833 },
+  ]),
+
   provenance: 'observed',
   source: "the owner's alt+Z Instance Information window, 25 Aug 2026",
-  derivation:
-    'Solved jointly with the Replay Timer: 5d23h58m5s remaining + 1m55s elapsed = 6d exactly, ' +
-    'where the elapsed time comes from the Replay Timer reading 0d0h58m5s of one hour.',
-  anchorEvent: null,   // NOT RECORDED — see the note above
+
+  // WHAT WOULD SETTLE IT, cheaply: open alt+Z immediately after entering ONE
+  // instance. The Replay Timer will then read close to its full period, which
+  // fixes R, which fixes B through the exact difference above.
+  settledBy: 'open alt+Z within a minute of entering a fresh instance and read the Replay Timer',
+
+  // ONE COMMON ORIGIN, and this half survives everything thrown at it.
+  //
+  // 14 distinct locks were earned across kills spanning 20:54:59 to 22:37:12 —
+  // 6,133 seconds. A timer stamped at each kill would render 14 DIFFERENT values
+  // at any single instant, spread across 1h42m. The window shows one value with
+  // zero spread. Per-kill is dead.
+  //
+  // The rounding explanation is dead too, and killed by the detail that first
+  // looked like a problem: the replay rows read 58m04s AND 58m05s. A display
+  // that resolves one second cannot also merge a 6,133-second spread.
+  commonOrigin: true,
+  commonOriginTolerance: 'about 1 second',
+  anchorEvent: null,   // NOT RECORDED — see below
+
+  // THE ANCHOR IS NOT RECORDED, and an earlier revision overstated this too.
+  // The moment the screenshot was taken is unknown — there is no file, no
+  // timestamp, no independent clock — so the "common instant" was derived from
+  // an assumed elapsed time and then matched to a salient log line. That is one
+  // free parameter fitted to itself. Several other lines fit as well, and under
+  // R = 2h the same reasoning lands on a different real log line entirely.
+  anchorNote:
+    'A lock cannot precede the kill that earns it, so the common origin is at ' +
+    'or after 22:37:12. Beyond that the log does not say, and no line anywhere ' +
+    'in the corpus announces a timer being granted.',
+
   corroboration:
     'Our own measurement refuted any cycle up to 5.78 days, from a weekly still ' +
-    'refused 5.78 days after it was granted. Six days clears that by ~5 hours.',
-  caveats: [
+    'refused 5.78 days after it was granted. Every candidate above clears that.',
+
+  caveats: Object.freeze([
     'The unit that carries this lockout appears to be the INSTANCE, not the boss: ' +
     'one Plane of Fear run produced rows for all five of its bosses.',
     'Rows appear for both the Solo and the Group shape of a tier from Group-only ' +
-    'runs. Two rows is not two locks; a shared lock displayed twice fits equally.',
-  ],
+    'runs. Two rows is not two locks; a shared lock displayed twice fits equally. ' +
+    'The window is 18 distinct locks shown twice, NOT 36 independent stamps.',
+    'The lockout does not start at the kill. Where it does start is not recorded, ' +
+    'and a tracker inferring from kills is therefore measuring a different event ' +
+    'from the one that matters — which no volume of kill data would reveal.',
+  ]),
 });
 
 // OBJECT 3 — the replay timer. Instance RE-ENTRY, not loot.
