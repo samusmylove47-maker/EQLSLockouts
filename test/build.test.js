@@ -48,7 +48,7 @@ test('BUILD: the embedded engine is the real one and runs standalone', () => {
   const core = new Function(`${body}\nreturn module.exports;`)();
 
   for (const k of ['parseLine', 'applyLine', 'projectGrid', 'createState',
-                   'characterFromLogFilename', 'ROSTER', 'RESET_RULE', 'DIFFICULTY_LABELS']) {
+                   'characterFromLogFilename', 'RAIDS', 'RESET_RULE', 'DIFFICULTY_LABELS']) {
     assert.ok(core[k], `the embedded engine must export ${k}`);
   }
   const st = core.createState('Avenrae');

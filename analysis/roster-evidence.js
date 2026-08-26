@@ -60,7 +60,11 @@ function logFiles() {
     }
   }
 
-  const roster = core.ROSTER.map((r) => {
+  // One entry per BOSS, flattened out of the raid list, because the evidence
+  // question is per name: does the game ever write this exact string?
+  const roster = [].concat(...core.RAIDS.map(
+    (r) => r.bosses.map((b) => ({ key: b, label: b, raid: r.key }))
+  )).map((r) => {
     const rec = seen.get(r.key) || { thirdPerson: 0, firstPerson: 0 };
     // Names that CONTAIN the roster key but are not it. These are why the match
     // must be exact equality: a substring roster would score all of them.

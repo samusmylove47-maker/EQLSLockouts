@@ -76,9 +76,9 @@ function render(grid, title, note) {
 
   // The grid itself, receding.
   out.push('');
-  out.push('  ' + 'boss'.padEnd(14) + core.DIFFICULTY_LABELS.map((l, i) => `D${i}`.padStart(4)).join(''));
-  for (const entry of core.ROSTER) {
-    const row = grid.cells.filter((c) => c.boss === entry.key).sort((a, b) => a.difficulty - b.difficulty);
+  out.push('  ' + 'raid'.padEnd(14) + core.DIFFICULTY_LABELS.map((l, i) => `D${i}`.padStart(4)).join(''));
+  for (const entry of core.RAIDS) {
+    const row = grid.cells.filter((c) => c.raid === entry.key).sort((a, b) => a.difficulty - b.difficulty);
     out.push('  ' + entry.label.padEnd(14) + row.map((c) => MARK[c.state].padStart(4)).join(''));
   }
   out.push('');

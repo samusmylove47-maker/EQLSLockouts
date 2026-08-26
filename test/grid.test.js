@@ -49,33 +49,36 @@ const NOW = { year: 2026, month: 8, day: 21, hour: 18, minute: 0, second: 0 };
 // The roster
 // ---------------------------------------------------------------------------
 
-test('ROSTER: every key is a string the game actually writes', () => {
+test('RAIDS: every boss name is a string the game actually writes', () => {
   // THE FAILURE THIS PREVENTS: an unmatched roster row and a genuinely
   // uncompleted raid render identically. A typo would show an empty row forever
   // and look exactly like the warning this tool exists to give. The evidence
   // file is derived from the real corpus, so a typo fails the build instead.
-  assert.equal(core.ROSTER.length, 5);
-  for (const entry of core.ROSTER) {
-    const found = ROSTER_EVIDENCE.roster.find((r) => r.key === entry.key);
-    assert.ok(found, `roster key ${JSON.stringify(entry.key)} is absent from the evidence file`);
-    assert.ok(found.exactKills > 0,
-      `roster key ${JSON.stringify(entry.key)} matched 0 kills in real data — it is a typo`);
+  assert.equal(core.RAIDS.length, 5, 'five raids, still 25 cells');
+  for (const raid of core.RAIDS) {
+    assert.ok(raid.bosses.length >= 1, `${raid.label} must name what it contains`);
+    for (const boss of raid.bosses) {
+      const found = ROSTER_EVIDENCE.roster.find((r) => r.key === boss);
+      assert.ok(found, `boss ${JSON.stringify(boss)} is absent from the evidence file`);
+      assert.ok(found.exactKills > 0,
+        `boss ${JSON.stringify(boss)} matched 0 kills in real data — it is a typo`);
+    }
   }
 });
 
-test('ROSTER: the three name traps are the game strings, not the owner wording', () => {
-  const keys = core.ROSTER.map((r) => r.key);
+test('RAIDS: the name traps are the game strings, not the window wording', () => {
+  const keys = [].concat(...core.RAIDS.map((r) => r.bosses));
   assert.ok(keys.includes('Innoruuk, the Prince of Hate'), 'not bare "Innoruuk"');
   assert.ok(keys.includes('Cazic-Thule'), 'hyphenated; "Cazic Thule" returns 0 kills');
-  // And the owner's wording survives as a label.
-  assert.equal(core.ROSTER.find((r) => r.key === 'Innoruuk, the Prince of Hate').label, 'Innoruuk');
-  assert.equal(core.ROSTER.find((r) => r.key === 'Cazic-Thule').label, 'Cazic Thule');
+  // The alt+Z window writes "Dracoliche"; the game writes "a dracoliche".
+  assert.ok(keys.includes('a dracoliche'), 'the kill-line spelling, not the window spelling');
+  assert.ok(!keys.includes('Dracoliche'));
 });
 
-test('ROSTER: the match is exact equality, never substring', () => {
+test('RAIDS: the match is exact equality, never substring', () => {
   // Measured: names containing "Innoruuk" that are NOT the boss account for
   // 141 kills against the boss's 9. A substring roster over-counts ~15x.
-  const inno = ROSTER_EVIDENCE.roster.find((r) => r.label === 'Innoruuk');
+  const inno = ROSTER_EVIDENCE.roster.find((r) => r.key === 'Innoruuk, the Prince of Hate');
   assert.ok(inno.nearMissKills > inno.exactKills * 5,
     'the near-miss hazard should be large; if it stops being, re-read the data');
 
@@ -153,7 +156,7 @@ test('GRID: 25 cells, five bosses by five tiers, each in exactly one bucket', ()
   const state = core.applyLines(core.createState('Avenrae'), fixtureLines);
   const grid = core.projectGrid(state, NOW);
   assert.equal(grid.cells.length, 25);
-  assert.equal(new Set(grid.cells.map((c) => c.boss)).size, 5);
+  assert.equal(new Set(grid.cells.map((c) => c.raid)).size, 5);
   assert.equal(new Set(grid.cells.map((c) => c.difficulty)).size, 5);
   assert.equal(
     grid.openCount + grid.uncertainCount + grid.notLookedCount + grid.completedCount, 25);
@@ -176,7 +179,7 @@ test('GRID: a kill at a stated difficulty completes exactly that cell', () => {
     '[Wed Aug 19 20:30:00 2026] Innoruuk, the Prince of Hate has been slain by Jrhx!',
 
   ]);
-  const row = core.projectGrid(st, NOW).cells.filter((c) => c.label === 'Innoruuk');
+  const row = core.projectGrid(st, NOW).cells.filter((c) => c.label === 'Plane of Hate');
   assert.equal(row.find((c) => c.difficulty === 3).state, 'completed');
   for (const d of [0, 1, 2, 4]) {
     assert.equal(row.find((c) => c.difficulty === d).state, 'open',
@@ -194,7 +197,7 @@ test('GRID: a bare "- Group" kill lands in unknown, NEVER in the D0 cell', () =>
     '[Wed Aug 19 20:30:00 2026] You have slain Cazic-Thule!',
 
   ]);
-  const row = core.projectGrid(st, NOW).cells.filter((c) => c.label === 'Cazic Thule');
+  const row = core.projectGrid(st, NOW).cells.filter((c) => c.label === 'Plane of Fear');
   assert.equal(row.filter((c) => c.state === 'completed').length, 0,
     'an unstated difficulty completes nothing');
   assert.equal(row.find((c) => c.difficulty === 0).state, 'unknown',
@@ -240,7 +243,7 @@ test('GRID: an invite never sets the current instance — only a zone-in does', 
 
   ]);
   assert.equal(st.kills[0].instanced, false, 'a declined-or-unentered invite grants no difficulty');
-  const row = core.projectGrid(st, NOW).cells.filter((c) => c.label === 'Innoruuk');
+  const row = core.projectGrid(st, NOW).cells.filter((c) => c.label === 'Plane of Hate');
   assert.equal(row.filter((c) => c.state === 'completed').length, 0);
 });
 
@@ -255,7 +258,7 @@ test('GRID: the instance SHAPE is recorded on a completion', () => {
     '[Wed Aug 19 20:30:00 2026] Innoruuk, the Prince of Hate has been slain by Jrhx!',
 
   ]);
-  const cell = core.projectGrid(st, NOW).cells.find((c) => c.label === 'Innoruuk' && c.difficulty === 4);
+  const cell = core.projectGrid(st, NOW).cells.find((c) => c.label === 'Plane of Hate' && c.difficulty === 4);
   assert.equal(cell.state, 'completed');
   assert.deepEqual(cell.shapes, ['raid'], 'bare Zone N is the raid instance');
 });
@@ -287,14 +290,14 @@ test('GRID: on the boundary day itself, both hypotheses are evaluated', () => {
   // last week and the cell is open. If it has not, the cell is done. Unknown.
   const onDay = core.projectGrid(st, { year: 2026, month: 8, day: 18, hour: 14, minute: 0, second: 0 });
   assert.equal(onDay.period.nowIsOnBoundaryDay, true);
-  const amb = onDay.cells.find((c) => c.label === 'Innoruuk' && c.difficulty === 3);
+  const amb = onDay.cells.find((c) => c.label === 'Plane of Hate' && c.difficulty === 3);
   assert.equal(amb.state, 'unknown');
   assert.match(amb.because, /whether the turnover has happened/);
 
   // Asked about the Monday before, there is no ambiguity: one period, kill in it.
   const before = core.projectGrid(st, { year: 2026, month: 8, day: 17, hour: 12, minute: 0, second: 0 });
   assert.equal(before.period.nowIsOnBoundaryDay, false);
-  assert.equal(before.cells.find((c) => c.label === 'Innoruuk' && c.difficulty === 3).state, 'completed');
+  assert.equal(before.cells.find((c) => c.label === 'Plane of Hate' && c.difficulty === 3).state, 'completed');
 });
 
 test('a non-zone "You have entered" must NOT clear the instance', () => {
@@ -395,10 +398,11 @@ test('REPEATS: a second kill at the same tier is recorded, never counted', () =>
     '[Thu Aug 20 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
     '[Thu Aug 20 20:30:00 2026] Innoruuk, the Prince of Hate has been slain by X!',
   ]);
-  const cell = core.projectGrid(st, NOW).cells.find((c) => c.label === 'Innoruuk' && c.difficulty === 4);
+  const cell = core.projectGrid(st, NOW).cells.find((c) => c.label === 'Plane of Hate' && c.difficulty === 4);
   assert.equal(cell.state, 'completed');
   assert.equal(cell.repeatKills, 1, 'the repeat is recorded');
-  assert.match(cell.because, /kill at D4 on 2026-08-19/, 'the FIRST completion is the one reported');
+  assert.match(cell.because, /Innoruuk, the Prince of Hate at D4 on 2026-08-19/,
+    'the FIRST completion is the one reported, and it names WHICH boss');
   assert.match(cell.because, /not counted/);
 });
 
@@ -426,10 +430,10 @@ test('THE WEEKLY TASK IS NOT PER BOSS — it is the first three raids of the wee
   //
   // Measured, and it fits exactly: Avenrae's week of 11 Aug holds 18 roster
   // boss kills against 3 task grants and 3 tokens.
-  assert.equal(core.ROSTER.filter((r) => r.weeklyTaskObserved).length, 3,
-    'three bosses were observed carrying a weekly IN OUR CORPUS');
-  // The field must not be named or read as a claim about the boss.
-  for (const r of core.ROSTER) {
+  assert.equal(core.RAIDS.filter((r) => r.weeklyTaskObserved).length, 3,
+    'three raids were observed carrying a weekly IN OUR CORPUS');
+  // The field must not be named or read as a claim about the raid.
+  for (const r of core.RAIDS) {
     assert.ok(!('weeklyTask' in r), 'the old, wrong field name must be gone');
     assert.equal(typeof r.weeklyTaskObserved, 'boolean');
   }
@@ -552,4 +556,69 @@ test('ZONES: the lockable unit looks like the instance, not the boss', () => {
   assert.equal(core.OBSERVED_ZONES['The Plane of Hate'].length, 2);
   // Recorded as evidence of structure, NOT shipped as the list of what exists.
   assert.match(core.LOCKOUT_MODEL.caveats.join(' '), /INSTANCE, not the boss/);
+});
+
+// ---------------------------------------------------------------------------
+// The row is the raid, not the boss
+// ---------------------------------------------------------------------------
+
+test('RAIDS: the row is labelled by what you RUN and names what it CONTAINS', () => {
+  // A player decides whether to run Plane of Fear. They do not decide whether to
+  // kill Cazic-Thule, and should not have to know which boss we picked to stand
+  // for the zone.
+  const fear = core.RAIDS.find((r) => r.key === 'The Plane of Fear');
+  assert.equal(fear.label, 'Plane of Fear', 'labelled by the raid, not by a boss inside it');
+  assert.equal(fear.bosses.length, 5);
+  assert.ok(fear.bosses.includes('Cazic-Thule'));
+
+  // Single-boss raids keep the boss name, because there the label was already right.
+  const vox = core.RAIDS.find((r) => r.key === 'The Permafrost Caverns');
+  assert.equal(vox.label, 'Lady Vox');
+  assert.deepEqual(vox.bosses, ['Lady Vox']);
+
+  // Still 25 cells. The change is a label, not a shape.
+  const grid = core.projectGrid(core.applyLines(core.createState('Avenrae'), heartbeat(17, 21)), NOW);
+  assert.equal(grid.cells.length, 25);
+  assert.equal(new Set(grid.cells.map((c) => c.raid)).size, 5);
+});
+
+test('RAIDS: ANY boss of a raid completes that raid cell', () => {
+  // The shared-lock assumption, made operational. Killing Terror completes the
+  // Plane of Fear cell at that tier — five cells moving in lockstep would be
+  // noise, and one cell is the unit of the decision a player actually makes.
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Fear - Group 3 (Fused).',
+    '[Wed Aug 19 20:30:00 2026] Terror has been slain by Orlando!',
+  ]);
+  const cell = core.projectGrid(st, NOW).cells.find((c) => c.label === 'Plane of Fear' && c.difficulty === 3);
+  assert.equal(cell.state, 'completed');
+  assert.match(cell.because, /^Terror at D3/, 'and it names WHICH boss, not just the raid');
+  assert.equal(cell.singleBoss, false);
+  assert.equal(cell.bosses.length, 5);
+});
+
+test('RAIDS: the shared-lock ASSUMPTION is stated, not buried', () => {
+  // One cell per raid is right only if the bosses inside share a lock. The alt+Z
+  // window is consistent with that and does not prove it — they appeared
+  // together after runs that took them together. If they ever diverge, one cell
+  // would hide it, and that has to be written down where the model lives.
+  const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'lockoutCore.js'), 'utf8');
+  assert.match(src, /SHARE a lock/i, 'the assumption must be named');
+  assert.match(src, /does not prove it/i, 'and its limit must be named');
+  assert.match(src, /one cell would hide it/i, 'and what it would fail to show');
+});
+
+test('RAIDS: a kill records both the raid and the boss', () => {
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Wed Aug 19 20:30:00 2026] Maestro of Rancor has been slain by Chrysaetos!',
+  ]);
+  assert.equal(st.kills.length, 1);
+  assert.equal(st.kills[0].raid, 'The Plane of Hate');
+  assert.equal(st.kills[0].boss, 'Maestro of Rancor', 'the boss is kept, not flattened to the raid');
+  assert.equal(core.RAID_OF_BOSS['Maestro of Rancor'], 'The Plane of Hate');
+  assert.equal(core.RAID_OF_BOSS['a dracoliche'], 'The Plane of Fear');
 });
