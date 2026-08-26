@@ -374,8 +374,8 @@ function render() {
 
   const body = table.tBodies[0];
   body.innerHTML = "";
-  for (const entry of LockoutCore.ROSTER) {
-    const row = g.cells.filter((c) => c.boss === entry.key).sort((a, b) => a.difficulty - b.difficulty);
+  for (const entry of LockoutCore.RAIDS) {
+    const row = g.cells.filter((c) => c.raid === entry.key).sort((a, b) => a.difficulty - b.difficulty);
     const tr = document.createElement("tr");
     if (row.every((c) => c.state === "completed")) tr.className = "done";
     const td = document.createElement("td");
@@ -389,7 +389,15 @@ function render() {
       span.textContent = c.state === "completed" ? "done"
         : c.state === "open" ? "open"
         : c.state === "unknown" ? "?" : "–";
-      span.title = c.because + (c.repeatKills ? "  (+" + c.repeatKills + " repeat kill(s))" : "");
+      /* The row is the raid, so the tooltip has to say what the raid contains —
+         otherwise a player reading "Plane of Fear" has no idea which bosses it
+         stands for, which is the confusion this relabelling exists to remove. */
+      const BR = String.fromCharCode(10);
+      span.title = c.because +
+        (c.repeatKills ? "  (+" + c.repeatKills + " repeat kill(s))" : "") +
+        (c.singleBoss ? "" : BR + BR + "contains: " + c.bosses.join(", ") + BR +
+          "(one cell per raid assumes these bosses share a lock — the alt+Z " +
+          "window is consistent with that and does not prove it)");
       cell.appendChild(span);
       tr.appendChild(cell);
     }

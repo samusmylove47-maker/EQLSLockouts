@@ -55,9 +55,9 @@ function logFiles() {
     if (grid.notLookedCount) bits.push(`${grid.notLookedCount} not looked at`);
     process.stdout.write(`  ${bits.join('   ·   ')}      (${grid.completedCount} of 25 done)\n\n`);
 
-    process.stdout.write('  ' + 'boss'.padEnd(14) + core.DIFFICULTY_LABELS.map((l, i) => `D${i}`.padStart(4)).join('') + '\n');
-    for (const entry of core.ROSTER) {
-      const row = grid.cells.filter((c) => c.boss === entry.key).sort((a, b) => a.difficulty - b.difficulty);
+    process.stdout.write('  ' + 'raid'.padEnd(14) + core.DIFFICULTY_LABELS.map((l, i) => `D${i}`.padStart(4)).join('') + '\n');
+    for (const entry of core.RAIDS) {
+      const row = grid.cells.filter((c) => c.raid === entry.key).sort((a, b) => a.difficulty - b.difficulty);
       process.stdout.write('  ' + entry.label.padEnd(14) + row.map((c) => MARK[c.state].padStart(4)).join('') + '\n');
     }
 
@@ -66,13 +66,13 @@ function logFiles() {
 
     // Every roster kill in the whole corpus, not just this period — this is the
     // part that says whether the grid is seeing what the logs actually contain.
-    process.stdout.write(`\n  ALL ${st.kills.length} roster kills in the corpus:\n`);
+    process.stdout.write(`\n  ALL ${st.kills.length} raid-boss kills in the corpus:\n`);
     const byBoss = new Map();
     for (const k of st.kills) {
-      if (!byBoss.has(k.boss)) byBoss.set(k.boss, []);
-      byBoss.get(k.boss).push(k);
+      if (!byBoss.has(k.raid)) byBoss.set(k.raid, []);
+      byBoss.get(k.raid).push(k);
     }
-    for (const entry of core.ROSTER) {
+    for (const entry of core.RAIDS) {
       const ks = byBoss.get(entry.key) || [];
       if (!ks.length) { process.stdout.write(`    ${entry.label.padEnd(13)} none\n`); continue; }
       const tiers = ks.map((k) => {

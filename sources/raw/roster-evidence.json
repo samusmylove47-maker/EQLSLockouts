@@ -56,19 +56,37 @@
       "looksNamed": true
     },
     {
+      "name": "An elemental crusader",
+      "kills": 160,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
       "name": "A deathly usher",
       "kills": 156,
       "isPet": false,
       "looksNamed": false
     },
     {
-      "name": "An elemental crusader",
-      "kills": 139,
+      "name": "A rock golem",
+      "kills": 151,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an elemental crusader",
+      "kills": 143,
       "isPet": false,
       "looksNamed": false
     },
     {
       "name": "An elemental warrior",
+      "kills": 140,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an elemental warrior",
       "kills": 137,
       "isPet": false,
       "looksNamed": false
@@ -80,13 +98,7 @@
       "looksNamed": false
     },
     {
-      "name": "an elemental warrior",
-      "kills": 134,
-      "isPet": false,
-      "looksNamed": false
-    },
-    {
-      "name": "an elemental crusader",
+      "name": "a rock golem",
       "kills": 134,
       "isPet": false,
       "looksNamed": false
@@ -100,18 +112,6 @@
     {
       "name": "A gnoll elite",
       "kills": 128,
-      "isPet": false,
-      "looksNamed": false
-    },
-    {
-      "name": "A rock golem",
-      "kills": 126,
-      "isPet": false,
-      "looksNamed": false
-    },
-    {
-      "name": "a rock golem",
-      "kills": 118,
       "isPet": false,
       "looksNamed": false
     },
@@ -144,6 +144,12 @@
       "kills": 97,
       "isPet": false,
       "looksNamed": true
+    },
+    {
+      "name": "A revenant",
+      "kills": 94,
+      "isPet": false,
+      "looksNamed": false
     },
     {
       "name": "A Troll Marauder",
@@ -200,12 +206,6 @@
       "looksNamed": false
     },
     {
-      "name": "A revenant",
-      "kills": 82,
-      "isPet": false,
-      "looksNamed": false
-    },
-    {
       "name": "A will sapper",
       "kills": 79,
       "isPet": false,
@@ -220,6 +220,12 @@
     {
       "name": "A hardened skeleton",
       "kills": 78,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elemental channeler",
+      "kills": 77,
       "isPet": false,
       "looksNamed": false
     },
@@ -248,12 +254,6 @@
       "looksNamed": false
     },
     {
-      "name": "An elemental channeler",
-      "kills": 69,
-      "isPet": false,
-      "looksNamed": false
-    },
-    {
       "name": "A lesser mummy",
       "kills": 66,
       "isPet": false,
@@ -272,7 +272,19 @@
       "looksNamed": false
     },
     {
+      "name": "an elemental channeler",
+      "kills": 61,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
       "name": "A greater kobold",
+      "kills": 61,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a revenant",
       "kills": 61,
       "isPet": false,
       "looksNamed": false
@@ -285,12 +297,6 @@
     },
     {
       "name": "An urd ghoul wizard",
-      "kills": 59,
-      "isPet": false,
-      "looksNamed": false
-    },
-    {
-      "name": "an elemental channeler",
       "kills": 59,
       "isPet": false,
       "looksNamed": false
@@ -339,12 +345,6 @@
     },
     {
       "name": "An imp protector",
-      "kills": 55,
-      "isPet": false,
-      "looksNamed": false
-    },
-    {
-      "name": "a revenant",
       "kills": 55,
       "isPet": false,
       "looksNamed": false
@@ -464,6 +464,12 @@
       "looksNamed": false
     },
     {
+      "name": "A flighty fiend",
+      "kills": 41,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
       "name": "a will sapper",
       "kills": 41,
       "isPet": false,
@@ -512,7 +518,19 @@
       "looksNamed": false
     },
     {
+      "name": "a wanderer",
+      "kills": 37,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
       "name": "a Troll Marauder",
+      "kills": 37,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A wanderer",
       "kills": 37,
       "isPet": false,
       "looksNamed": false
@@ -594,12 +612,6 @@
       "kills": 35,
       "isPet": false,
       "looksNamed": true
-    },
-    {
-      "name": "A flighty fiend",
-      "kills": 34,
-      "isPet": false,
-      "looksNamed": false
     },
     {
       "name": "A spinechiller spider",
@@ -686,13 +698,19 @@
       "looksNamed": true
     },
     {
+      "name": "a flighty fiend",
+      "kills": 32,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
       "name": "a lava duct crawler",
       "kills": 32,
       "isPet": false,
       "looksNamed": false
     },
     {
-      "name": "a wanderer",
+      "name": "An elemental deceiver",
       "kills": 32,
       "isPet": false,
       "looksNamed": false
@@ -705,6 +723,12 @@
     },
     {
       "name": "A revultant rat",
+      "kills": 32,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elemental wizard",
       "kills": 32,
       "isPet": false,
       "looksNamed": false
@@ -736,12 +760,6 @@
     {
       "name": "a jeering gargoyle",
       "kills": 31,
-      "isPet": false,
-      "looksNamed": false
-    },
-    {
-      "name": "a flighty fiend",
-      "kills": 30,
       "isPet": false,
       "looksNamed": false
     },
@@ -824,6 +842,12 @@
       "looksNamed": false
     },
     {
+      "name": "An elemental visier",
+      "kills": 28,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
       "name": "Baron Telyx V`Zher",
       "kills": 28,
       "isPet": false,
@@ -854,12 +878,6 @@
       "looksNamed": false
     },
     {
-      "name": "A wanderer",
-      "kills": 27,
-      "isPet": false,
-      "looksNamed": false
-    },
-    {
       "name": "Gynok Moltor",
       "kills": 27,
       "isPet": false,
@@ -873,12 +891,6 @@
     },
     {
       "name": "an elemental deceiver",
-      "kills": 26,
-      "isPet": false,
-      "looksNamed": false
-    },
-    {
-      "name": "An elemental deceiver",
       "kills": 26,
       "isPet": false,
       "looksNamed": false
@@ -956,6 +968,12 @@
       "looksNamed": false
     },
     {
+      "name": "An elemental harvester",
+      "kills": 24,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
       "name": "A boogeyman",
       "kills": 24,
       "isPet": false,
@@ -1022,7 +1040,7 @@
       "looksNamed": false
     },
     {
-      "name": "An elemental wizard",
+      "name": "An elemental capturer",
       "kills": 22,
       "isPet": false,
       "looksNamed": false
@@ -1070,19 +1088,25 @@
       "looksNamed": true
     },
     {
+      "name": "an elemental harvester",
+      "kills": 21,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
       "name": "A worry wraith",
       "kills": 21,
       "isPet": false,
       "looksNamed": false
     },
     {
-      "name": "A fire giant wizard",
+      "name": "an elemental visier",
       "kills": 20,
       "isPet": false,
       "looksNamed": false
     },
     {
-      "name": "An elemental visier",
+      "name": "A fire giant wizard",
       "kills": 20,
       "isPet": false,
       "looksNamed": false
@@ -1220,12 +1244,6 @@
       "looksNamed": true
     },
     {
-      "name": "an elemental visier",
-      "kills": 17,
-      "isPet": false,
-      "looksNamed": false
-    },
-    {
       "name": "A greater kobold shaman",
       "kills": 17,
       "isPet": false,
@@ -1292,12 +1310,6 @@
       "looksNamed": true
     },
     {
-      "name": "An elemental harvester",
-      "kills": 16,
-      "isPet": false,
-      "looksNamed": false
-    },
-    {
       "name": "a tentacle tormentor",
       "kills": 16,
       "isPet": false,
@@ -1352,7 +1364,7 @@
       "looksNamed": false
     },
     {
-      "name": "An elemental capturer",
+      "name": "a fallen erudite",
       "kills": 15,
       "isPet": false,
       "looksNamed": false
@@ -1413,18 +1425,6 @@
     },
     {
       "name": "A lava guardian",
-      "kills": 14,
-      "isPet": false,
-      "looksNamed": false
-    },
-    {
-      "name": "an elemental harvester",
-      "kills": 14,
-      "isPet": false,
-      "looksNamed": false
-    },
-    {
-      "name": "a fallen erudite",
       "kills": 14,
       "isPet": false,
       "looksNamed": false
@@ -1533,6 +1533,12 @@
     },
     {
       "name": "A bok ghoul knight",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an elemental capturer",
       "kills": 12,
       "isPet": false,
       "looksNamed": false
@@ -1802,6 +1808,12 @@
       "looksNamed": false
     },
     {
+      "name": "A ratman warrior",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
       "name": "Kerran tiger spahi",
       "kills": 10,
       "isPet": false,
@@ -1854,12 +1866,6 @@
       "kills": 9,
       "isPet": false,
       "looksNamed": true
-    },
-    {
-      "name": "an elemental capturer",
-      "kills": 9,
-      "isPet": false,
-      "looksNamed": false
     },
     {
       "name": "A dry bones skeleton",
@@ -2024,6 +2030,12 @@
       "looksNamed": true
     },
     {
+      "name": "A fallen erudite",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
       "name": "A frightfinger pet",
       "kills": 8,
       "isPet": true,
@@ -2166,6 +2178,12 @@
       "kills": 8,
       "isPet": false,
       "looksNamed": false
+    },
+    {
+      "name": "Initiate Sirlis",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": true
     },
     {
       "name": "A ghoul scribe",
@@ -2336,12 +2354,6 @@
       "looksNamed": false
     },
     {
-      "name": "A ratman warrior",
-      "kills": 7,
-      "isPet": false,
-      "looksNamed": false
-    },
-    {
       "name": "The froglok shin lord",
       "kills": 7,
       "isPet": false,
@@ -2450,10 +2462,10 @@
       "looksNamed": true
     },
     {
-      "name": "A fallen erudite",
+      "name": "Ulrik the Devout",
       "kills": 6,
       "isPet": false,
-      "looksNamed": false
+      "looksNamed": true
     },
     {
       "name": "A priest of Nagafen",
@@ -2708,12 +2720,6 @@
       "looksNamed": false
     },
     {
-      "name": "Ulrik the Devout",
-      "kills": 5,
-      "isPet": false,
-      "looksNamed": true
-    },
-    {
       "name": "An elite goblin guard",
       "kills": 5,
       "isPet": false,
@@ -2894,7 +2900,7 @@
       "looksNamed": false
     },
     {
-      "name": "Initiate Sirlis",
+      "name": "Niltoth the Unholy",
       "kills": 5,
       "isPet": false,
       "looksNamed": true
@@ -2961,6 +2967,12 @@
     },
     {
       "name": "Ffossip",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Rocksoul",
       "kills": 4,
       "isPet": false,
       "looksNamed": true
@@ -3140,12 +3152,6 @@
       "looksNamed": false
     },
     {
-      "name": "Niltoth the Unholy",
-      "kills": 4,
-      "isPet": false,
-      "looksNamed": true
-    },
-    {
       "name": "a basalt gargoyle",
       "kills": 3,
       "isPet": false,
@@ -3281,12 +3287,6 @@
       "name": "Grandmaster R`tal pet",
       "kills": 3,
       "isPet": true,
-      "looksNamed": true
-    },
-    {
-      "name": "Rocksoul",
-      "kills": 3,
-      "isPet": false,
       "looksNamed": true
     },
     {
@@ -3555,6 +3555,12 @@
     },
     {
       "name": "Stonegrinder Minion",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Bejeweled elemental",
       "kills": 3,
       "isPet": false,
       "looksNamed": true
@@ -4244,7 +4250,7 @@
       "looksNamed": false
     },
     {
-      "name": "Bejeweled elemental",
+      "name": "bejeweled elemental",
       "kills": 2,
       "isPet": false,
       "looksNamed": true
@@ -4266,6 +4272,12 @@
       "kills": 2,
       "isPet": false,
       "looksNamed": false
+    },
+    {
+      "name": "Irslak the Wretched",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
     },
     {
       "name": "an orc warrior",
@@ -5012,12 +5024,6 @@
       "looksNamed": false
     },
     {
-      "name": "bejeweled elemental",
-      "kills": 1,
-      "isPet": false,
-      "looksNamed": true
-    },
-    {
       "name": "Xonn",
       "kills": 1,
       "isPet": false,
@@ -5091,20 +5097,14 @@
     }
   ],
   "note": "Every roster key must have exactBoss > 0 or the roster is wrong. nearMisses are names containing the key that are NOT the boss — the reason the match is exact equality and never substring.",
-  "distinctSlainNames": 848,
+  "distinctSlainNames": 849,
   "roster": [
-    {
-      "key": "Lady Vox",
-      "label": "Lady Vox",
-      "exactKills": 8,
-      "thirdPerson": 5,
-      "firstPerson": 3,
-      "nearMisses": [],
-      "nearMissKills": 0
-    },
     {
       "key": "Lord Nagafen",
       "label": "Lord Nagafen",
+      "spellings": [
+        "Lord Nagafen"
+      ],
       "exactKills": 10,
       "thirdPerson": 10,
       "firstPerson": 0,
@@ -5112,8 +5112,23 @@
       "nearMissKills": 0
     },
     {
+      "key": "Lady Vox",
+      "label": "Lady Vox",
+      "spellings": [
+        "Lady Vox"
+      ],
+      "exactKills": 8,
+      "thirdPerson": 5,
+      "firstPerson": 3,
+      "nearMisses": [],
+      "nearMissKills": 0
+    },
+    {
       "key": "Master Yael",
       "label": "Master Yael",
+      "spellings": [
+        "Master Yael"
+      ],
       "exactKills": 14,
       "thirdPerson": 12,
       "firstPerson": 2,
@@ -5121,8 +5136,102 @@
       "nearMissKills": 0
     },
     {
+      "key": "Terror",
+      "label": "Terror",
+      "spellings": [
+        "Terror"
+      ],
+      "exactKills": 9,
+      "thirdPerson": 8,
+      "firstPerson": 1,
+      "nearMisses": [
+        {
+          "name": "Terror pet",
+          "thirdPerson": 6,
+          "firstPerson": 2
+        }
+      ],
+      "nearMissKills": 8
+    },
+    {
+      "key": "Dread",
+      "label": "Dread",
+      "spellings": [
+        "Dread"
+      ],
+      "exactKills": 9,
+      "thirdPerson": 5,
+      "firstPerson": 4,
+      "nearMisses": [
+        {
+          "name": "Dread pet",
+          "thirdPerson": 6,
+          "firstPerson": 1
+        }
+      ],
+      "nearMissKills": 7
+    },
+    {
+      "key": "Fright",
+      "label": "Fright",
+      "spellings": [
+        "Fright"
+      ],
+      "exactKills": 9,
+      "thirdPerson": 9,
+      "firstPerson": 0,
+      "nearMisses": [
+        {
+          "name": "Fright pet",
+          "thirdPerson": 4,
+          "firstPerson": 2
+        }
+      ],
+      "nearMissKills": 6
+    },
+    {
+      "key": "a dracoliche",
+      "label": "a dracoliche",
+      "spellings": [
+        "A dracoliche",
+        "a dracoliche"
+      ],
+      "exactKills": 10,
+      "thirdPerson": 8,
+      "firstPerson": 2,
+      "nearMisses": [
+        {
+          "name": "a dracoliche pet",
+          "thirdPerson": 0,
+          "firstPerson": 3
+        }
+      ],
+      "nearMissKills": 3
+    },
+    {
+      "key": "Cazic-Thule",
+      "label": "Cazic-Thule",
+      "spellings": [
+        "Cazic-Thule"
+      ],
+      "exactKills": 10,
+      "thirdPerson": 6,
+      "firstPerson": 4,
+      "nearMisses": [
+        {
+          "name": "Cazic Cenobite",
+          "thirdPerson": 4,
+          "firstPerson": 5
+        }
+      ],
+      "nearMissKills": 9
+    },
+    {
       "key": "Innoruuk, the Prince of Hate",
-      "label": "Innoruuk",
+      "label": "Innoruuk, the Prince of Hate",
+      "spellings": [
+        "Innoruuk, the Prince of Hate"
+      ],
       "exactKills": 11,
       "thirdPerson": 10,
       "firstPerson": 1,
@@ -5156,19 +5265,16 @@
       "nearMissKills": 156
     },
     {
-      "key": "Cazic-Thule",
-      "label": "Cazic Thule",
-      "exactKills": 10,
-      "thirdPerson": 6,
-      "firstPerson": 4,
-      "nearMisses": [
-        {
-          "name": "Cazic Cenobite",
-          "thirdPerson": 4,
-          "firstPerson": 5
-        }
+      "key": "Maestro of Rancor",
+      "label": "Maestro of Rancor",
+      "spellings": [
+        "Maestro of Rancor"
       ],
-      "nearMissKills": 9
+      "exactKills": 11,
+      "thirdPerson": 11,
+      "firstPerson": 0,
+      "nearMisses": [],
+      "nearMissKills": 0
     }
   ]
 }

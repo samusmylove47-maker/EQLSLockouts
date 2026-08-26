@@ -519,13 +519,138 @@ const YOU_SLEW_RE = /^You have slain (.+?)!$/;
 // `weeklyTask` below therefore records only what our corpus HAPPENED to observe,
 // and is not a claim about the boss.
 const WEEKLY_TASK_IS_PER_BOSS = false;
-const ROSTER = Object.freeze([
-  { key: 'Lady Vox', label: 'Lady Vox', weeklyTaskObserved: true },
-  { key: 'Lord Nagafen', label: 'Lord Nagafen', weeklyTaskObserved: true },
-  { key: 'Master Yael', label: 'Master Yael', weeklyTaskObserved: true },
-  { key: 'Innoruuk, the Prince of Hate', label: 'Innoruuk', weeklyTaskObserved: false },
-  { key: 'Cazic-Thule', label: 'Cazic Thule', weeklyTaskObserved: false },
+// ===========================================================================
+// THE ROW IS THE RAID, NOT THE BOSS
+// ===========================================================================
+//
+// A player decides whether to *run Plane of Fear*. They do not decide whether
+// to kill Cazic-Thule. So the row is labelled by what you RUN and names what it
+// CONTAINS, and there is still exactly one cell per tier.
+//
+// This was five boss rows until the alt+Z window showed a single Plane of Fear
+// run producing lockout rows for FIVE bosses at once, and a Plane of Hate run
+// for TWO. Five cells moving in lockstep would be noise; worse, a row reading
+// "Cazic Thule" when it means "the Plane of Fear raid" makes the player learn
+// which boss we happened to pick to stand for the zone.
+//
+// Where the raid holds one boss — Vox, Nagafen, Yael — the boss name IS the
+// right label and nothing changes for it.
+//
+// **THE ASSUMPTION UNDERNEATH, STATED BECAUSE IT IS ONE.**
+//
+// One cell per raid is correct only if the bosses inside a raid SHARE a lock.
+// The alt+Z window is CONSISTENT with that and does not prove it: those bosses
+// appeared together after runs that took them together, which is equally what
+// five separate locks started at the same moment would look like.
+//
+// **If they ever diverge, one cell would hide it.** A player who killed Terror
+// but not Cazic-Thule would see one cell, and the cell cannot be half true. The
+// observation that would separate the two models is a run that clears SOME of a
+// zone's bosses, followed by evidence about the others — and whether our corpus
+// holds one is recorded in docs/EVIDENCE.md rather than assumed here.
+//
+// This is the same shape as the kill-stamping caveat: the model is the best fit
+// to what we have seen, and the thing it would fail to show is named.
+//
+// FOUR THINGS THE CORPUS SAYS ABOUT THIS LIST THAT THE alt+Z WINDOW DID NOT.
+// Measured across 16 files, 6.3M lines, 93 kills of the ten named bosses.
+//
+// 1. **EVERY ONE OF THOSE KILLS WAS IN A `- Group N` INSTANCE.** Zero in the
+//    bare `Zone N` raid shape, zero in the open world — and the raid shape of
+//    these zones DOES occur in the logs (14 Fear visits, 5 Hate visits) without
+//    producing a single one of them. So "raid" here is the owner's word for the
+//    activity, not the client's word for the instance shape, and nothing in this
+//    module should key on the shape believing otherwise.
+//
+// 2. **THE PLANE OF HATE LIST IS INCOMPLETE FOR THE RAID SHAPE.** Ten further
+//    bosses from raids-measured.json die inside Plane of Hate instances — but
+//    only in the bare `Zone N` shape, and Innoruuk and the Maestro appear only
+//    in `- Group N`. The two shapes hold different populations. The alt+Z window
+//    was taken after Group-shape runs, so it could only ever have shown these
+//    two. **A Hate row built from that window describes the group instance and
+//    not the raid instance**, and that is not yet decided anywhere.
+//
+// 3. **THE PLANE OF FEAR LIST IS COMPLETE AT FIVE.** The only other candidate,
+//    Phoboplasm, fails on its own evidence: it is absent from
+//    raids-measured.json and dies up to FIVE times in one visit, where each of
+//    the five dies exactly once per visit. A lockout boss dies once.
+//
+// 4. **`singleBoss` IS UNPROVEN FOR TWO OF THE THREE.** Every Nagafen's Lair
+//    group visit also kills King Tranix, Warlord Skarlon and Magus Rokyl; every
+//    Permafrost visit also kills Giant wooly spider. None of the four appears as
+//    a boss in raids-measured.json, which is weak evidence they are not lockout
+//    bosses — and we hold no alt+Z reading for either zone, which is what would
+//    settle it. Only The Ruins of Old Paineel is genuinely single: all seven of
+//    its group visits killed Master Yael and nothing else.
+//
+// **NOT A DISCOVERED ROSTER, AND DELIBERATELY NOT YET.** A tracker that learns
+// its raids from observed timer rows beats one that ships a list — but if
+// `/dzlisttimers` logs, the roster discovers itself for free and anything built
+// now is thrown away. This list is the interim, and it is small on purpose.
+const RAIDS = Object.freeze([
+  {
+    key: "Nagafen's Lair",
+    label: 'Lord Nagafen',            // single-boss raid: the boss name is the right label
+    bosses: Object.freeze(['Lord Nagafen']),
+    weeklyTaskObserved: true,
+  },
+  {
+    key: 'The Permafrost Caverns',
+    label: 'Lady Vox',
+    bosses: Object.freeze(['Lady Vox']),
+    weeklyTaskObserved: true,
+  },
+  {
+    key: 'The Ruins of Old Paineel',
+    label: 'Master Yael',
+    bosses: Object.freeze(['Master Yael']),
+    weeklyTaskObserved: true,
+  },
+  {
+    key: 'The Plane of Fear',
+    label: 'Plane of Fear',           // what you RUN
+    // What it CONTAINS. Kill-line spellings, not the alt+Z window's — the
+    // window writes "Dracoliche", the game writes "a dracoliche", and a name
+    // that does not match renders as a raid still owed.
+    bosses: Object.freeze(['Terror', 'Dread', 'Fright', 'a dracoliche', 'Cazic-Thule']),
+    weeklyTaskObserved: false,
+  },
+  {
+    key: 'The Plane of Hate',
+    label: 'Plane of Hate',
+    bosses: Object.freeze(['Innoruuk, the Prince of Hate', 'Maestro of Rancor']),
+    weeklyTaskObserved: false,
+  },
 ].map(Object.freeze));
+
+// THE CLIENT CAPITALISES THE FIRST CHARACTER OF A LINE, so a mob whose name
+// begins with a lowercase article appears in TWO spellings:
+//
+//     A dracoliche has been slain by Orlando!     <- 8 kills, sentence-initial
+//     You have slain a dracoliche!                <- 3 kills, mid-sentence
+//
+// Exact equality on `a dracoliche` therefore catches 3 of 11 — and a missed kill
+// renders as a raid still owed, which is the precise failure the roster assert
+// exists to prevent, arriving through capitalisation instead of through a typo.
+// Same defect on `the Hand of Veeshan`: 5 of its kills read `The`.
+//
+// So the match folds case. That is safe HERE and would not be safe for a
+// substring match: `A priest of Nagafen` and `a priest of Nagafen` are the same
+// mob, but neither equals `Lord Nagafen`, so exact-equality-ignoring-case cannot
+// collide the way `includes()` would. A test asserts no two roster bosses
+// collide under the fold.
+function normaliseBossName(name) {
+  return String(name).toLowerCase();
+}
+
+// Every boss name that belongs to a raid, to the raid that holds it, keyed on
+// the folded form so both spellings resolve.
+const RAID_OF_BOSS = Object.freeze(
+  RAIDS.reduce((m, r) => {
+    for (const b of r.bosses) m[normaliseBossName(b)] = r.key;
+    return m;
+  }, {})
+);
 
 // ---------------------------------------------------------------------------
 // The reset rule — the ONE place a reset constant is permitted to live
@@ -818,17 +943,18 @@ function createState(character, opts) {
       'own task grant, and merging them fabricates reset brackets.'
     );
   }
-  const roster = (opts && opts.roster) || ROSTER;
+  const raids = (opts && opts.raids) || RAIDS;
   return {
     version: STATE_VERSION,
     character,
-    // The bosses whose kills are recorded. `parseLine` stays open to every
-    // name; this is the only place a roster narrows anything, and it is
+    // The RAIDS whose boss kills are recorded. `parseLine` stays open to every
+    // name; this is the only place the list narrows anything, and it is
     // overridable so the host is not stuck with ours.
-    roster: roster.map((r) => ({
+    raids: raids.map((r) => ({
       key: r.key,
       label: r.label,
-      // Observed in OUR corpus; not a property of the boss. See the note above.
+      bosses: r.bosses.slice(),
+      // Observed in OUR corpus; not a property of the raid. See the note above.
       weeklyTaskObserved: r.weeklyTaskObserved === true,
     })),
     // Kills of roster bosses, each carrying the instance it happened in.
@@ -1038,14 +1164,24 @@ function applyLine(state, line) {
   }
 
   if (ev.kind === 'kill') {
-    // The roster narrows here and nowhere else. EXACT equality, never substring:
-    // `Cleric of Innoruuk` and `Innoruuk\`s Chosen` are different mobs that a
-    // substring match would score as the boss.
-    const entry = state.roster.find((r) => r.key === ev.slain);
+    // The raid list narrows here and nowhere else. EXACT equality, never
+    // substring: `Cleric of Innoruuk` and `Innoruuk\`s Chosen` are different
+    // mobs that a substring match would score as the boss, and `Terror pet` is
+    // not Terror.
+    const slainKey = normaliseBossName(ev.slain);
+    const entry = state.raids.find(
+      (r) => r.bosses.some((b) => normaliseBossName(b) === slainKey)
+    );
     if (entry) {
       const inst = state.currentInstance;
       state.kills.push({
-        boss: entry.key,
+        // WHICH RAID this kill belongs to, and which boss it actually was. The
+        // cell is keyed by the raid; the boss is kept so a completion can say
+        // what was killed rather than just that something was.
+        raid: entry.key,
+        // The spelling the game actually wrote on this line, not the canonical
+        // one — so a completion can be traced back to its exact log line.
+        boss: ev.slain,
         civil,
         at: ev.at,
         byYou: ev.byYou === true,
@@ -1487,8 +1623,10 @@ function projectGrid(state, now) {
   const priorBoundaryStart = boundaryDayStart - 7 * 86400000;
 
   const cells = [];
-  for (const entry of state.roster) {
-    const mine = state.kills.filter((k) => k.boss === entry.key);
+  for (const entry of state.raids) {
+    // ANY boss of this raid completes the raid's cell. That is the shared-lock
+    // assumption made operational; see the note on RAIDS.
+    const mine = state.kills.filter((k) => k.raid === entry.key);
 
     // Evaluate one hypothesis: what does the grid say if the period began at
     // `from`? Returns the cell state for difficulty `d`, ignoring coverage.
@@ -1519,7 +1657,7 @@ function projectGrid(state, now) {
           done,
           first,
           repeats: done.length - 1,
-          why: `kill at D${d} on ${formatCivil(first.at)}` +
+          why: `${first.boss} at D${d} on ${formatCivil(first.at)}` +
                (done.length > 1 ? ` (and ${done.length - 1} later kill(s) this period, not counted)` : ''),
         };
       }
@@ -1556,8 +1694,12 @@ function projectGrid(state, now) {
       }
 
       cells.push({
-        boss: entry.key,
+        raid: entry.key,
         label: entry.label,
+        // What this row contains, so a player never has to know which boss we
+        // picked to stand for the zone.
+        bosses: entry.bosses.slice(),
+        singleBoss: entry.bosses.length === 1,
         // Whether a weekly task for this boss was ever seen in our corpus. NOT
         // a claim that the boss can or cannot carry one — the task goes to the
         // first three raids of the week, whichever they are.
@@ -1774,7 +1916,9 @@ module.exports = {
   characterFromLogFilename,
   // tables
   DIFFICULTY_LABELS,
-  ROSTER,
+  RAIDS,
+  RAID_OF_BOSS,
+  normaliseBossName,
   RESET_RULE,
   LOCKOUT_MODEL,
   REPLAY_MODEL,
