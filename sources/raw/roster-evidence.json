@@ -1,7 +1,5097 @@
 {
   "generatedBy": "analysis/roster-evidence.js",
+  "namedMobs": [
+    {
+      "name": "A wan ghoul knight",
+      "kills": 307,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A zol ghoul knight",
+      "kills": 265,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A gnoll bouncer",
+      "kills": 209,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A Teir`Dal ranger",
+      "kills": 196,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A flouting gargoyle",
+      "kills": 192,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A Teir`Dal shadowknight",
+      "kills": 178,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A dar ghoul knight",
+      "kills": 172,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A Teir`Dal rogue",
+      "kills": 166,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Amygdalan warrior",
+      "kills": 165,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A deathly usher",
+      "kills": 156,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elemental crusader",
+      "kills": 139,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elemental warrior",
+      "kills": 137,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A pledge familiar",
+      "kills": 135,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an elemental warrior",
+      "kills": 134,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an elemental crusader",
+      "kills": 134,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A fire giant warrior",
+      "kills": 128,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A gnoll elite",
+      "kills": 128,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A rock golem",
+      "kills": 126,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a rock golem",
+      "kills": 118,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an imp protector",
+      "kills": 110,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A Teir`Dal Priest",
+      "kills": 105,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A ghoulish ancille",
+      "kills": 100,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A Troll Greenblood",
+      "kills": 98,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Ice boned skeleton",
+      "kills": 97,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A Troll Marauder",
+      "kills": 92,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A Teir`Dal Spellbinder",
+      "kills": 92,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An initiate familiar",
+      "kills": 92,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A jeering gargoyle",
+      "kills": 89,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A deathly herald",
+      "kills": 87,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Cleric of Innoruuk",
+      "kills": 86,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A leering gargoyle",
+      "kills": 86,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A greater skeleton",
+      "kills": 84,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A shin ghoul knight",
+      "kills": 83,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A revenant",
+      "kills": 82,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A will sapper",
+      "kills": 79,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a greater kobold",
+      "kills": 78,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A hardened skeleton",
+      "kills": 78,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Amygdalan knight",
+      "kills": 74,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a gnoll bouncer",
+      "kills": 74,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Amygdalan knight pet",
+      "kills": 72,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "A gnoll",
+      "kills": 72,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elemental channeler",
+      "kills": 69,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A lesser mummy",
+      "kills": 66,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A boisterous gnoll",
+      "kills": 64,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A fetid fiend",
+      "kills": 62,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A greater kobold",
+      "kills": 61,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A scareling",
+      "kills": 60,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An urd ghoul wizard",
+      "kills": 59,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an elemental channeler",
+      "kills": 59,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An ire ghast",
+      "kills": 59,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Innoruuk`s Chosen",
+      "kills": 59,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A shadowknight",
+      "kills": 59,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A necro acolyte",
+      "kills": 59,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a flouting gargoyle",
+      "kills": 59,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A forsaken revenant",
+      "kills": 58,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A ghoul",
+      "kills": 58,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An imp protector",
+      "kills": 55,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a revenant",
+      "kills": 55,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elite gnoll fighter",
+      "kills": 55,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A gnoll necromancer",
+      "kills": 54,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A will pillager",
+      "kills": 54,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a lava beetle",
+      "kills": 53,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an initiate familiar",
+      "kills": 53,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A dark offerer",
+      "kills": 52,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Avatar of Fear",
+      "kills": 50,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A greater ice bones",
+      "kills": 50,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a gnoll elite",
+      "kills": 50,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a deathly usher",
+      "kills": 50,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A dread bone",
+      "kills": 49,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A ghastish ancille",
+      "kills": 49,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A vis ghoul knight",
+      "kills": 47,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a sonic bat",
+      "kills": 47,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A necro theurgist",
+      "kills": 47,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a wan ghoul knight",
+      "kills": 46,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok shin knight",
+      "kills": 44,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A glyphed guard",
+      "kills": 44,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a pledge familiar",
+      "kills": 42,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a will sapper",
+      "kills": 41,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Eye of Veeshan",
+      "kills": 40,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A spectre",
+      "kills": 39,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A turmoil toad",
+      "kills": 39,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A willowisp",
+      "kills": 39,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a zol ghoul knight",
+      "kills": 38,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A shadowy scrivener",
+      "kills": 38,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A sonic bat",
+      "kills": 37,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a Troll Marauder",
+      "kills": 37,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Master Brewer",
+      "kills": 37,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A glyphed sentry",
+      "kills": 37,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a deathly herald",
+      "kills": 37,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A vampire bat",
+      "kills": 36,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A shiverback",
+      "kills": 36,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A glare lord",
+      "kills": 36,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Bazzzazzt",
+      "kills": 36,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A shadowknight pet",
+      "kills": 36,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A vampiric ancille",
+      "kills": 36,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An abhorrent",
+      "kills": 35,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a Troll Greenblood",
+      "kills": 35,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a Teir`Dal Spellbinder",
+      "kills": 35,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Bzzazzt",
+      "kills": 35,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A flighty fiend",
+      "kills": 34,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A spinechiller spider",
+      "kills": 34,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A loathling lich",
+      "kills": 34,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Sister of the Spire",
+      "kills": 34,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A lava duct crawler",
+      "kills": 33,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A lava beetle",
+      "kills": 33,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An ice giant",
+      "kills": 33,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A haunted chest",
+      "kills": 33,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A spite golem",
+      "kills": 33,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a Teir`Dal Priest",
+      "kills": 33,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An azarack",
+      "kills": 33,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elite gnoll shaman",
+      "kills": 33,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a boisterous gnoll",
+      "kills": 33,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Knight V`Tal",
+      "kills": 33,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "orc legionnaire",
+      "kills": 33,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a lava duct crawler",
+      "kills": 32,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a wanderer",
+      "kills": 32,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A gorgon",
+      "kills": 32,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A revultant rat",
+      "kills": 32,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a scareling",
+      "kills": 31,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A frightfinger",
+      "kills": 31,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A glare lord pet",
+      "kills": 31,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "An essence carrier",
+      "kills": 31,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a jeering gargoyle",
+      "kills": 31,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a flighty fiend",
+      "kills": 30,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Shara",
+      "kills": 30,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Sabertooth Overseer",
+      "kills": 30,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A gnoll brewer",
+      "kills": 30,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A gnoll necromancer pet",
+      "kills": 30,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A shadowy scribe",
+      "kills": 30,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a lava guardian",
+      "kills": 29,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Refugee Splitpaw",
+      "kills": 29,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A Teir`Dal priestess",
+      "kills": 29,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A soul temptress",
+      "kills": 29,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A thought spoiler",
+      "kills": 29,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A thought corruptor",
+      "kills": 29,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A gypsy musician",
+      "kills": 29,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a ghoulish ancille",
+      "kills": 29,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Baron Telyx V`Zher",
+      "kills": 28,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Soldier of V`Zher",
+      "kills": 28,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Korven Nisere",
+      "kills": 28,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a fire giant warrior",
+      "kills": 27,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An essence tamer",
+      "kills": 27,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A wanderer",
+      "kills": 27,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Gynok Moltor",
+      "kills": 27,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A sneering gargoyle",
+      "kills": 27,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an elemental deceiver",
+      "kills": 26,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elemental deceiver",
+      "kills": 26,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a gnoll",
+      "kills": 26,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Splitpaw Sharpshooter",
+      "kills": 26,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A Teir`Dal priest",
+      "kills": 26,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a dar ghoul knight",
+      "kills": 25,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a fetid fiend",
+      "kills": 25,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A tentacle tormentor",
+      "kills": 25,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A tal ghoul wizard",
+      "kills": 25,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an elite gnoll shaman",
+      "kills": 25,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elf skeleton",
+      "kills": 25,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Footman of V`Zher",
+      "kills": 25,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A necro initiate",
+      "kills": 25,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a will pillager",
+      "kills": 25,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A boogeyman",
+      "kills": 24,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a ghastish ancille",
+      "kills": 24,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Bzzzt",
+      "kills": 23,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Bazzt Zzzt",
+      "kills": 23,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A greater mummy",
+      "kills": 23,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A scorched zombie",
+      "kills": 23,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A glyphed familiar",
+      "kills": 23,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Princess Cherista",
+      "kills": 23,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A deathly harbinger",
+      "kills": 23,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Orc legionnaire",
+      "kills": 23,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A yun ghoul wizard",
+      "kills": 22,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elemental wizard",
+      "kills": 22,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A greater sphinx",
+      "kills": 22,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A deadly black widow",
+      "kills": 22,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A basalt gargoyle",
+      "kills": 22,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Splitpaw Commander",
+      "kills": 22,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A froglok ton knight",
+      "kills": 22,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An ancille cook",
+      "kills": 22,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "orc centurion",
+      "kills": 22,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A worry wraith",
+      "kills": 21,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A fire giant wizard",
+      "kills": 20,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elemental visier",
+      "kills": 20,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a glare lord pet",
+      "kills": 20,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "Avenrae",
+      "kills": 20,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "an elite gnoll fighter",
+      "kills": 20,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A werewolf",
+      "kills": 20,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a leering gargoyle",
+      "kills": 20,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A bloodthirsty ghoul",
+      "kills": 19,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an elemental wizard",
+      "kills": 19,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An icy terror",
+      "kills": 19,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "The Spiroc Guardian",
+      "kills": 19,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Orc centurion",
+      "kills": 19,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A necro acolyte pet",
+      "kills": 19,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A greater dread bone",
+      "kills": 19,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A dark sacrificer",
+      "kills": 19,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a glyphed sentry",
+      "kills": 19,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Amygdalan warrior pet",
+      "kills": 18,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "an azarack",
+      "kills": 18,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "The Spiroc Lord",
+      "kills": 18,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A zombie",
+      "kills": 18,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Lasna Cheroon",
+      "kills": 18,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A gypsy dancer",
+      "kills": 18,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Butler Syncall",
+      "kills": 18,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Mynthi Davissi",
+      "kills": 18,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "an elemental visier",
+      "kills": 17,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A greater kobold shaman",
+      "kills": 17,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A samhain",
+      "kills": 17,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An ashenbone drake",
+      "kills": 17,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a shiverback",
+      "kills": 17,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Splitpaw Explorer",
+      "kills": 17,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Enynti",
+      "kills": 17,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Maid Issis",
+      "kills": 17,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A ghoul executioner",
+      "kills": 16,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a greater kobold shaman",
+      "kills": 16,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Efreeti Lord Djarn",
+      "kills": 16,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Stonesoul the Unmoving",
+      "kills": 16,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "An elemental harvester",
+      "kills": 16,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a tentacle tormentor",
+      "kills": 16,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a turmoil toad",
+      "kills": 16,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Phoboplasm",
+      "kills": 16,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A blade storm",
+      "kills": 16,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A spiroc vanquisher",
+      "kills": 16,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An undine spirit",
+      "kills": 16,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A glyphed warder",
+      "kills": 16,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A gypsy ambassador",
+      "kills": 16,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an orc thaumaturgist",
+      "kills": 16,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elemental capturer",
+      "kills": 15,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A fetid fiend pet",
+      "kills": 15,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A large plague rat",
+      "kills": 15,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A necro apprentice",
+      "kills": 15,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A glyphed custodian",
+      "kills": 15,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A shadowy sage",
+      "kills": 15,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a glyphed guard",
+      "kills": 15,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Avatar of Fear pet",
+      "kills": 14,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "Master Yael",
+      "kills": 14,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "An ice giant magus",
+      "kills": 14,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A lava guardian",
+      "kills": 14,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an elemental harvester",
+      "kills": 14,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a fallen erudite",
+      "kills": 14,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Noble Dojorn",
+      "kills": 14,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A gust of wind",
+      "kills": 14,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A giant snake",
+      "kills": 14,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A burnt zombie",
+      "kills": 14,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An imp familiar",
+      "kills": 14,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A soul seductress",
+      "kills": 14,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Hoptor Thaggelum pet",
+      "kills": 13,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "a worry wraith pet",
+      "kills": 13,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A kiraikuei",
+      "kills": 13,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A ghoul cavalier pet",
+      "kills": 13,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A ghoul cavalier",
+      "kills": 13,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A shin ghoul warrior",
+      "kills": 13,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A glyphed ghoul",
+      "kills": 13,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A spiritish ancille",
+      "kills": 13,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Orc taskmaster",
+      "kills": 13,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "an urd ghoul wizard",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A ghoul sentinel",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A bok ghoul knight",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An ice goblin veteran",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An ice giant priest",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A fire giant warrior pet",
+      "kills": 12,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a spinechiller spider",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A worry wraith pet",
+      "kills": 12,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a glare lord",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an ire ghast",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a forsaken revenant",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A kerran `amir",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Tranixx Darkpaw",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A putrid skeleton",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Priest Amiaz",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A dark librarian",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A negotiator",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A dark elf noble",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A dark ritualist",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "orc taskmaster",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a vampiric ancille",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a dark offerer",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a shadowy scrivener",
+      "kills": 12,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A frenzied ghoul",
+      "kills": 11,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Hoptor Thaggelum",
+      "kills": 11,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a lizard judicator",
+      "kills": 11,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A lizard judicator",
+      "kills": 11,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a death beetle",
+      "kills": 11,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a frightfinger",
+      "kills": 11,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Maestro of Rancor",
+      "kills": 11,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Innoruuk, the Prince of Hate",
+      "kills": 11,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A ghoul ritualist",
+      "kills": 11,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A kor ghoul wizard",
+      "kills": 11,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Arisen Thaumaturgist",
+      "kills": 11,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Xicotl",
+      "kills": 11,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A ghoul sage",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "King Tranix pet",
+      "kills": 10,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "King Tranix",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Magus Rokyl",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Lord Nagafen",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A nightmare",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Cazic-Thule",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Magi P`tasa",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Lord of Loathing",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "An Evangelist of Hate",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Gorgalosk",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "an essence carrier",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Kerran tiger spahi",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a gnoll necromancer",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Asaka L`Rei",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Kahaptra Z`Taj",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "The thaumaturgist",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a glyphed familiar",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a thought spoiler",
+      "kills": 10,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A ghoul assassin",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Cazic Cenobite",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "an elemental capturer",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A dry bones skeleton",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Fright",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Terror",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Dread",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "an abhorrent",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Coercer T`vala",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A scorn banshee",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Grandmaster R`tal",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "an essence tamer",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a greater sphinx",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A ghoul ritualist pet",
+      "kills": 9,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a gnoll brewer",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a Teir`Dal ranger",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A necro theurgist pet",
+      "kills": 9,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A cracked skeleton",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A will ravisher",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A werewolf gypsy",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a glyphed warder",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a werewolf",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a thought corruptor",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a shadowy scribe",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "royal guard",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "An orc thaumaturgist",
+      "kills": 9,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A lizard fanatic",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A death beetle",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Warlord Skarlon",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Lady Vox",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A frightfinger pet",
+      "kills": 8,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a worry wraith",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A thought bleeder",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Terror pet",
+      "kills": 8,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "phoboplasm",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A dracoliche",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Ashenbone Broodmaster",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Mistress of Scorn",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Overseer of Air",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A heartsbane drake",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A tsu ghoul wizard",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A ghoul supplier",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a Teir`Dal shadowknight",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A skeletal excavator",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A necro initiate pet",
+      "kills": 8,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A soul inveigling",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A glyphed forbidder",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A wightish ancille",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A hemo enologist",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A fallen noble",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Orc slaver",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a glyphed custodian",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a dark librarian",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A fish",
+      "kills": 8,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A ghoul scribe",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a lizard zealot",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a lizard fanatic",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a lizard protector",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A lizard protector",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An ice giant diplomat",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an icy terror",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an ice giant",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a ratman warrior",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Commander Yarik",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Gibartik",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A turmoil toad pet",
+      "kills": 7,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A thought bleeder pet",
+      "kills": 7,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "Dread pet",
+      "kills": 7,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "Lord of Ire",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a revultant rat",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A skeleton",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Master of Spite",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A phantasm",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Protector of Sky",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A crystaline cloud",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Heart harpie",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Keeper of Souls",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A spiroc expulser",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A spiroc revolter",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A watchful guard",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a blade storm",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a heartsbane drake",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A ratman warrior",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "The froglok shin lord",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A necro neophyte",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A grinning gargoyle",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A wraithish ancille",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A vampire noble",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A cloaked dhampyre",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a soul temptress",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a gypsy dancer",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "orc slaver",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a grinning gargoyle",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a willowisp",
+      "kills": 7,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a shin ghoul knight",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a vis ghoul knight",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "The ghoul arch magus",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A ghoul scribe pet",
+      "kills": 6,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A lizard zealot",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a noxious spider",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Giant wooly spider",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A fallen erudite",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A priest of Nagafen",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A gorgon pet",
+      "kills": 6,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a gorgon",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elite dragoon",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Fright pet",
+      "kills": 6,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "A thunder spirit",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An essence harvester",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A soul harvester",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A soul tamer",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Bizazzzt",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A spiroc banisher",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A windrider drake",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Badvillage",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A dracoliche pet",
+      "kills": 6,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "Sabertooth Overseer pet",
+      "kills": 6,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "A gnoll bouncer pet",
+      "kills": 6,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A gnoll guardsman",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An acolyte of Elgnub",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a Teir`Dal priestess",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A plague rat",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok shin warrior",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok scryer",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A thought defiler",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A glyphed aegis",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A ghostly ancille",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a spiritish ancille",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A vampire oracle",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a dark sacrificer",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an imp familiar",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a will ravisher",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a sneering gargoyle",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "The Prophet",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An orc thaumaturgist pet",
+      "kills": 6,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a gypsy musician",
+      "kills": 6,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a greater ice bones",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a kor ghoul wizard",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a lizard justicar",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A jungle spiderling",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Targin the Rock",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a kobold noble pet",
+      "kills": 5,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a kobold noble",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A stone spider",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Ulrik the Devout",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "An elite goblin guard",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a fetid fiend pet",
+      "kills": 5,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a samhain",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Phoboplasm pet",
+      "kills": 5,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "A haunted chest pet",
+      "kills": 5,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "Avatar of Abhorrence",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A Sage of Innoruuk",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a boogeyman",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an ashenbone drake",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an avenging gazer",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a spiroc vanquisher",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "The Hand of Veeshan",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Bzizzzt",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A spiroc caller",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A lizard justicar",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A noxious spider",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Sabertooth Clan Necromancer",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a giant snake",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A scruffy gnoll",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a froglok shin warrior",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Ssynthi",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A spectral ancille",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a cloaked dhampyre",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a dark ritualist",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a deathly harbinger",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Royal guard",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Orc apprentice",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "orc oracle",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a glyphed ghoul",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a hemo enologist",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Initiate Sirlis",
+      "kills": 5,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a ghoul scribe",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok tad",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A decaying skeleton",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A lizardman broodling",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an ice giant magus",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A shiverback pet",
+      "kills": 4,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A spinechiller spider pet",
+      "kills": 4,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a frightfinger pet",
+      "kills": 4,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a haunted chest",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a loathling lich",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Ffossip",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A soul carrier",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An avenging gazer",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Innoruuk`s Chosen pet",
+      "kills": 4,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "a crystaline cloud",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A spiroc arbiter",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A nok ghoul wizard",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A greater minotaur",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A kobold noble",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elite gnoll guard",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Socho Darkpaw",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a Teir`Dal priest",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "ice boned skeleton",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a Teir`Dal rogue",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A willowisp pet",
+      "kills": 4,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok ton knight pet",
+      "kills": 4,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a froglok ton knight",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok gaz shaman",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok sentry",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a dark elf noble",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Guard V`Ehn",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a soul seductress",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a wightish ancille",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Bonefire",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Orc emissary",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Marrowbane",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Bloodgurgler",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "orc trainee",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a negotiator",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a fallen noble",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Niltoth the Unholy",
+      "kills": 4,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a basalt gargoyle",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a bloodthirsty ghoul",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a bok ghoul knight",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a ghoul cavalier pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a ghoul cavalier",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a jin ghoul wizard",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "the ghoul arch magus",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a stone spider",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A kobold priest",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An ice goblin",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a guano harvester",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a scout from zanivar",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A scareling pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A tentacle tormentor pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a phantasm",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a dracoliche pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a thought bleeder",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Avatar of Abhorrence pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "High Priest M`kari",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a cyclops",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A boogeyman pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a spectre",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Grandmaster R`tal pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "Rocksoul",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A gorgalask",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a spiroc walker",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "the Hand of Veeshan",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "heart harpie",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a spiroc arbiter",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A spiroc walker",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A thunder spirit princess",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a gust of wind",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A fatestealer drake",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A wan ghoul knight pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok tsu shaman",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok vis knight",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A kobold noble pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a tentacle tormentor pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A giant wasp drone",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A cyclops",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A kerran pasdar",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A venomous spikefish",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an undine spirit",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Splitpaw Sharpshooter pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "A boisterous gnoll pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "Splitpaw Commander pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "a gnoll necromancer pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "Lord Elgnub",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A froglok vis shaman",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "the froglok shin lord",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok gaz shaman pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok wan knight",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A necro neophyte pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a greater skeleton",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A necro apprentice pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a shadowknight",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Guard Z`Den",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a soul inveigling",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a vampire oracle",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A dark ass`t librarian",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Orc oracle",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Lord Darish",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Chokehold",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Orc scoutsman",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "an orc thaumaturgist pet",
+      "kills": 3,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "an acolyte of Elgnub",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A dwarf skeleton",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a thought defiler",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Stonegrinder Minion",
+      "kills": 3,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a skeleton",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a tal ghoul wizard",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a ghoul savant",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A reanimated hand",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a lizard broodling",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A jungle spider",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Muck covered elemental",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A kobold champion",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Ehpstien",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a fire giant wizard",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A snow orc trooper",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A young ice goblin",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An ice giant youth",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a priest of Nagafen",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a lava guardian pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "an imp protector pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a fallen Erudite",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "muck covered elemental",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A goblin evoker",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "giant wooly spider",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "an ice giant priest",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Konann",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Brandfury",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Magus Rokyl pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "Jararn",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A large fire beetle",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a spinechiller spider pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a gorgon pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "Cyndreela pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "Cyndreela",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Utachi",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a spite golem",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an elite dragoon",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elite dragoon pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "Gabaner",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Xibanab",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a shiverback pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "An obsidian drake",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Wembly",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a soul harvester",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a soul tamer",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a spiroc revolter",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Tholi",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Kuzco",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Nillan",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A Knight of Innoruuk",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok slave",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A dar ghoul knight pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A ghoul savant",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A jin ghoul wizard",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok nok shaman",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A lizard broodling",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A kobold king pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A kobold king",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a kobold champion",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A lizardman warrior",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A goblin prelate",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A guano harvester",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An orc warrior",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a windrider drake",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Splitpaw Sentry",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A gnoll commander",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "The gnoll high shaman",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a gnoll guardsman",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An acolyte of Elgnub pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "Lord Elgnub pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "A gnoll pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "An elite gnoll fighter pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A gnoll scout",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Splitpaw Explorer pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "A gnoll elite pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a ghoul",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a greater mummy",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a necro theurgist",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok shin shaman",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a froglok ton knight pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a froglok tsu shaman",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A clay gargoyle",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok crusader",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok dar knight",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Skeleton L`rodd",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a lesser mummy",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "The thaumaturgist pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "the thaumaturgist",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a hardened skeleton",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a necro acolyte",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Priest Amiaz pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "a necro initiate",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A gnoll shaman",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A plains cat",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Ice boned skeleton pet",
+      "kills": 2,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "An avenging caitiff",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a dracoliche",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Guard D`Zel",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a wraithish ancille",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Orc warlord",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Rondo Dunfire",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Orc Warden",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Orc trainer",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Orc trainee",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "orc warlord",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Ambassador D`Vinn",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "orc scoutsman",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A patrolling gnoll",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a scruffy gnoll",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a spiroc expulser",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a spiroc caller",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a watchful guard",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a spectral ancille",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a gypsy ambassador",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a shadowy sage",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an ancille cook",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a vampire noble",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a werewolf gypsy",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Bejeweled elemental",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A fallen Erudite",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A kobold watcher",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A kobold runt",
+      "kills": 2,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an orc warrior",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A heart spider",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a vampire bat",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a tsu ghoul wizard",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a shin ghoul warrior",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a ghoul ritualist pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a ghoul ritualist",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a ghoul supplier",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a vis ghoul knight pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a ghoul sage",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a ghoul sentinel",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a froglok slave",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a pack rat",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a kobold king pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a kobold king",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a kobold priest",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Deadham",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "an ice giant pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A goblin patriarch",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "The goblin sage",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a turmoil toad pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a scareling pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "phoboplasm pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "a haunted chest pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a lizardman warrior",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Dry bones skeleton",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Doraleous",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Zlad",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a fire beetle",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a spiroc banisher",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A guk ghoul knight",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A vis ghoul knight pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "Murdark",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A pack rat",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Archie",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "dry bones skeleton",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A sand scarab hatchling",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A Deathfist pawn",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a soul carrier",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Accurately",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "An ice giant pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "Tacar Tissleplay",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Horse",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Whopper",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a thought bleeder pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a boogeyman pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A wild tiger",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A sylvan bat",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a decaying skeleton",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a lantern beetle",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a giant wasp drone",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a fatestealer drake",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an essence harvester",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A gnoll brewer pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "Mannan of the Sabertooth",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "an elite gnoll guard",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An elite gnoll guard pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a gnoll shaman",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Corun Finisc",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a necro theurgist pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a sturdy skeleton",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A hardened skeleton pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A ghoul pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "Boondin Babbinsbort",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A froglok ton warrior",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok nok shaman pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok shin warrior pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok vis shaman pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a froglok vis shaman",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok witch doctor",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Tempus pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": true
+    },
+    {
+      "name": "Tempus",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A skeleton monk",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok ton shaman pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok ton shaman",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a froglok scryer",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a froglok shin knight",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A kerran mujahed",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok gaz warrior",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok urd shaman",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Raster of Guk",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a froglok yun shaman",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A froglok herbalist",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "The froglok king",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a froglok tal shaman",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A deadly black widow pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a ghoul scribe pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "Tolkar Parlone",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Guard Hutian",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Guard Mystan",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A scythe beetle",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a burnt zombie",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a large plague rat",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "kerran tiger spahi",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A kerran puma",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a kerran mujahed",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A sturdy skeleton",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an elf skeleton",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A greater skeleton pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "An undead knight ",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A crab spiderling",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a nightmare",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A rotting initiate",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "An Undead Steward",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "orc emissary",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a dwarven slave",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "orc apprentice",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Emperor Crush",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A burly gnoll",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a gnoll scout",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a burly gnoll",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an acolyte of Elgnub pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "a large snake",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A young puma",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a gorgalask",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Fahh",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Brando",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a ghostly ancille",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "a glyphed forbidder",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "Bears",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Seanadon",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Pnub",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Magik",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "a sonic bat pet",
+      "kills": 1,
+      "isPet": true,
+      "looksNamed": false
+    },
+    {
+      "name": "bejeweled elemental",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Xonn",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Cian McMarrin",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Andres McMarrin",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Oli McMarrin",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "Mils McMarrin",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": true
+    },
+    {
+      "name": "A kobold scout",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A kobold shaman",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A fire beetle",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A spiderling",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A thistle snake",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "A skunk",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    },
+    {
+      "name": "an Evangelist of Hate",
+      "kills": 1,
+      "isPet": false,
+      "looksNamed": false
+    }
+  ],
   "note": "Every roster key must have exactBoss > 0 or the roster is wrong. nearMisses are names containing the key that are NOT the boss — the reason the match is exact equality and never substring.",
-  "distinctSlainNames": 748,
+  "distinctSlainNames": 848,
   "roster": [
     {
       "key": "Lady Vox",
@@ -33,44 +5123,44 @@
     {
       "key": "Innoruuk, the Prince of Hate",
       "label": "Innoruuk",
-      "exactKills": 9,
-      "thirdPerson": 8,
+      "exactKills": 11,
+      "thirdPerson": 10,
       "firstPerson": 1,
       "nearMisses": [
         {
           "name": "Cleric of Innoruuk",
-          "thirdPerson": 68,
+          "thirdPerson": 69,
           "firstPerson": 17
         },
         {
           "name": "Innoruuk`s Chosen",
-          "thirdPerson": 39,
+          "thirdPerson": 49,
           "firstPerson": 10
         },
         {
           "name": "A Sage of Innoruuk",
-          "thirdPerson": 4,
+          "thirdPerson": 5,
           "firstPerson": 0
         },
         {
           "name": "Innoruuk`s Chosen pet",
-          "thirdPerson": 1,
-          "firstPerson": 1
+          "thirdPerson": 2,
+          "firstPerson": 2
         },
         {
           "name": "A Knight of Innoruuk",
-          "thirdPerson": 1,
+          "thirdPerson": 2,
           "firstPerson": 0
         }
       ],
-      "nearMissKills": 141
+      "nearMissKills": 156
     },
     {
       "key": "Cazic-Thule",
       "label": "Cazic Thule",
-      "exactKills": 7,
-      "thirdPerson": 4,
-      "firstPerson": 3,
+      "exactKills": 10,
+      "thirdPerson": 6,
+      "firstPerson": 4,
       "nearMisses": [
         {
           "name": "Cazic Cenobite",

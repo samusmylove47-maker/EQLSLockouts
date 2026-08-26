@@ -436,3 +436,120 @@ test('THE WEEKLY TASK IS NOT PER BOSS — it is the first three raids of the wee
   const grid = core.projectGrid(core.applyLines(core.createState('Avenrae'), heartbeat(17, 21)), NOW);
   assert.equal(grid.cells.filter((c) => c.weeklyTaskObserved).length, 15);
 });
+
+// ---------------------------------------------------------------------------
+// The alt+Z window: three objects, and the second name trap
+// ---------------------------------------------------------------------------
+
+test('THREE OBJECTS: the weekly, the lockout and the replay timer stay separate', () => {
+  // The owner's alt+Z window shows all three at once with different periods.
+  // Merging any two of them is the error the module was built to refuse.
+  assert.equal(core.RESET_RULE.kind, undefined, 'the weekly is a WEEKDAY rule, not a rolling one');
+  assert.equal(core.RESET_RULE.weekdayName, 'Tuesday');
+
+  assert.equal(core.LOCKOUT_MODEL.kind, 'rolling');
+  assert.equal(core.LOCKOUT_MODEL.days, 6);
+  assert.equal(core.LOCKOUT_MODEL.provenance, 'observed', 'read off the client, not stated or inferred');
+
+  assert.equal(core.REPLAY_MODEL.kind, 'rolling');
+  assert.equal(core.REPLAY_MODEL.minutes, 60);
+  assert.match(core.REPLAY_MODEL.governs, /re-entry/);
+  assert.match(core.REPLAY_MODEL.doesNotGovern, /loot/);
+
+  // Three distinct periods. If two ever coincide, something has been merged.
+  const periods = new Set([
+    'weekday:' + core.RESET_RULE.weekdayName,
+    'rolling-days:' + core.LOCKOUT_MODEL.days,
+    'rolling-mins:' + core.REPLAY_MODEL.minutes,
+  ]);
+  assert.equal(periods.size, 3);
+});
+
+test('THE LOCKOUT ANCHOR IS NOT RECORDED, and says so', () => {
+  // All 28 boss rows read the same value to the second. Four runs spanning two
+  // hours cannot each stamp their own timer and land identically, so the timer
+  // does not start at the kill — but which event it DOES start at is a separate
+  // question, and the module must not answer it by preference.
+  assert.equal(core.LOCKOUT_MODEL.anchorEvent, null);
+  assert.match(core.LOCKOUT_MODEL.anchorNote, /not recorded|does not say/i);
+  assert.ok(core.LOCKOUT_MODEL.caveats.length >= 3);
+});
+
+test('THE PERIOD IS CONDITIONAL AND THE DIFFERENCE IS THE MEASUREMENT', () => {
+  // An earlier revision claimed the two timers "solve each other" and that six
+  // days "falls out". They do not and it does not. Two readings give two
+  // equations in THREE unknowns (both periods and the elapsed time); subtracting
+  // cancels the elapsed time and leaves only the DIFFERENCE of the periods.
+  //
+  // That difference is exact and assumption-free. The absolute period is not.
+  const m = core.LOCKOUT_MODEL;
+
+  assert.equal(m.differenceFromReplaySeconds, 514800, 'exactly 5d 23h');
+  assert.equal(m.differenceProvenance, 'observed');
+  // Verified from the two readings rather than trusted:
+  const replayRemaining = 58 * 60 + 5;
+  const bossRemaining = 5 * 86400 + 23 * 3600 + 58 * 60 + 5;
+  assert.equal(bossRemaining - replayRemaining, m.differenceFromReplaySeconds);
+
+  // The period must never be labelled as measured.
+  assert.equal(m.daysProvenance, 'conditional');
+  assert.match(m.condition, /one hour/);
+
+  // And the alternatives must be carried, because "no other value fits" was the
+  // false claim. Each one is self-consistent to the second.
+  assert.ok(m.alternatives.length >= 3);
+  for (const alt of m.alternatives) {
+    const R = { '1h': 3600, '90m': 5400, '2h': 7200, '3h': 10800 }[alt.replayPeriod];
+    assert.ok(R, `unhandled alternative ${alt.replayPeriod}`);
+    const elapsed = R - replayRemaining;
+    assert.ok(elapsed >= 0, `${alt.replayPeriod} would have already expired`);
+    const B = bossRemaining + elapsed;
+    assert.ok(Math.abs(B / 86400 - alt.lockoutDays) < 0.001,
+      `${alt.replayPeriod} implies ${B / 86400} days, not ${alt.lockoutDays}`);
+  }
+  assert.match(m.settledBy, /alt\+Z|Replay Timer/);
+});
+
+test('NAME MAPPING: the window and the kill lines disagree, and only where recorded', () => {
+  // An unmapped name renders as a MISSING lockout, which looks exactly like a
+  // raid still owed — the roster trap through a second door.
+  assert.equal(core.WINDOW_TO_KILL_NAME['Innoruuk'], 'Innoruuk, the Prince of Hate');
+  assert.equal(core.WINDOW_TO_KILL_NAME['a dracoliche'], undefined, 'keyed on the WINDOW name');
+  assert.equal(core.WINDOW_TO_KILL_NAME['Dracoliche'], 'a dracoliche');
+
+  // EVERY window name must resolve to a string the game actually writes —
+  // either directly, or through the mapping. Checked against every distinct
+  // slain name in the corpus, not just the five-boss roster, because the window
+  // names four bosses the roster never had.
+  const windowNames = [].concat(...Object.values(core.OBSERVED_ZONES));
+  const everSlain = new Set(ROSTER_EVIDENCE.namedMobs.map((m) => m.name));
+  for (const w of windowNames) {
+    const mapped = core.WINDOW_TO_KILL_NAME[w] || w;
+    assert.ok(everSlain.has(mapped),
+      `window name ${JSON.stringify(w)} resolves to ${JSON.stringify(mapped)}, ` +
+      'which is not a string the game has ever written — that renders as a MISSING lockout');
+  }
+
+  // And no mapping may be redundant: if a window name already matches verbatim,
+  // an entry for it is dead weight that will rot.
+  for (const [win, kill] of Object.entries(core.WINDOW_TO_KILL_NAME)) {
+    assert.ok(!everSlain.has(win),
+      `${JSON.stringify(win)} is written verbatim by the game; its mapping to ` +
+      `${JSON.stringify(kill)} is unnecessary`);
+  }
+
+  // THE ARTICLE HEURISTIC FAILS ON REAL BOSSES, and the evidence file records it.
+  // "a dracoliche" and "the Hand of Veeshan" are raid bosses whose names begin
+  // with an article. Filtering trash by that rule drops them.
+  const dracoliche = ROSTER_EVIDENCE.namedMobs.find((m) => m.name === 'a dracoliche');
+  assert.ok(dracoliche, 'a dracoliche must be recorded despite its leading article');
+  assert.equal(dracoliche.looksNamed, false, 'and the heuristic must be shown failing on it');
+});
+
+test('ZONES: the lockable unit looks like the instance, not the boss', () => {
+  // One Plane of Fear run produced lockout rows for all five of its bosses.
+  assert.equal(core.OBSERVED_ZONES['The Plane of Fear'].length, 5);
+  assert.equal(core.OBSERVED_ZONES['The Plane of Hate'].length, 2);
+  // Recorded as evidence of structure, NOT shipped as the list of what exists.
+  assert.match(core.LOCKOUT_MODEL.caveats.join(' '), /INSTANCE, not the boss/);
+});

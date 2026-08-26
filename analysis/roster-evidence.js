@@ -21,6 +21,9 @@ const core = require('../src/lockoutCore');
 const DIRS = [
   'C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs',
   'C:\\Users\\Lindsey\\Desktop\\EQL Source',
+  // The LIVE log. The archives end 18 Aug; the bosses the alt+Z window named on
+  // 25 Aug — Terror, Dread, Fright, Maestro of Rancor — appear only here.
+  'C:\\Users\\Public\\Daybreak Game Company\\Installed Games\\EverQuest Legends\\Logs',
 ];
 const OUT = path.join(__dirname, '..', 'sources', 'raw', 'roster-evidence.json');
 
@@ -76,8 +79,37 @@ function logFiles() {
     };
   });
 
+  // EVERY named mob killed, not only the roster. The alt+Z window shows the
+  // roster is DISCOVERABLE — a tracker that learns its bosses from observed
+  // data beats one that ships a list and goes stale on the next patch. This is
+  // the raw material for that, and it is what the name-mapping test asserts
+  // against, so a mapping can never point at a string the game never writes.
+  //
+  // THE ARTICLE HEURISTIC IS A FLAG, NOT A FILTER, AND THAT MATTERS.
+  //
+  // "A leading article means trash" is tempting — `A fire giant warrior has
+  // been slain` against `Lord Nagafen has been slain` — and it is WRONG. Two
+  // real raid bosses in this game are written with one: **`a dracoliche`** and
+  // **`the Hand of Veeshan`**, both listed as bosses in raids-measured.json.
+  // Filtering on it dropped `a dracoliche` out of this file entirely, which
+  // then made the alt+Z window's "Dracoliche" row unmappable — the exact
+  // missing-lockout failure the mapping is supposed to prevent.
+  //
+  // So every distinct slain name is kept, and `looksNamed` records what the
+  // heuristic would have said. Pets keep the boss's name as a prefix —
+  // `Terror pet` — and are flagged too, because that is a live substring hazard.
+  const named = [...seen.entries()]
+    .map(([name, c]) => ({
+      name,
+      kills: c.thirdPerson + c.firstPerson,
+      isPet: / pet$/.test(name),
+      looksNamed: !/^(a |an |A |An |The |the )/.test(name),
+    }))
+    .sort((a, b) => b.kills - a.kills);
+
   fs.writeFileSync(OUT, JSON.stringify({
     generatedBy: 'analysis/roster-evidence.js',
+    namedMobs: named,
     note:
       'Every roster key must have exactBoss > 0 or the roster is wrong. ' +
       'nearMisses are names containing the key that are NOT the boss — the ' +
