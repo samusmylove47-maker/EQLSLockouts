@@ -11,6 +11,209 @@ the owner measures, my protocol governs. All actioned; see the second report.
 
 ## To the Director
 
+### Seventh report, 26 Aug 2026 — the alt+Z window, and the anomaly is solved
+
+## THE ONE INSTRUCTION FOR THE OWNER, at the top as ordered
+
+**In game, type exactly this and press enter:**
+
+```
+/dzlisttimers
+```
+
+**Then, whatever happens, type `/say timers check done` so the log carries proof
+the window was open and unfiltered at that moment.**
+
+**What to paste back:** everything the chat window prints in the ten seconds
+after the command — even if it is nothing.
+
+**WHAT A NEGATIVE RESULT LOOKS LIKE, so an empty response is never mistaken for
+a failed capture.** There are three different outcomes and they are not the same:
+
+| what you see | what it means |
+|---|---|
+| A list of timers, like the alt+Z window | **The best case.** The tracker stops inferring and starts reading. |
+| `You have no outstanding replay timers` or similar | The command works; it just prints a different thing than alt+Z shows. |
+| **Nothing at all**, but `timers check done` appears | The command is not implemented, or prints only to the window. A real negative. |
+| `Unknown command` or similar | Not implemented. Also a real negative, and a cleaner one. |
+
+**The third row is the one that needs the control line.** Without `timers check
+done` in the log, "nothing happened" and "my chat filter hid it" look identical,
+and that is the failure this whole project is built to avoid.
+
+**Why it is worth ten seconds:** the client's own string table carries
+`3536 Usage: /dzListTimers — This command will list any outstanding replay timers
+you have for all expeditions`, and `grep -F "outstanding replay"` returns **0**
+across 434 MB. It has never been run. If it logs, every "uncertain" cell in the
+grid becomes a fact.
+
+---
+
+#### First: what I read off the image myself, and where it differs from your description
+
+Your description is right in substance. Three details differ and two of them matter.
+
+**1. The eight Replay Timer rows are NOT all one value.** Two read
+`0d:0h:58m:4s` and six read `0d:0h:58m:5s`. You described them as eight rows at
+`0d:0h:58m`, which is true but flattens a one-second spread — **and that spread
+is what refutes your "the display groups and rounds" alternative.** A display
+that rounded would not produce two different seconds values in the same column.
+
+**2. The instance names are TRUNCATED at a fixed column width.** Every Group row
+reads `The Plane of Fear - Group 4 (Refine` — the `d)` is cut off — while
+`- Solo 4 (Refined)` fits, because "Solo" is a character shorter than "Group".
+**If `/dzlisttimers` prints the same truncation, a parser matching full instance
+names will fail on exactly half the rows.** Worth knowing before we write one.
+
+**3. You flagged `Innoruuk` as needing a mapping. `Dracoliche` needs one too** —
+the log and `raids-measured.json` both write **`a dracoliche`**, lower case, with
+the article. Those are the only two of the seven that differ; Terror, Dread,
+Fright, Cazic-Thule and Maestro of Rancor match the kill lines verbatim.
+
+---
+
+#### THE ANOMALY IS SOLVED, and the answer is in our own log
+
+You asked me to kill it or explain it before any model rests on it.
+
+**All four runs are in the live log**, which has grown to 82 MB and now reaches
+26 Aug:
+
+```
+[Tue Aug 25 20:31:09 2026] You have entered The Plane of Hate - Group 4 (Refined).
+[Tue Aug 25 21:09:47 2026] You have entered The Plane of Hate - Group 3 (Fused).
+[Tue Aug 25 21:51:37 2026] You have entered The Plane of Fear - Group 4 (Refined).
+[Tue Aug 25 22:17:36 2026] You have entered The Plane of Fear - Group 3 (Fused).
+...
+[Tue Aug 25 22:37:12 2026] You have slain Cazic-Thule!            <- last kill
+[Tue Aug 25 22:40:33 2026] Avenrae has been removed from The Plane of Fear - Group.
+```
+
+**The two timers solve each other.** If the Replay Timer's period is one hour,
+`0d:0h:58m:5s` remaining means **1m55s elapsed**. Apply that same elapsed to the
+boss rows: `5d:23h:58m:5s + 1m55s` = **exactly six days**.
+
+A clean whole number falling out of two independent readings is the reason to
+believe it, rather than a preference for round figures. I tried other pairings —
+none of 30m, 90m, 2h or 3h against 5d, 6.5d or 7d produces a whole-number fit.
+
+**So: the lockout is six days, the replay timer is one hour, and everything on
+that window was stamped about 1m55s before the screenshot.**
+
+**THE ANSWER TO YOUR ANOMALY: the lockout is not applied at the kill.** Four runs
+spanning 20:31 to 22:37 cannot each stamp their own six-day timer and land
+identically to the second. Whatever moment they share, they share ONE — and that
+conclusion holds no matter when the screenshot was taken, because it depends only
+on all 36 rows agreeing, not on any assumed clock.
+
+**The anchor itself I state more carefully, because I do not know when the
+screenshot was taken.** If it was at ~22:42:28, the common moment is **22:40:33 —
+`Avenrae has been removed from The Plane of Fear - Group.`** That fits, and
+nothing else in the log within minutes of it does. But it is a fit, not a
+measurement, and `LOCKOUT_MODEL.anchorEvent` is therefore **`null` — not
+recorded**. I will not write a preference into the module as a fact.
+
+**Your point 3 stands and I have made it load-bearing:** if the lockout is
+stamped somewhere other than the kill, a kill-inference tracker is measuring the
+wrong event, and **no volume of kill data would ever reveal it.** That sentence
+is now in the module beside the model.
+
+---
+
+#### The three objects, separated and separately labelled
+
+Added **alongside** the Tuesday rule, not replacing it, exactly as ordered:
+
+| object | period | provenance | governs |
+|---|---|---|---|
+| `RESET_RULE` | Tuesday, hour not recorded | **stated** — owner, 23 Aug | the weekly task and its token |
+| `LOCKOUT_MODEL` | 6 days rolling | **observed** — the alt+Z window | instance loot |
+| `REPLAY_MODEL` | ~1 hour rolling | **observed** — the alt+Z window | **re-entry, not loot** |
+
+A test asserts all three periods are distinct, so a future merge fails the build.
+
+**On your item 1 — the corroboration is real and it is mutual.** We measured that
+any cycle up to **5.78 days** was refuted, from a weekly still refused 5.78 days
+after being granted. Six days clears that by about five hours. A measurement made
+without seeing this window, and a window read without seeing that measurement,
+agree from opposite directions.
+
+**On your item d — the Replay Timer is modelled to be excluded**, never to leak
+into a lockout cell. And you are almost certainly right about its origin: an
+hourly re-entry timer is a far better fit for the "rolling 18 hours" fan claim
+than anything else we found. It is an hour, not eighteen, and it is not a lockout.
+
+---
+
+#### Your item c — does the boundary problem dissolve? Partly, and the halves must not be confused
+
+**For the lockout: yes.** A six-day rolling timer has no boundary to fall either
+side of — only a timestamp plus six days. The "is today Tuesday and has the reset
+happened" ambiguity does not arise for it at all.
+
+**For the weekly task: no.** The weekly still resets on a weekday and the hour is
+still unmeasured, so its boundary-day uncertainty is untouched.
+
+**They must not share a cell**, which is exactly why the models are separate
+objects rather than one merged number. The grid's `unknown` cells today are about
+the *weekly*; a lockout view built on `LOCKOUT_MODEL` would not have them.
+
+---
+
+#### Your item b — the roster is discoverable, and here is what that takes
+
+I have **not** hardcoded Terror, Dread, Fright or Maestro of Rancor. The window
+proves the roster is discoverable, and a tracker that learns beats one that ships
+a list.
+
+What it takes, concretely: **the alt+Z window's Event Name column is itself the
+roster.** Every row names a boss and the instance that locks it. One reading of
+`/dzlisttimers` — if it logs — enumerates both the bosses and the zone structure
+without anyone typing a name. Until then the structure is recorded as
+`OBSERVED_ZONES`, explicitly as *evidence of shape*, not as a shipped list.
+
+**And a defect I found while building the evidence for it.** I had been treating
+"a leading article means trash" as a rule — `A fire giant warrior` versus
+`Lord Nagafen`. **It is wrong, and it bit immediately:** `a dracoliche` and
+`the Hand of Veeshan` are both real raid bosses written with articles. Filtering
+on it dropped `a dracoliche` out of the evidence file entirely, which made the
+window's `Dracoliche` row unmappable — *the exact missing-lockout failure the
+mapping exists to prevent*. It is now a flag, not a filter, and a test asserts
+the heuristic is recorded failing on `a dracoliche`.
+
+---
+
+#### Your item 4 — two rows is not two locks, and I have not read it as one
+
+The window shows Solo and Group rows from Group-only runs. That is consistent
+with a shared lock displayed twice, and consistent with two locks of which one
+was never used. **Recorded as a caveat on the model, not resolved.**
+`grep -F " - Solo"` over the archived corpus returns **0**; whether the live log
+has any is in the pending sweep.
+
+---
+
+#### Also done
+
+- **Contract clause 7 is bounded and the bound is stated.** The set of Voidling
+  seconds holds at most 5,000 distinct seconds, oldest dropped first — about 83
+  minutes of continuous hailing, against 195 replies across three weeks in the
+  real corpus. The cost of the bound is named too: a refusal older than the
+  5,000th most recent second loses its control and degrades to `unknown`, which
+  is the safe direction and never a false lockout.
+- **A new line shape nobody has modelled**, found in today's log:
+  `Player Avenrae creating instance The Ruins of Old Paineel 617.` — instance
+  creation, with a numeric instance id. The pending sweep is enumerating every
+  other unmodelled system line containing "instance", "expedition", "Replay" or
+  "lockout".
+- **72 tests green** (was 68). The page rebuilt at 104 KB.
+
+**Still open and not forgotten:** the clause 2 and 4 amendments, and the
+logSplitter per-day-files finding for `FOR-AURAS.md`, which Session C carries to
+Shara — not me.
+
+---
+
 ### Sixth report, 25 Aug 2026 — the browser surface
 
 **Sections 1 and 3 of your order were already built and merged.** The grid is

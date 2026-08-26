@@ -124,6 +124,17 @@
 //    CONTRACT 6 test proved that broke idempotence, and the exception is gone.
 //    Presence is all they are for, and a set is idempotent by construction.
 //
+//    THAT SET IS BOUNDED, AND HERE IS THE BOUND. It holds at most MAX_EVENTS
+//    (5,000) distinct seconds, oldest dropped first. A set with no bound is a
+//    leak in a page the owner is asked to leave open all evening, and "it is a
+//    set so it cannot grow" is only true of repeats — distinct seconds keep
+//    arriving as long as the client is running. At one Voidling exchange per
+//    second sustained, 5,000 seconds is about 83 minutes of continuous hailing;
+//    in real play the corpus produces 195 replies across three weeks. The cost
+//    of the bound is that a refusal older than the 5,000th most recent Voidling
+//    second loses its positive control and degrades to `unknown` — the safe
+//    direction, never to a false lockout.
+//
 // 7. ONE STATE PER CHARACTER. THE CHARACTER IS AN INPUT.
 //    `createState(character)` requires the name and refuses to be shared.
 //
@@ -528,6 +539,41 @@ const ROSTER = Object.freeze([
 // hour to make the arithmetic tidy is exactly the fault this module refuses, so
 // the period boundary is a DAY and everything landing inside that day is
 // reported as ambiguous rather than resolved. See `projectGrid`.
+// ===========================================================================
+// THREE DIFFERENT OBJECTS. DO NOT MERGE THEM.
+// ===========================================================================
+//
+// The owner's alt+Z "Instance Information" window, screenshotted 25 Aug 2026
+// after four raid runs, shows the state we had concluded the client never
+// exposes. It lists 36 "Outstanding Instance Timers" in three columns —
+// Lockout Time, Instance Name, Event Name — and it separates three things this
+// module had every reason to confuse:
+//
+//   1. THE WEEKLY TASK — `Potential of the Void - <Boss> - Weekly`, the
+//      Void-Touched Potential token, capped at the first three raids of the
+//      week, resetting on a WEEKDAY BOUNDARY (Tuesday). See RESET_RULE.
+//
+//   2. THE INSTANCE LOCKOUT — 28 rows whose Event Name is a boss name, each
+//      reading 5d:23h:58m:5s. A SIX-DAY ROLLING TIMER from when it is taken.
+//      There is no weekday and no boundary. See LOCKOUT_MODEL.
+//
+//   3. THE REPLAY TIMER — 8 rows whose Event Name is literally "Replay Timer",
+//      reading 0d:0h:58m. About an hour, and it governs RE-ENTRY, not loot.
+//      See REPLAY_MODEL. This is almost certainly the origin of the "rolling
+//      18 hours" fan claim this project could never place, and it must never
+//      leak into a lockout cell.
+//
+// **THE SEPARATION IS THE FINDING.** Under pressure to reconcile them, this
+// module recorded that "the loot lockout may still be a different object from
+// the weekly task and I am not merging them". The window shows both, side by
+// side, with different periods and different anchors.
+//
+// AND OUR OWN NEGATIVE EVIDENCE BRACKETS IT FROM THE OTHER SIDE. We measured
+// that any cycle up to 5.78 days was refuted — a weekly still refused on the
+// 5.78th day. Six days clears that by about five hours. A measurement made
+// without seeing this window and a window read without seeing that measurement
+// agree, which is the strongest corroboration this project has produced.
+
 const RESET_RULE = Object.freeze({
   weekday: 2,                    // 0 = Sunday, so 2 = Tuesday
   weekdayName: 'Tuesday',
@@ -542,6 +588,97 @@ const RESET_RULE = Object.freeze({
   note:
     'A day, not an instant. The hour of the turnover has never been measured, ' +
     'so a kill on the boundary day itself cannot be assigned to a period.',
+});
+
+// OBJECT 2 — the instance loot lockout. A ROLLING TIMER, not a weekday.
+//
+// Read off the client's own window, so this is `observed`, not `stated` and not
+// `inferred`. All 28 boss rows showed 5d:23h:58m:5s.
+//
+// THE PERIOD IS SOLVED, NOT ASSUMED, and the two timers solve each other:
+// if the Replay Timer's period is one hour then 0d:0h:58m:5s means 1m55s has
+// elapsed, and the boss period is therefore 5d23h58m5s + 1m55s = EXACTLY six
+// days. A clean whole number falling out of two independent readings is the
+// reason to believe it rather than a preference for round figures.
+//
+// `anchorEvent` is deliberately 'not recorded'. All 28 rows read the SAME value
+// to the second, and four raid runs spanning 20:31 to 22:37 cannot each have
+// stamped their own timer and land identically. So the timer does NOT start at
+// the kill — but which event it does start at is a separate question this
+// module will not answer by preference. See docs/EVIDENCE.md.
+//
+// **THIS IS WHY A KILL-INFERENCE TRACKER CAN BE WRONG IN A WAY NO AMOUNT OF
+// KILL DATA WOULD REVEAL.** If the lockout is stamped somewhere other than the
+// kill, a tracker watching kills is measuring the wrong event, and no volume of
+// kills would ever expose it. The grid still reports what it observed — a kill
+// happened — but must not claim to know when the lockout began.
+const LOCKOUT_MODEL = Object.freeze({
+  kind: 'rolling',
+  days: 6,
+  hours: 6 * 24,
+  provenance: 'observed',
+  source: "the owner's alt+Z Instance Information window, 25 Aug 2026",
+  derivation:
+    'Solved jointly with the Replay Timer: 5d23h58m5s remaining + 1m55s elapsed = 6d exactly, ' +
+    'where the elapsed time comes from the Replay Timer reading 0d0h58m5s of one hour.',
+  anchorEvent: null,   // NOT RECORDED — see the note above
+  corroboration:
+    'Our own measurement refuted any cycle up to 5.78 days, from a weekly still ' +
+    'refused 5.78 days after it was granted. Six days clears that by ~5 hours.',
+  caveats: [
+    'The unit that carries this lockout appears to be the INSTANCE, not the boss: ' +
+    'one Plane of Fear run produced rows for all five of its bosses.',
+    'Rows appear for both the Solo and the Group shape of a tier from Group-only ' +
+    'runs. Two rows is not two locks; a shared lock displayed twice fits equally.',
+  ],
+});
+
+// OBJECT 3 — the replay timer. Instance RE-ENTRY, not loot.
+//
+// Eight rows reading 0d:0h:58m, Event Name literally "Replay Timer". It governs
+// how soon the same instance may be entered again and has nothing to do with
+// whether its loot is still owed. Modelled here so it can be EXCLUDED
+// explicitly rather than leaking into a lockout cell.
+const REPLAY_MODEL = Object.freeze({
+  kind: 'rolling',
+  minutes: 60,
+  provenance: 'observed',
+  source: "the owner's alt+Z Instance Information window, 25 Aug 2026",
+  governs: 're-entry to the same instance',
+  doesNotGovern: 'whether the loot in that instance is still available',
+  note:
+    'Almost certainly the origin of the "rolling 18 hours" community claim this ' +
+    'project could never place. It is an hour, not eighteen, and it is not a lockout.',
+});
+
+// The zone-to-boss structure, as OBSERVED in the alt+Z window and the live log.
+//
+// This is the shape our 25-cell grid does not model: Vox, Nagafen and Yael are
+// single-boss instances, but Fear and Hate are not — one run of Fear produces
+// lockout rows for five bosses at once. So the lockable unit looks like the
+// INSTANCE, with bosses as its contents.
+//
+// **NOT HARDCODED AS A ROSTER.** These names are recorded as evidence of the
+// structure, not shipped as the list of what exists. The window proves the
+// roster is DISCOVERABLE — a tracker that learns its bosses from observed timer
+// rows beats one that ships a list and goes stale on the next patch.
+const OBSERVED_ZONES = Object.freeze({
+  'The Plane of Fear': Object.freeze(['Terror', 'Dread', 'Fright', 'Dracoliche', 'Cazic-Thule']),
+  'The Plane of Hate': Object.freeze(['Innoruuk', 'Maestro of Rancor']),
+});
+
+// THE NAME MAPPING, and it is the roster trap arriving through a second door.
+//
+// The alt+Z window and the kill lines do not use the same strings. An unmapped
+// name renders as a MISSING lockout, which looks exactly like a raid you still
+// owe — the same failure the roster assert exists to prevent, reached from the
+// other side.
+//
+// Only the names that DIFFER are listed. Everything else matches exactly, and a
+// test asserts that, so an entry silently becoming unnecessary is caught too.
+const WINDOW_TO_KILL_NAME = Object.freeze({
+  'Innoruuk': 'Innoruuk, the Prince of Hate',
+  'Dracoliche': 'a dracoliche',
 });
 
 function parseLine(line) {
@@ -1581,6 +1718,10 @@ module.exports = {
   DIFFICULTY_LABELS,
   ROSTER,
   RESET_RULE,
+  LOCKOUT_MODEL,
+  REPLAY_MODEL,
+  OBSERVED_ZONES,
+  WINDOW_TO_KILL_NAME,
   OBSERVED_WEEKLY_BOSSES,
   STATE_VERSION,
   CAVEAT_DST,
