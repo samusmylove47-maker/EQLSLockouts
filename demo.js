@@ -22,7 +22,9 @@ const fs = require('fs');
 const path = require('path');
 const core = require('./src/lockoutCore');
 
-const MARK = { completed: '##', open: ' .', unknown: ' ?', not_looked: ' -' };
+// '~~' is CONDITIONAL: a kill on the reset day itself. The cell knows the
+// exact instant that decides it and prints it below, rather than shrugging.
+const MARK = { completed: '##', open: ' .', conditional: ' ~', unknown: ' ?', not_looked: ' -' };
 
 function readFixture() {
   return fs
@@ -48,6 +50,7 @@ function render(grid, title, note) {
   } else {
     out.push('');
     const bits = [`${grid.openCount} still open`];
+    if (grid.conditionalCount) bits.push(`${grid.conditionalCount} turning on the reset hour`);
     if (grid.uncertainCount) bits.push(`${grid.uncertainCount} uncertain`);
     if (grid.notLookedCount) bits.push(`${grid.notLookedCount} not looked at`);
     out.push(`  ${bits.join('   ·   ')}      (${grid.completedCount} of 25 done)`);
@@ -56,6 +59,19 @@ function render(grid, title, note) {
       out.push('  STILL OPEN:');
       for (const c of grid.open) {
         out.push(`      ${c.label.padEnd(13)} D${c.difficulty} ${c.difficultyLabel}`);
+      }
+    }
+    // TURNS ON THE RESET HOUR. These are not "cannot tell" — they are answered
+    // with a stated condition, and the condition is a clock time the player can
+    // reason about. This section is the difference between a tool that refuses
+    // to guess and a tool that refuses to help.
+    if (grid.conditional.length) {
+      out.push('');
+      out.push('  TURNS ON THE RESET HOUR — we know exactly what would settle it:');
+      for (const c of grid.conditional) {
+        out.push(`      ${c.label.padEnd(13)} D${c.difficulty} ${c.difficultyLabel}`);
+        out.push(`         DONE if ${c.decidedBy.doneIf}`);
+        out.push(`         OPEN if ${c.decidedBy.openIf}`);
       }
     }
     if (grid.uncertain.length) {
@@ -83,7 +99,8 @@ function render(grid, title, note) {
   }
   out.push('');
   out.push('    ##  completed since the reset        .  still open');
-  out.push('     ?  cannot tell                      -  not looked at');
+  out.push('     ~  turns on the reset hour          ?  cannot tell');
+  out.push('     -  not looked at');
 
   out.push('');
   out.push(`  reset rule : ${grid.resetRule.weekdayName}, hour NOT RECORDED`);
