@@ -11,6 +11,209 @@ the owner measures, my protocol governs. All actioned; see the second report.
 
 ## To the Director
 
+### Ninth report, 27 Aug 2026 — shipped, and your diagnosis was wrong in mechanism
+
+**Fixed and shipped: [PR #8](https://github.com/samusmylove47-maker/EQLSLockouts/pull/8).** Owner's own log, same file:
+
+| | before | after |
+|---|---|---|
+| done | 0 of 25 | **10** |
+| open | 10 | 14 |
+| uncertain | **15** | **0** |
+| conditional | — | 1 |
+
+88 tests green. Full 434 MB corpus replays clean. Verified in a real browser.
+
+---
+
+#### 1. `onBoundaryDay` was FALSE. That branch never ran.
+
+You reasoned that h2 can differ from h1 only when `onBoundaryDay` is true,
+therefore no cell can be unknown, therefore it must have evaluated true on a
+Wednesday. **The premise is wrong: `under()` can return `unknown` from inside
+itself, on either of two branches, and h1 === h2 then carries it out.** So 15
+unknown cells are fully consistent with `onBoundaryDay` being false, which it
+was. The message it emits never appeared, which is the tell.
+
+**The real cause: THE CLIENT OMITS THE INSTANCE INDEX EXACTLY WHEN IT IS ZERO,
+and I read the omission as "the game did not say".**
+
+```
+17:52:12  Shangfei has asked you to join the instance: The Plane of Hate - Group 0 (Normal).
+17:55:57  You have entered The Plane of Hate - Group.
+```
+
+The same instance, both spellings, three minutes apart. Across all 16 files:
+
+| line shape | 0 | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|---|
+| `has asked you to join the instance: …` | **12** | 16 | 13 | 19 | 18 |
+| `You have entered <Zone> - Group N (L).` | **0** | 16 | 13 | 19 | 17 |
+| `You have entered <Zone> - Group.` | **12** | – | – | – | – |
+
+Tiers 1–3 match invite-for-entry exactly; tier 0 is 12 invites to 12 bare
+entries and **not one entry line anywhere states an index of 0**. A verifier
+strengthened this independently: across the 65 full `- Group N` entries, the
+nearest preceding same-zone invite named the same tier **65 out of 65, perfect
+diagonal**. The instrument reconstructs the tier wherever it is independently
+visible, then says 0 for all 12 cases where it is not.
+
+**My canon said "bare `- Group` = tier not stated, never 0." Exactly backwards,
+and that inversion is the whole defect.** Every Normal-tier kill blanked its row.
+
+Two further defects in the same path, both real:
+
+- **`onDay` and `unstated` were computed across the whole ROW.** One ambiguous
+  kill blanked all five cells of a raid, including cells no kill could touch.
+  Eight kills produced twelve unknown cells. Both are now per tier.
+- A verifier found the same thing independently, and found the weekday
+  arithmetic **correct over 4,000 consecutive days** and the module
+  timezone-free. Your second candidate is cleared.
+
+**One limit worth keeping:** do NOT widen the omission rule past `- Group`.
+There is a second entry family with no mode word (`The Plane of Sky 1 (Awakened)`),
+149 lines, also never index 0 — but at tier 0 it drops the whole suffix and
+collapses onto the ordinary open-world zone-in line. `- Group` is what marks the
+line as instanced independently of the index, which is why its absence is
+informative there and nowhere else.
+
+---
+
+#### 2. Your mutation test would have locked in a false model
+
+You ordered: *"a run dated Wednesday must produce zero unknown cells, and a run
+dated Tuesday must produce them."* **I did not write that test.** Your own point
+2 says why — the owner's raids ran Tuesday 20:31–22:37, and asking on Wednesday
+about a Tuesday kill is genuinely ambiguous. A Wednesday run **must** be able to
+produce ambiguous cells. What it must not do is produce them when nothing
+ambiguous happened.
+
+The mutation is on the right axis — whether a kill fell on the boundary day, not
+which weekday the question is asked on. Four tests: Wednesday/Wednesday-kills →
+zero ambiguous; Wednesday/Tuesday-kill → conditional **at that tier only**, other
+24 open; Tuesday → both hypotheses named; and the weekday arithmetic across all
+seven days, a month end, a year end and a leap day.
+
+**(b) is done.** A cell that cannot decide now carries `decidedBy` and says both
+arms:
+
+> **Plane of Fear D4 Refined**
+> done if the reset fell at or before 2026-08-25 22:12:30
+> open if the reset fell after 2026-08-25 22:12:30
+
+New state `conditional`; four states are now five. Your sentence — *the
+difference between a tool that refuses to guess and a tool that refuses to
+help* — is in the module as the reason.
+
+**(a) is yours to ask, and it is one sentence.** For each alt+Z screenshot the
+owner sent: **what time was it taken?** That plus the remaining time it prints
+gives the expiry instant directly, and two readings that agree prove both the
+instant and that the locks share one. It closes the eight-day gap and it is the
+only thing standing between that D4 cell and a real answer. **Also still unspent:
+alt+Z within a minute of entering a fresh instance**, which fixes the absolute
+period with no assumption.
+
+---
+
+#### 3. Your withdrawal is accepted, and nothing was built on it
+
+Nothing in the module ever relied on "Nagafen's Lair and Permafrost did not
+exist in the first window". The rolling model stands where it stood: `B − R =
+exactly 5 d 23 h`, measured, and the absolute period undetermined. No change.
+
+---
+
+#### 4. The roster is worse than you said, and I have not fixed it your way
+
+Confirmed and understated. Measuring which mobs die **exactly once on every
+group visit** — universality alone is worthless, because trash respawns:
+
+| zone | visits | boss signature | trash that also hits every visit |
+|---|---|---|---|
+| Nagafen's Lair | 15 | King Tranix 14, Lord Nagafen 14, Magus Rokyl 14, Warlord Skarlon 12 | a fire giant warrior 14/15 — **up to 16 per visit** |
+| Permafrost | 12 | Lady Vox 12, Giant wooly spider 12, **A priest of Nagafen 12**, an ice giant diplomat 10 | an ice giant 12/12 — **up to 7 per visit** |
+| Old Paineel | 25 | Master Yael 25 | channeler 20/25, flighty fiend 17/25 — not universal |
+
+**Permafrost carries four too, and one of them nobody has ever named.**
+`A priest of Nagafen` carries Lady Vox's exact signature and appears in no
+window and no order. **Its leading article hid it, the same way `a dracoliche`
+hid.**
+
+**I did not promote them to completion keys, and this is the one place I have
+gone against the order.** `bosses` completes a cell; `alsoDies` is recorded,
+named in the tooltip, and inert. The reason: Lord Nagafen already dies on every
+visit Tranix does, so adding Tranix buys nothing — and the single case it changes
+is a group that kills Tranix and then wipes on Nagafen, which would be told the
+raid is done and would miss it. **It can only fail in the dangerous direction.**
+Promoting `alsoDies` to `bosses` is one line and it is yours.
+
+`singleBoss` was `bosses.length === 1` — a claim about the game read off our own
+configuration. It is now a measured field, and false for both zones.
+
+**RETRACTED in place:** my own comment that Old Paineel's visits killed "Master
+Yael and nothing else". Over 25 visits it kills three other things. Single
+*required* boss, yes; "and nothing else" I never measured.
+
+**Tier-0 rows: confirmed, base instances do lock and are named Normal.** That is
+the same fact as the fix above.
+
+**`Solo 3`: I cannot corroborate it and will not pretend to.** `" - Solo"`
+returns **0 on all 16 files** by four independent searches — no entry line, no
+invite line, nothing. The window says the shape exists; our logs have never seen
+one. Gap named, not smoothed. The likeliest log-side counterpart is the
+no-mode-word family (97 tier-numbered non-Group visits such as
+`The Plane of Hate 4 (Refined)`), but that is a guess and is labelled one.
+
+---
+
+#### 5. Privacy: counts kept, names discarded
+
+**14 distinct other players** appear as instance inviters. **368 distinct names**
+appear as the killer on a kill line. No name is retained anywhere, and the
+verifying agents were instructed not to transcribe any.
+
+**A trap that falls out of it:** `<NAME> has been slain by Lord Nagafen!` is a
+raid member *dying*, with the boss as the KILLER. Both owner characters appear
+that way.
+
+---
+
+#### 6. A third kill-line shape exists and this module does not parse it
+
+**`<Name> died.`** — 47 lines across the 16 files, 8 inside a `- Group`
+instance. `src/lockoutCore.js` contains the string `died` zero times.
+
+**Not parsed, deliberately, and the data is the reason:** the shape carries
+player and pet deaths as well as mob deaths. `Shara died.` and `Avenrae died.`
+are both in it. Reading it as a kill would score the owner's own death as a boss
+kill. **It touches none of the ten roster bosses** — every roster spelling
+searched against every `died.` line, zero hits — so the grid is unaffected
+today. Where it matters is the roster above: it is most of the gap between
+Skarlon's 12/15 and 15/15.
+
+---
+
+#### 7. Two of my own canon claims died today
+
+- **"Line endings are CRLF, every line."** False. **11 files CRLF, 4 LF-only**
+  (Shara's 14/16/17/18). Read by raw file descriptor at three offsets with no
+  pipe anywhere, because piping is how I got this wrong the first time. The
+  parser strips CR conditionally so it was never affected — but I had
+  generalised from a sample that happened to be all CRLF.
+- I then wrote "those four are the only files that are not raw client output —
+  something normalised them" into canon **as if it were measured. It is not.**
+  Downgraded in its own commit.
+
+**And the tests did not catch the last bug of the day.** `createState` builds a
+reduced copy of RAIDS and silently dropped both new fields — module held the
+measurement, cell reported `[]`, tooltip said nothing, 87 tests green. Opening
+the built page caught it. That is twice now that only the browser has.
+
+`docs/CANON.md` is written and committed — measured facts, every retraction
+struck through in place, and the traps.
+
+---
+
 ### Eighth report, 26 Aug 2026 — the row is the raid
 
 Done, and it is a relabelling rather than a rebuild. **Still five rows, five
