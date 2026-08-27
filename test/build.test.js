@@ -186,3 +186,33 @@ test('BUILD: the licence notice ships with the fonts it describes', () => {
   assert.match(lic, /Reserved Font Name/i, 'the notice must explain the rename');
   assert.match(lic, /name.{0,20}table/i, 'and must state the gap: the rename is CSS-only');
 });
+
+test('BUILD: no wall-clock time is ever rendered on the page surface', () => {
+  // THE OWNER'S CONSTRAINT, and it is narrower than "no countdown".
+  //
+  // The page had grown "if before 22:12" in the unsure cells and
+  // "at or before 2026-08-25 20:29:00" in the list under the count. Both were
+  // true, and both were answering a question nobody asked: the tool exists so a
+  // player can see what they have and have not killed. A printed time invites
+  // arithmetic, and at a glance it reads as a countdown — which this page has
+  // never had and must never grow.
+  //
+  // The instant is NOT discarded. The engine still computes it, and the cell's
+  // `title` still carries it for whoever hovers. This guards the SURFACE.
+  const { html } = build();
+  const body = html.slice(html.indexOf('<main>'), html.indexOf('</main>'));
+  const clocks = body.match(/\b\d{1,2}:\d{2}(:\d{2})?\b/g) || [];
+  assert.deepEqual(clocks, [], `static markup renders a clock: ${clocks.join(', ')}`);
+
+  // And the renderer must not build one either. These are the two shapes it
+  // grew before: slicing a civil stamp for its time half, and printing an
+  // engine string that ends in one.
+  const script = html.slice(html.indexOf('</style>'));
+  for (const shape of ['decidedBy.doneIf', 'decidedBy.openIf', '.pivot.slice(11']) {
+    assert.ok(!script.includes(shape),
+      `the view must not surface ${shape} — it carries a wall-clock time`);
+  }
+  // `shortDay` is the only formatter allowed to touch a civil stamp for display.
+  assert.match(script, /function shortDay/, 'the date formatter must exist');
+  assert.match(script, /MON\[Number\(m\[2\]\) - 1\]/, 'and produce a day and month, not a time');
+});
