@@ -103,9 +103,14 @@ pipe anywhere**, because piping is how I got this wrong the first time.
 
 The parser is unharmed: `splitStamp` strips a trailing CR **conditionally**, and
 `readline` with `crlfDelay: Infinity` handles both. But the claim was false, and
-I had generalised from a sample that happened to be all CRLF. **Those four are
-also the only files that are not raw client output** — something normalised
-them — so their provenance is weaker than the other eleven's.
+I had generalised from a sample that happened to be all CRLF.
+
+**NOT MEASURED, and I nearly wrote it as if it were:** that those four were
+normalised by some tool rather than written that way by the client. It is the
+obvious reading — the four are consecutive dated Shara archives and the client
+demonstrably writes CRLF elsewhere — but I have no evidence of a transform, and
+"the obvious reading" is not a measurement. If it matters, it is checkable: the
+same client writing the same session should not change terminator mid-corpus.
 
 One file reads "mixed" at 2855/2856. That is my instrument: a 64 KB sample
 window can open between a CR and its LF. Exactly one off, at one boundary.
