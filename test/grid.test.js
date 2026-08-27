@@ -807,3 +807,87 @@ test('MUTATION 4/4: the weekday arithmetic lands on Tuesday for all seven days o
     assert.equal(new Date(`${boundary}T00:00:00Z`).getUTCDay(), 2, `${boundary} must be a Tuesday`);
   }
 });
+
+test('ROSTER: `alsoDies` is recorded and INERT — it must never complete a cell', () => {
+  // The window lists four bosses under Nagafen's Lair and the corpus agrees
+  // (Tranix 14/15 group visits, Rokyl 14/15, Skarlon 12/15, each exactly once).
+  // They are named, and they complete nothing. Promoting them could only fail
+  // in the dangerous direction: a group that kills Tranix and then wipes on
+  // Nagafen would be told the raid is done, and would miss it.
+  const nag = core.RAIDS.find((r) => r.key === "Nagafen's Lair");
+  assert.deepEqual(nag.bosses.slice(), ['Lord Nagafen'], 'exactly one completion key');
+  assert.ok(nag.alsoDies.includes('King Tranix'));
+  assert.equal(nag.singleBoss, false, 'and the row must stop claiming to be single-boss');
+
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 20:00:00 2026] You have entered ' + "Nagafen's Lair - Group 3 (Fused).",
+    '[Wed Aug 19 20:20:00 2026] King Tranix has been slain by X!',
+    '[Wed Aug 19 20:22:00 2026] Magus Rokyl has been slain by X!',
+  ]);
+  assert.equal(st.kills.length, 0, 'a non-key kill is not even recorded as a roster kill');
+  const row = core.projectGrid(st, NOW).cells.filter((c) => c.label === 'Lord Nagafen');
+  for (const c of row) assert.equal(c.state, 'open', 'and it completes nothing');
+});
+
+test('ROSTER: singleBoss is MEASURED, not derived from our own list length', () => {
+  // It used to be `bosses.length === 1`, which read a claim about the game off
+  // our own configuration — Nagafen's Lair "was" single-boss only because we
+  // had listed one key.
+  const byKey = Object.fromEntries(core.RAIDS.map((r) => [r.key, r]));
+  assert.equal(byKey["Nagafen's Lair"].singleBoss, false);
+  assert.equal(byKey['The Permafrost Caverns'].singleBoss, false);
+  assert.equal(byKey['The Ruins of Old Paineel'].singleBoss, true, 'Master Yael is the only mob at 25/25');
+  for (const r of core.RAIDS) {
+    assert.equal(typeof r.singleBoss, 'boolean', `${r.key} must state it, not imply it`);
+    if (r.singleBoss) assert.equal(r.alsoDies.length, 0, 'single-boss and alsoDies are contradictory');
+  }
+});
+
+test('THE THIRD KILL SHAPE "<Name> died." is deliberately NOT parsed', () => {
+  // 47 lines across the 16 files, 8 inside a `- Group` instance. It is not
+  // parsed because it covers PLAYER and PET deaths as well as mob deaths —
+  // "Shara died." and "Avenrae died." are both in the corpus — so reading it as
+  // a kill would score the owner's own death as a boss kill.
+  assert.equal(core.parseLine('[Wed Aug 12 22:55:43 2026] Warlord Skarlon died.'), null);
+  assert.equal(core.parseLine('[Wed Aug 12 22:55:43 2026] Avenrae died.'), null,
+    'and this is why: the same shape carries the player');
+
+  // The two shapes we DO parse must keep working, so this is a decision about
+  // one shape and not a hole in kill parsing generally.
+  assert.equal(core.parseLine('[Wed Aug 12 22:55:43 2026] Lord Nagafen has been slain by X!').kind, 'kill');
+  assert.equal(core.parseLine('[Wed Aug 12 22:55:43 2026] You have slain Lord Nagafen!').kind, 'kill');
+
+  // THE CLEARANCE: no roster boss has ever appeared in the unparsed shape, so
+  // not parsing it costs the grid nothing today. If that changes, this is the
+  // decision to revisit.
+  const spellings = ROSTER_EVIDENCE.roster.flatMap((r) => r.spellings || [r.key]);
+  assert.ok(spellings.length >= 10, 'the evidence file must carry the spellings to clear against');
+});
+
+test('ROSTER: alsoDies and singleBoss survive the trip through state and a restore', () => {
+  // They did not, first time. `createState` builds a reduced copy of RAIDS and
+  // silently dropped both fields, so the module held the measurement, the cell
+  // reported `alsoDies: []`, and the tooltip said nothing. Only opening the
+  // built page caught it — the tests were all green.
+  const st = core.createState('Avenrae');
+  const nag = st.raids.find((r) => r.key === "Nagafen's Lair");
+  assert.deepEqual(nag.alsoDies, ['King Tranix', 'Magus Rokyl', 'Warlord Skarlon']);
+  assert.equal(nag.singleBoss, false);
+
+  const cell = core.projectGrid(st, NOW).cells.find((c) => c.label === 'Lord Nagafen' && c.difficulty === 0);
+  assert.deepEqual(cell.alsoDies, ['King Tranix', 'Magus Rokyl', 'Warlord Skarlon'],
+    'the cell is what the UI renders — the measurement has to reach it');
+  assert.equal(cell.singleBoss, false);
+
+  // And across a JSON round trip, which is the core's contract (serialize and
+  // restore live on the engine; the core promises only that state is clonable)
+  // and is how the page persists a session between reloads.
+  const back = JSON.parse(JSON.stringify(st));
+  assert.deepEqual(back.raids.find((r) => r.key === "Nagafen's Lair").alsoDies,
+    ['King Tranix', 'Magus Rokyl', 'Warlord Skarlon']);
+  assert.deepEqual(core.projectGrid(back, NOW).cells.map((c) => c.state),
+    core.projectGrid(st, NOW).cells.map((c) => c.state),
+    'a cloned state must project identically');
+});

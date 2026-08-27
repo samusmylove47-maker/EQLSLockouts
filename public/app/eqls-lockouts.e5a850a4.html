@@ -757,35 +757,104 @@ const WEEKLY_TASK_IS_PER_BOSS = false;
 //    raids-measured.json and dies up to FIVE times in one visit, where each of
 //    the five dies exactly once per visit. A lockout boss dies once.
 //
-// 4. **`singleBoss` IS UNPROVEN FOR TWO OF THE THREE.** Every Nagafen's Lair
-//    group visit also kills King Tranix, Warlord Skarlon and Magus Rokyl; every
-//    Permafrost visit also kills Giant wooly spider. None of the four appears as
-//    a boss in raids-measured.json, which is weak evidence they are not lockout
-//    bosses — and we hold no alt+Z reading for either zone, which is what would
-//    settle it. Only The Ruins of Old Paineel is genuinely single: all seven of
-//    its group visits killed Master Yael and nothing else.
+// 4. **`singleBoss` WAS FALSE FOR TWO OF THE THREE, and is now measured.**
+//    The owner's alt+Z window lists FOUR bosses under Nagafen's Lair. The
+//    corpus agrees independently. Counting group visits and asking which mobs
+//    die EXACTLY ONCE ON EVERY VISIT — the signature that separates a lockout
+//    boss from trash that always spawns:
+//
+//      Nagafen's Lair, 15 group visits
+//        King Tranix 14/15 · Lord Nagafen 14/15 · Magus Rokyl 14/15
+//        Warlord Skarlon 12/15
+//        (a fire giant warrior is also 14/15 — but up to SIXTEEN per visit)
+//
+//      The Permafrost Caverns, 12 group visits
+//        Lady Vox 12/12 · Giant wooly spider 12/12 · A priest of Nagafen 12/12
+//        an ice giant diplomat 10/12
+//        (an ice giant is also 12/12 — but up to SEVEN per visit)
+//
+//    "Killed on every visit" alone is worthless; it is universality PLUS
+//    exactly-one-per-visit that discriminates, and the trash above shows why.
+//
+//    **A PRIEST OF NAGAFEN WAS HIDING BEHIND ITS ARTICLE.** Nobody had named
+//    it, in the window or in any order, and it carries Lady Vox's exact
+//    signature. It is the same trap as `a dracoliche`: the leading article
+//    reads as trash and is not.
+//
+//    ~~"Only The Ruins of Old Paineel is genuinely single: all seven of its
+//    group visits killed Master Yael and nothing else."~~ **THE SECOND HALF IS
+//    FALSE.** Over 25 group visits Paineel also kills an elemental channeler
+//    (20/25), a flighty fiend (17/25) and an elemental warrior (7/25). Master
+//    Yael is the only mob at 25/25, so Paineel is single-REQUIRED-boss — but
+//    "and nothing else" was a claim I never measured.
+//
+// 5. **THERE IS A THIRD KILL-LINE SHAPE AND THIS MODULE DOES NOT PARSE IT.**
+//    `<Name> died.` — 47 lines across the 16 files, 8 of them inside a
+//    `- Group` instance. It is NOT parsed, and that is a decision rather than
+//    an oversight: the shape covers player and pet deaths as well as mob
+//    deaths. `Shara died.` and `Avenrae died.` are both in it, so reading it as
+//    a kill line would score the owner's own death as a boss kill.
+//
+//    **It touches none of the ten roster bosses** — searched all 16 files for
+//    every roster spelling in a `died.` line and got zero — so the grid is
+//    unaffected today. Where it DOES matter is the roster question above:
+//    Warlord Skarlon and an ice giant diplomat each die twice in this shape,
+//    which is most of the gap between their counts and 15/15 and 12/12.
+//    Parsing it safely needs a way to tell a mob death from a player death,
+//    and we do not have one yet.
 //
 // **NOT A DISCOVERED ROSTER, AND DELIBERATELY NOT YET.** A tracker that learns
 // its raids from observed timer rows beats one that ships a list — but if
 // `/dzlisttimers` logs, the roster discovers itself for free and anything built
 // now is thrown away. This list is the interim, and it is small on purpose.
 const RAIDS = Object.freeze([
+  // TWO LISTS, AND THEY ARE NOT THE SAME LIST.
+  //
+  //   `bosses`   COMPLETION KEYS. Killing any one of these marks the cell done.
+  //   `alsoDies` measured to die exactly once on (nearly) every group visit,
+  //              and NOT used to complete anything.
+  //
+  // The split is the whole of my answer to "the roster ships as single-boss".
+  // It is wrong that these zones hold one boss — the window says four and the
+  // corpus agrees. But **promoting them to completion keys can only fail in the
+  // dangerous direction.** Lord Nagafen already dies on every visit where
+  // Tranix does, so adding Tranix buys nothing; the one case it changes is a
+  // group that kills Tranix and then WIPES on Nagafen, where the tool would
+  // report the raid done and the player would miss it. That is precisely the
+  // failure this tool exists to prevent.
+  //
+  // So they are recorded, named in the tooltip, and inert — until the
+  // shared-lock question is settled by an alt+Z reading for these zones.
+  // **Director: promoting `alsoDies` to `bosses` is a one-line change and it
+  // is yours, not mine.**
   {
     key: "Nagafen's Lair",
-    label: 'Lord Nagafen',            // single-boss raid: the boss name is the right label
+    label: 'Lord Nagafen',
     bosses: Object.freeze(['Lord Nagafen']),
+    alsoDies: Object.freeze(['King Tranix', 'Magus Rokyl', 'Warlord Skarlon']),
+    singleBoss: false,                // the window lists four; measured 14/15, 14/15, 12/15
     weeklyTaskObserved: true,
   },
   {
     key: 'The Permafrost Caverns',
     label: 'Lady Vox',
+    // A priest of Nagafen carries Lady Vox's exact signature — 12/12 visits,
+    // exactly once — and NOBODY had named it, in the window or in any order.
+    // Its leading article is what hid it, the same way `a dracoliche` hid.
+    alsoDies: Object.freeze(['Giant wooly spider', 'A priest of Nagafen', 'an ice giant diplomat']),
     bosses: Object.freeze(['Lady Vox']),
+    singleBoss: false,
     weeklyTaskObserved: true,
   },
   {
     key: 'The Ruins of Old Paineel',
     label: 'Master Yael',
     bosses: Object.freeze(['Master Yael']),
+    // Master Yael is the only mob at 25/25. The three below are common but not
+    // universal, so they do not carry the boss signature — this is the one zone
+    // of the three that really is single-boss.
+    alsoDies: Object.freeze([]),
+    singleBoss: true,
     weeklyTaskObserved: true,
   },
   {
@@ -795,12 +864,16 @@ const RAIDS = Object.freeze([
     // window writes "Dracoliche", the game writes "a dracoliche", and a name
     // that does not match renders as a raid still owed.
     bosses: Object.freeze(['Terror', 'Dread', 'Fright', 'a dracoliche', 'Cazic-Thule']),
+    alsoDies: Object.freeze([]),
+    singleBoss: false,
     weeklyTaskObserved: false,
   },
   {
     key: 'The Plane of Hate',
     label: 'Plane of Hate',
     bosses: Object.freeze(['Innoruuk, the Prince of Hate', 'Maestro of Rancor']),
+    alsoDies: Object.freeze([]),
+    singleBoss: false,
     weeklyTaskObserved: false,
   },
 ].map(Object.freeze));
@@ -1136,6 +1209,11 @@ function createState(character, opts) {
       key: r.key,
       label: r.label,
       bosses: r.bosses.slice(),
+      // Measured to die once on (nearly) every group visit, and NOT completion
+      // keys — see the two-lists note above RAIDS. Copied into the state so a
+      // restored snapshot renders the same tooltip as a live one.
+      alsoDies: (r.alsoDies || []).slice(),
+      singleBoss: r.singleBoss === true,
       // Observed in OUR corpus; not a property of the raid. See the note above.
       weeklyTaskObserved: r.weeklyTaskObserved === true,
     })),
@@ -1973,7 +2051,14 @@ function projectGrid(state, now) {
         // What this row contains, so a player never has to know which boss we
         // picked to stand for the zone.
         bosses: entry.bosses.slice(),
-        singleBoss: entry.bosses.length === 1,
+        // NOT `bosses.length === 1`. That derived it from the completion-key
+        // list and so asserted "Nagafen's Lair is a single-boss raid" purely
+        // because we had only listed one key — a claim about the game read off
+        // our own configuration. It is now a measured field on the entry.
+        singleBoss: entry.singleBoss === true,
+        // Measured to die exactly once on (nearly) every group visit, and
+        // deliberately NOT completion keys — see the note above RAIDS.
+        alsoDies: (entry.alsoDies || []).slice(),
         // Whether a weekly task for this boss was ever seen in our corpus. NOT
         // a claim that the boss can or cannot carry one — the task goes to the
         // first three raids of the week, whichever they are.
@@ -2518,6 +2603,8 @@ function render() {
       const BR = String.fromCharCode(10);
       span.title = c.because +
         (c.repeatKills ? "  (+" + c.repeatKills + " repeat kill(s))" : "") +
+        (c.alsoDies && c.alsoDies.length ? BR + BR + "also dies here, every visit, and NOT counted as completing it: " +
+          c.alsoDies.join(", ") : "") +
         (c.singleBoss ? "" : BR + BR + "contains: " + c.bosses.join(", ") + BR +
           "(one cell per raid assumes these bosses share a lock — the alt+Z " +
           "window is consistent with that and does not prove it)");

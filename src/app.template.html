@@ -439,6 +439,8 @@ function render() {
       const BR = String.fromCharCode(10);
       span.title = c.because +
         (c.repeatKills ? "  (+" + c.repeatKills + " repeat kill(s))" : "") +
+        (c.alsoDies && c.alsoDies.length ? BR + BR + "also dies here, every visit, and NOT counted as completing it: " +
+          c.alsoDies.join(", ") : "") +
         (c.singleBoss ? "" : BR + BR + "contains: " + c.bosses.join(", ") + BR +
           "(one cell per raid assumes these bosses share a lock — the alt+Z " +
           "window is consistent with that and does not prove it)");
