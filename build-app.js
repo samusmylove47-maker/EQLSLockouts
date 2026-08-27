@@ -25,6 +25,8 @@ const CORE = path.join(ROOT, 'src', 'lockoutCore.js');
 const TEMPLATE = path.join(ROOT, 'src', 'app.template.html');
 const OUT_DIR = path.join(ROOT, 'public', 'app');
 const MARKER = '/*__LOCKOUT_CORE__*/';
+const FONT_MARKER = '/*__LOCKOUT_FONTS__*/';
+const FONTS = path.join(ROOT, 'assets', 'fonts', 'fonts.json');
 
 const core = fs.readFileSync(CORE, 'utf8');
 const template = fs.readFileSync(TEMPLATE, 'utf8');
@@ -32,6 +34,50 @@ const template = fs.readFileSync(TEMPLATE, 'utf8');
 if (!template.includes(MARKER)) {
   throw new Error(`template is missing ${MARKER} — nothing would be embedded`);
 }
+
+// ── the typefaces, inlined ─────────────────────────────────────────────────
+//
+// The page uses the site's four faces and fetches NONE of them at runtime.
+// `node analysis/fetch-fonts.js` downloads and subsets them once, into
+// assets/fonts/fonts.json; this splices them in as data: URIs.
+//
+// THE REASON IS A PUBLISHED CLAIM WE HAVE TO KEEP TRUE. eqlsource.com loads
+// these four from fonts.googleapis.com, and the site itself criticises another
+// app for doing that — "It fetches its typeface from Google each time it
+// launches, which discloses your IP address to Google." This page's subtitle is
+// "Your log never leaves this machine". Linking Google here would make the page
+// contradict both the sentence above it and the sentence we published about
+// somebody else.
+//
+// test/build.test.js fails the build if the output contains either font host,
+// or if any @font-face src is not a data: URI.
+function fontFaces() {
+  if (!fs.existsSync(FONTS)) {
+    // Not fatal. The page must still build on a machine that has never run the
+    // fetcher — it falls back to the system stacks declared beside each family
+    // in the template. A silent 0-byte build is the wrong failure; a loud line
+    // on stdout is the right one.
+    process.stdout.write('  fonts   NONE — run `node analysis/fetch-fonts.js` (page will use system stacks)\n');
+    return { css: '', bytes: 0, count: 0 };
+  }
+  const faces = JSON.parse(fs.readFileSync(FONTS, 'utf8'));
+  const css = faces.map((f) => {
+    // A supplementary face carries a unicode-range so the browser reaches for
+    // it only for the codepoints it actually holds; a full latin face carries
+    // none, so it serves as the general fallback for its family and weight.
+    const range = f.unicodeRange && /^U\+[0-9A-Fa-f]/.test(f.unicodeRange) && f.subset.startsWith('text=')
+      ? `\n    unicode-range: ${f.unicodeRange};` : '';
+    return `  @font-face {\n` +
+           `    font-family: '${f.family}';\n` +
+           `    font-style: ${f.style};\n` +
+           `    font-weight: ${f.weight};\n` +
+           `    font-display: block;\n` +
+           `    src: url(data:font/woff2;base64,${f.base64}) format('woff2');${range}\n` +
+           `  }`;
+  }).join('\n');
+  return { css, bytes: css.length, count: faces.length };
+}
+const fonts = fontFaces();
 
 // The core must be usable with nothing but a `module` object. Verified here
 // rather than assumed, because a `require` sneaking in would fail only in the
@@ -57,7 +103,9 @@ for (const banned of ['process.', 'fs.', '__dirname']) {
 //
 // A function replacement is passed through verbatim. Found by opening the built
 // page in a browser, which is the only reason it was found at all.
-const html = template.replace(MARKER, () => core);
+const html = template
+  .replace(FONT_MARKER, () => fonts.css)
+  .replace(MARKER, () => core);
 
 // Guard against the page silently shipping without an engine.
 if (!html.includes('module.exports')) {
@@ -96,5 +144,8 @@ fs.writeFileSync(path.join(OUT_DIR, 'latest.txt'), name + '\n', 'utf8');
 process.stdout.write(
   `wrote public/app/${name}\n` +
   `  engine  ${core.split('\n').length} lines embedded from src/lockoutCore.js\n` +
+  (fonts.count
+    ? `  fonts   ${fonts.count} faces, ${fonts.bytes.toLocaleString()} bytes inlined as data: URIs\n`
+    : '') +
   `  page    ${html.length.toLocaleString()} bytes, self-contained\n`
 );

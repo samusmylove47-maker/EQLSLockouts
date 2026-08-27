@@ -1943,6 +1943,17 @@ function projectGrid(state, now) {
         // mean Normal. Surfaced per cell so the one inference in the chain is
         // visible exactly where it is relied on.
         tierFromOmission: (h1.done || []).some((k) => k.difficultyFromOmission === true),
+        // WHEN the first completion of this period happened, as a civil stamp,
+        // and WHICH boss did it. Null unless the cell is `completed`.
+        //
+        // These exist because the browser page was reading the date back out of
+        // `because` with a regex — parsing our own prose. It worked until the
+        // regex was mangled by a shell heredoc and the date silently vanished
+        // from every cell, which is the mild version; the bad version is
+        // rewording `because` some Tuesday and breaking the view with no error
+        // anywhere. A view should read a field, not a sentence.
+        completedAt: cellState === 'completed' && h1.first ? formatCivil(h1.first.at) : null,
+        completedBy: cellState === 'completed' && h1.first ? h1.first.boss : null,
         // Later kills of the same boss at the same tier in the same period.
         // Recorded, never counted: a kill proves completion, not consumption.
         repeatKills: h1.repeats || 0,

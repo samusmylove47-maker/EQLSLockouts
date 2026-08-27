@@ -891,3 +891,28 @@ test('ROSTER: alsoDies and singleBoss survive the trip through state and a resto
     core.projectGrid(st, NOW).cells.map((c) => c.state),
     'a cloned state must project identically');
 });
+
+test('GRID: a completion carries its date as a FIELD, not inside prose', () => {
+  // The page rendered the date by regexing `because`. A shell heredoc ate the
+  // backslashes, the pattern became /on (d{4}-d{2}-d{2})/, it matched nothing,
+  // and every completion date vanished from the grid with no error anywhere.
+  // The mangling was my fault; the fragility was the design. A view reads a
+  // field. Reword `because` freely — this must keep working.
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Wed Aug 19 20:30:00 2026] Innoruuk, the Prince of Hate has been slain by Jrhx!',
+  ]);
+  const cells = core.projectGrid(st, NOW).cells;
+  const done = cells.find((c) => c.label === 'Plane of Hate' && c.difficulty === 4);
+  assert.equal(done.state, 'completed');
+  assert.equal(done.completedAt, '2026-08-19 20:30:00');
+  assert.equal(done.completedBy, 'Innoruuk, the Prince of Hate');
+
+  // Null everywhere else, so a view can key on it without guessing.
+  for (const c of cells.filter((c) => c.state !== 'completed')) {
+    assert.equal(c.completedAt, null, `${c.label} D${c.difficulty} is ${c.state} and must carry no date`);
+    assert.equal(c.completedBy, null);
+  }
+});

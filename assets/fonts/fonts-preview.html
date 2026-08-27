@@ -1,0 +1,146 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>EQLS Lockouts — font subset preview</title>
+<!--
+  EYEBALL FILE. Not part of the build, not shipped, not tested.
+  It exists so a human can look at fonts-preview.css and see whether the
+  subsets actually render before anyone wires them into src/app.template.html.
+
+  It links the CSS with a <link> tag on purpose. That is legal HERE because
+  this file is a local preview. It would NOT be legal in the shipped page,
+  where test/build.test.js bans "<link " outright.
+-->
+<link rel="stylesheet" href="fonts-preview.css">
+<style>
+  :root {
+    --bg: #0e1116; --panel: #161b22; --edge: #2a313b; --ink: #e6edf3;
+    --dim: #8b949e; --open: #f0b429; --done: #2ea043; --unk: #a371f7; --none: #4a525d;
+    /* The renamed families. "Plex" and "Saira" are Reserved Font Names and a
+       subset is a Modified Version, so the subsets may not carry them. */
+    --mono: 'EQLS Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
+    --cond: 'EQLS Condensed', system-ui, sans-serif;
+    --prose: 'Public Sans', system-ui, sans-serif;
+    --title: 'Cinzel', Georgia, serif;
+  }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.55 var(--prose); }
+  main { max-width: 860px; margin: 0 auto; padding: 28px 20px 60px; }
+  h1 { font-family: var(--title); font-weight: 600; font-size: 30px;
+       letter-spacing: .5px; margin: 0 0 4px; }
+  .sub { color: var(--dim); font-size: 13px; margin-bottom: 26px; }
+  h2 { font-family: var(--cond); font-weight: 600; font-size: 13px;
+       text-transform: uppercase; letter-spacing: .8px; color: var(--dim);
+       margin: 26px 0 10px; }
+  .panel { background: var(--panel); border: 1px solid var(--edge);
+           border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { padding: 7px 8px; text-align: center; font-family: var(--mono);
+           font-size: 13px; }
+  th { font-family: var(--cond); font-weight: 600; text-transform: uppercase;
+       letter-spacing: .6px; color: var(--dim); font-size: 12px; }
+  td.boss { text-align: left; font-family: var(--prose); font-size: 14px;
+            white-space: nowrap; }
+  .c-open { color: var(--open); font-weight: 600; }
+  .c-done { color: var(--done); }
+  .c-unk  { color: var(--unk); }
+  .c-none { color: var(--none); }
+  dl.meta { margin: 0; font-size: 12px; color: var(--dim);
+            font-family: var(--mono); }
+  dl.meta div { display: flex; gap: 10px; padding: 2px 0; }
+  dl.meta dt { min-width: 130px; color: #6e7681; }
+  dl.meta dd { margin: 0; }
+  .spec { font-family: var(--mono); font-size: 13px; color: var(--dim); }
+  .big { font-size: 34px; font-weight: 600; color: var(--open);
+         font-variant-numeric: tabular-nums; }
+  .w400 { font-weight: 400; } .w500 { font-weight: 500; } .w600 { font-weight: 600; }
+  code { font-family: var(--mono); }
+  .note { color: var(--dim); font-size: 12px; }
+</style>
+
+<main>
+  <h1>EQLS Lockouts</h1>
+  <div class="sub">What you still owe this week. Your log never leaves this machine.</div>
+
+  <h2>Cinzel 600 — the title, and nothing else</h2>
+  <div class="panel">
+    <div style="font-family:var(--title);font-weight:600;font-size:26px">EQLS Lockouts</div>
+    <p class="note">This face carries 11 glyphs: the letters of that string and a
+    space. Anything else falls back. That is deliberate and it is why the file is
+    1,928 bytes instead of 15,204.</p>
+    <div style="font-family:var(--title);font-weight:600;font-size:20px;color:var(--unk)">EQLS Lockouts 12345 — fallback from the digits onward</div>
+  </div>
+
+  <h2>EQLS Condensed 600 — labels, eyebrows, column heads</h2>
+  <div class="panel">
+    <div style="font-family:var(--cond);font-weight:600;text-transform:uppercase;letter-spacing:.8px;font-size:14px">
+      Your log · What this is based on · Reset rule · Evidence
+    </div>
+  </div>
+
+  <h2>EQLS Mono 400 / 500 / 600 — every number, date, tier and grid cell</h2>
+  <div class="panel">
+    <table>
+      <thead>
+        <tr><th>Raid</th><th>D0</th><th>D1</th><th>D2</th><th>D3</th><th>D4</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="boss">Lord Nagafen</td>
+            <td class="c-done">done</td><td class="c-open">open</td>
+            <td class="c-open">open</td><td class="c-unk">?</td><td class="c-none">–</td></tr>
+        <tr><td class="boss">Innoruuk, the Prince of Hate</td>
+            <td class="c-done">done</td><td class="c-done">done</td>
+            <td class="c-open">open</td><td class="c-open">open</td><td class="c-none">–</td></tr>
+        <tr><td class="boss">Innoruuk`s Chosen</td>
+            <td class="c-unk">?</td><td class="c-open">open</td>
+            <td class="c-none">–</td><td class="c-none">–</td><td class="c-none">–</td></tr>
+      </tbody>
+    </table>
+    <p class="note">The boss row above carries a backtick, which EverQuest names
+    really do use. It is ASCII 0x60, inside every subset here.</p>
+    <p class="spec">
+      <span class="w400">400 &nbsp; 0123456789 &nbsp; 2026-08-27 20:00:00</span><br>
+      <span class="w500">500 &nbsp; 0123456789 &nbsp; 2026-08-27 20:00:00</span><br>
+      <span class="w600">600 &nbsp; 0123456789 &nbsp; 2026-08-27 20:00:00</span>
+    </p>
+    <p class="note">Every glyph in IBM Plex Mono advances 600/1000 em, digits and
+    letters alike, so the columns line up without <code>tabular-nums</code>.</p>
+  </div>
+
+  <h2>The arrow — the one character the latin subset does not have</h2>
+  <div class="panel">
+    <dl class="meta">
+      <div><dt>character</dt><dd>Avenrae</dd></div>
+      <div><dt>our measurement</dt><dd>the reset falls inside Mon 10 Aug 15:34 → Tue 11 Aug 17:37 2026 Pacific</dd></div>
+      <div><dt>log covers</dt><dd>2026-08-19 20:00 &nbsp;..&nbsp; 2026-08-27 09:14</dd></div>
+      <div><dt>decoded as</dt><dd>utf-8</dd></div>
+    </dl>
+    <p class="note">That → comes from <code>measuredBracketPacific</code> in
+    src/lockoutCore.js and renders in the mono face. Google's stock
+    <em>latin</em> subset has no U+2192 glyph at all, so a separate 1,176-byte
+    face covering only U+2192 is loaded alongside it. If the arrow above is a
+    different shape or weight from the surrounding text, that patch face is
+    missing.</p>
+  </div>
+
+  <h2>Public Sans 400 / 600 — prose</h2>
+  <div class="panel">
+    <div class="big">7</div>
+    <p>The log does not cover this week yet — so this is “I do not know”, not
+    “nothing is done”. <b>open</b> still to do · <b>done</b> observed this week ·
+    <b>?</b> cannot tell · <b>–</b> not looked at. Choose your log file…</p>
+    <p>Accented names render rather than falling back: Zoë, Æther, Ingólfur,
+    Bjørn, Ramírez, Céline, Müller, Ståle, Þorvaldr, ÿ.</p>
+    <p class="note">Those are the reason the stock <em>latin</em> subset was
+    chosen over a <code>&amp;text=</code> subset of bare ASCII. A player's name
+    comes out of their own log filename, and we have never seen their server.</p>
+  </div>
+
+  <h2>Every non-ASCII character the page can actually print</h2>
+  <div class="panel">
+    <p class="spec">U+00A0&nbsp;nbsp &nbsp; U+00B7 · &nbsp; U+2013 – &nbsp;
+       U+2014 — &nbsp; U+201C “ &nbsp; U+201D ” &nbsp; U+2026 … &nbsp; U+2192 →</p>
+    <p class="note">Collected from src/app.template.html and src/lockoutCore.js
+    with comments stripped. U+2500 ─, U+00D7 × and U+2212 − appear in those files
+    too, but only inside comments, so no face needs them.</p>
+  </div>
+</main>
