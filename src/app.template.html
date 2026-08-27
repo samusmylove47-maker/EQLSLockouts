@@ -22,72 +22,293 @@
   ONE DELIBERATE DIVERGENCE FROM THE FILE IT WAS COPIED FROM — see `decode()`.
 -->
 <style>
-  :root {
-    --bg: #0e1116; --panel: #161b22; --edge: #2a313b; --ink: #e6edf3;
-    --dim: #8b949e; --open: #f0b429; --done: #2ea043; --unk: #a371f7;
-    --none: #4a525d; --warn: #f85149;
-    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-         font: 15px/1.55 system-ui, -apple-system, Segoe UI, sans-serif; }
-  main { max-width: 860px; margin: 0 auto; padding: 28px 20px 60px; }
-  h1 { font-size: 19px; margin: 0 0 2px; letter-spacing: .2px; }
-  .sub { color: var(--dim); font-size: 13px; margin-bottom: 22px; }
+/*__LOCKOUT_FONTS__*/
+  /* ── the site's palette, INHERITED rather than approximated ───────────────
+     Every colour below is copied verbatim from eqlsource.com's own
+     public/assets/site.css at origin/main. The ground is not a dark theme
+     somebody picked: _build/palette.py reads the DXT1 endpoint colours out of
+     every zone texture in the game's .s3d archives, and Norrath's grounds come
+     back at hue 15–30 — a warm umber-black — across 2.6 million samples. 62% of
+     all saturated colour in the game art is warm.
 
-  /* THE LEAD. The owner's reason for wanting this is that people remember
-     having done "some" raids, not which ones — so the count of what is still
-     owed is the first thing on the page, not a summary of what is done. */
-  .lead { background: var(--panel); border: 1px solid var(--edge); border-radius: 10px;
-          padding: 18px 20px; margin-bottom: 18px; }
-  .count { font-size: 34px; font-weight: 650; line-height: 1.1; }
-  .count.open { color: var(--open); }
+     A CORRECTION I OWE THIS FILE. I first wrote here that the site was
+     dark-only, on the strength of `grep -c "prefers-color-scheme"` returning 0.
+     The grep was right and the file was wrong: I had read a working tree
+     **43 commits stale**. The authoritative stylesheet carries 4
+     prefers-color-scheme and 10 data-theme, and 700 of 717 published pages ship
+     a theme switcher. I measured my instrument again instead of the thing.
+
+     So both grounds below are the SITE'S, not mine, and the structure is the
+     site's too: bare :root is dark, the light ground arrives through a media
+     query guarded as :root:not([data-theme="dark"]), and each [data-theme]
+     block restates its palette so an explicit choice wins in both directions.
+     No colour is ever declared only inside a media block, and body carries an
+     explicit token background. ------------------------------------------- */
+  :root {
+    color-scheme: dark light;
+
+    --surface-0:#0B0704; --surface-1:#191309; --surface-2:#282013;
+    --rule:#544833;      /* 2.25:1 — a hairline you can actually see */
+    --rule2:#6B5C46;     /* 3.10:1 — a boundary that carries meaning */
+    --rule3:#6B5C46;     /* see the light block: there it has to be darkened */
+
+    --bone:#F2EADA; --txt:#DFD6C4; --mut:#B5AA95; --dim:#9A8F7C; --faint:#978C7C;
+
+    --ember:#C4482E; --ember-t:#D76C55;   /* the site's colour FOR RAIDS */
+    --brass:#C9922E; --brass-t:#D9A63F;   /* the chrome's own accent */
+    --lava:#FF2800;  --lava-t:#FF6A4D;    /* see the note on .count */
+    --ok:#5FA37E;    --ok-t:#5FA37E;
+    --instr:#7FB2C7; --instr-t:#7FB2C7; --warn:#C9453A; --warn-t:#D46C64;
+
+    /* CELL FIELDS, opaque rather than rgba, so the composite is a value I
+       measured and not a result that changes with whatever ends up underneath.
+       --field-open is --ember over --surface-1 at 18%; --cell-open-ink reads
+       4.56:1 on it. A SOLID ember fill was the brief's wording and it cannot
+       carry legible text — --bone on #C4482E measures 4.07:1 and fails AA — so
+       it is a field, which is also the site's own doctrine: accents are "used
+       as fields rather than as trim". */
+    --field-open:#381D10;  --cell-open-ink:#D76C55;
+    --field-done:#15100A;
+    --hatch-ink:#4A3E2A;   --cell-hatch-ink:#D9A63F; --cell-unk-ink:#B5AA95;
+
+    /* TWO FAMILIES ARE RENAMED AND IT IS A LICENCE REQUIREMENT, not a habit.
+       IBM Plex Mono reserves the font name "Plex" and Saira Condensed reserves
+       "Saira". OFL 1.1 calls a subset a Modified Version, and clause 3 forbids
+       a Modified Version using a Reserved Font Name. The system fallbacks after
+       each keep the page readable if a face ever fails to load. */
+    --mono:"EQLS Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --figure:"EQLS Condensed", "Saira Condensed Fallback", system-ui, sans-serif;
+    --prose:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --display:"Cinzel", Georgia, "Times New Roman", serif;
+
+    --t-2xs:10px; --t-xs:11.5px; --t-sm:13.5px; --t-base:15.5px;
+    --t-md:18.5px; --t-lg:22px; --t-xl:29px; --t-2xl:42px;
+    --t-hero:clamp(44px,7vw,72px);
+    --tr-wide:.16em; --tr-wider:.2em; --tr-widest:.24em; --tr-tight:-.018em;
+    --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:24px; --s-6:32px; --s-7:48px;
+    --r:4px;                                  /* ONE radius. The site's. */
+    --shadow-1:0 1px 2px rgba(0,0,0,.28);
+    --shadow-2:0 12px 32px -14px rgba(0,0,0,.62);
+    --speed:.16s;
+  }
+
+  /* The site's own daylight ground, verbatim — plus four values it does not
+     have, because it has no cell grid. Each of those four was SOLVED against
+     WCAG AA rather than picked, and carries its measured ratio. */
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      color-scheme: light;
+      --surface-0:#EFE6D4; --surface-1:#E7DCC6; --surface-2:#DDD0B5;
+      --bone:#241C12; --txt:#3A2E1E; --mut:#675843; --dim:#615849; --faint:#62584C;
+      --rule:#CBBA9C; --rule2:#A89575;
+      --rule3:#928266;      /* 3.02:1 — the site's --rule2 is 2.35 here */
+      --warn:#C9453A; --ember:#C4482E; --lava:#F22701;
+      --brass:#A17627; --ok:#538868; --instr:#62828D;
+      --warn-t:#874940; --ember-t:#884938; --lava-t:#8D412E;
+      --brass-t:#705625; --instr-t:#4D5A62; --ok-t:#426048;
+      --field-open:#E1C1AB; --cell-open-ink:#7D4334;   /* 4.56:1 */
+      --field-done:#E0D3B9;
+      --hatch-ink:#B1A081; --cell-hatch-ink:#614B20;   /* 4.52:1 */
+      --cell-unk-ink:#594C3A;                          /* 4.55:1 */
+      --shadow-1:0 1px 2px rgba(60,44,20,.14);
+      --shadow-2:0 12px 32px -14px rgba(60,44,20,.30);
+    }
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --surface-0:#EFE6D4; --surface-1:#E7DCC6; --surface-2:#DDD0B5;
+    --bone:#241C12; --txt:#3A2E1E; --mut:#675843; --dim:#615849; --faint:#62584C;
+    --rule:#CBBA9C; --rule2:#A89575; --rule3:#928266;
+    --warn:#C9453A; --ember:#C4482E; --lava:#F22701;
+    --brass:#A17627; --ok:#538868; --instr:#62828D;
+    --warn-t:#874940; --ember-t:#884938; --lava-t:#8D412E;
+    --brass-t:#705625; --instr-t:#4D5A62; --ok-t:#426048;
+    --field-open:#E1C1AB; --cell-open-ink:#7D4334;
+    --field-done:#E0D3B9;
+    --hatch-ink:#B1A081; --cell-hatch-ink:#614B20; --cell-unk-ink:#594C3A;
+    --shadow-1:0 1px 2px rgba(60,44,20,.14);
+    --shadow-2:0 12px 32px -14px rgba(60,44,20,.30);
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0:#0B0704; --surface-1:#191309; --surface-2:#282013;
+    --rule:#544833; --rule2:#6B5C46; --rule3:#6B5C46;
+    --bone:#F2EADA; --txt:#DFD6C4; --mut:#B5AA95; --dim:#9A8F7C; --faint:#978C7C;
+    --ember:#C4482E; --ember-t:#D76C55;
+    --brass:#C9922E; --brass-t:#D9A63F;
+    --lava:#FF2800;  --lava-t:#FF6A4D;
+    --ok:#5FA37E; --ok-t:#5FA37E; --instr:#7FB2C7; --instr-t:#7FB2C7; --warn:#C9453A; --warn-t:#D46C64;
+    --field-open:#381D10; --cell-open-ink:#D76C55;
+    --field-done:#15100A;
+    --hatch-ink:#4A3E2A; --cell-hatch-ink:#D9A63F; --cell-unk-ink:#B5AA95;
+    --shadow-1:0 1px 2px rgba(0,0,0,.28);
+    --shadow-2:0 12px 32px -14px rgba(0,0,0,.62);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background-color: var(--surface-0); color: var(--txt);
+         font: var(--t-base)/1.6 var(--prose);
+         -webkit-font-smoothing: antialiased; }
+  main { max-width: 1000px; margin: 0 auto; padding: var(--s-7) var(--s-5); }
+
+  /* ── the four faces, each doing what the SITE gives it to do ──────────────
+     Corrected against the authoritative stylesheet after I had them wrong:
+       Cinzel          display, top two levels only            (h1.display, .mark)
+       EQLS Condensed  the sub-display and BIG FIGURE face     (h3, .card .t, .ix dd)
+       EQLS Mono       labels, eyebrows, nav, and all data     (66 uses to Saira's 22)
+       Public Sans     prose
+     I had the label face as Saira. The site's `.eyebrow` is Plex Mono, and
+     uppercase-tracked mono is most of what makes its pages read as instrumented.
+     Saira's real job is the large figure — `.ix dd` at --t-2xl — which on this
+     page is the count. */
+  h1 { font-family: var(--display); font-weight: 600; font-size: var(--t-xl);
+       letter-spacing: .04em; color: var(--bone); margin: 0 0 var(--s-1); }
+
+  .eyebrow, h2, thead th, dl.meta dt, .legend dt {
+    font-family: var(--mono); font-weight: 400; text-transform: uppercase;
+    letter-spacing: var(--tr-wider); }
+
+  /* TABULAR, and the site does this too — 5 declarations, which I had also
+     written off as "nowhere". A column of counts is where it earns its place. */
+  .num, td, .openlist li, .condlist li, .status, dl.meta dd, .cell, .tally {
+    font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  .sub { color: var(--mut); font-size: var(--t-sm); max-width: 64ch; }
+
+  /* ── the lead. The count is the hero ────────────────────────────────────── */
+  .lead { background-color: var(--surface-1); border: 1px solid var(--rule);
+          border-radius: var(--r); box-shadow: var(--shadow-2);
+          padding: var(--s-5); margin: var(--s-6) 0 var(--s-5); }
+  .headline { display: flex; align-items: baseline; gap: var(--s-4); flex-wrap: wrap; }
+
+  /* --lava is the loudest colour the game owns and the site spends it ONCE per
+     page, on "a live figure, a warning, the thing the eye should land on
+     first". Here that is unambiguously the number of raids still owed: it is
+     the entire reason the tool exists. Nothing else on this page may use it. */
+  .count { font-family: var(--figure); font-size: var(--t-hero); line-height: .95;
+           font-weight: 600; letter-spacing: var(--tr-tight); color: var(--lava-t);
+           font-variant-numeric: tabular-nums; }
   .count.none { color: var(--dim); }
-  .leadsub { color: var(--dim); font-size: 13px; margin-top: 4px; }
-  .openlist { margin: 14px 0 0; padding: 0; list-style: none;
-              display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 14px; }
-  .openlist li { font-family: var(--mono); font-size: 13px; }
+  .count .unit { font-family: var(--mono); font-size: var(--t-sm); font-weight: 400;
+                 text-transform: uppercase; letter-spacing: var(--tr-wide);
+                 color: var(--mut); margin-left: var(--s-2); }
+  .tally { color: var(--mut); font-size: var(--t-sm); }
+  .tally b { color: var(--txt); font-weight: 600; }
+
+  .openlist { margin: var(--s-4) 0 0; padding: 0; list-style: none;
+              display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+              gap: var(--s-1) var(--s-4); }
+  .openlist li { font-size: var(--t-sm); color: var(--txt); }
   .openlist .tier { color: var(--dim); }
 
-  table { border-collapse: collapse; width: 100%; margin: 18px 0 10px; }
-  th, td { padding: 7px 8px; text-align: center; font-family: var(--mono); font-size: 13px; }
-  th { color: var(--dim); font-weight: 500; font-size: 12px; }
-  td.boss, th.boss { text-align: left; font-family: inherit; font-size: 14px; white-space: nowrap; }
-  tr.done td.boss { color: var(--dim); }        /* completed rows recede */
-  .cell { display: inline-block; min-width: 34px; padding: 3px 0; border-radius: 5px;
-          border: 1px solid transparent; cursor: default; }
-  .c-open { color: var(--open); border-color: #4a3a12; background: #241d0c; font-weight: 600; }
-  .c-completed { color: var(--done); background: #10261a; }
-  /* CONDITIONAL is not "cannot tell". It is answered, with a stated condition,
-     so it reads closer to done than to a shrug and carries its own colour. */
-  .c-conditional { color: #9fd0ff; background: #101f2e; border-color: #23405c; }
-  .c-unknown { color: var(--unk); background: #1d1630; }
-  .condlist { margin: 12px 0 0; padding: 0; list-style: none; }
-  .condlist li { font-family: var(--mono); font-size: 13px; margin-bottom: 7px; }
-  .condlist .arm { color: var(--dim); display: block; padding-left: 14px; }
-  .condlist .arm b { color: #9fd0ff; font-weight: 600; }
-  .c-not_looked { color: var(--none); }
+  .condlist { margin: var(--s-3) 0 0; padding: 0; list-style: none; }
+  .condlist li { font-size: var(--t-sm); margin-bottom: var(--s-2); color: var(--txt); }
+  .condlist .arm { color: var(--mut); display: block; padding-left: var(--s-3); }
+  .condlist .arm b { color: var(--brass-t); font-weight: 600; }
 
-  .key { color: var(--dim); font-size: 12px; margin: 10px 0 22px; }
-  .key b { font-weight: 600; }
+  /* ── the grid ───────────────────────────────────────────────────────────── */
+  .gridwrap { overflow-x: auto; margin: var(--s-6) 0 var(--s-3); }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 640px; }
+  th, td { padding: var(--s-2) 3px; text-align: center; vertical-align: bottom; }
+  thead th { color: var(--mut); font-size: var(--t-2xs); padding-bottom: var(--s-3);
+             border-bottom: 1px solid var(--rule3); }
+  /* THE TIER COLUMNS CARRY THE GAME'S OWN WORDS. Normal, Awakened, Adaptive,
+     Fused, Refined are derived from the client's own instance line, and no
+     other tool prints them. A bare D0..D4 throws that away. */
+  thead th .dnum { display: block; font-size: var(--t-xs); color: var(--dim);
+                   letter-spacing: 0; margin-bottom: 2px; }
+  td.boss, th.boss { text-align: left; white-space: nowrap; padding-left: 0;
+                     font-variant-numeric: normal; }
+  td.boss { font-family: var(--figure); font-size: var(--t-md); font-weight: 600;
+            color: var(--txt); }
+  tbody tr + tr td { border-top: 1px solid var(--rule); }
+  tbody tr:hover td.boss { color: var(--bone); }
+  tr.done td.boss { color: var(--dim); }
 
-  .panel { background: var(--panel); border: 1px solid var(--edge); border-radius: 10px;
-           padding: 16px 18px; margin-bottom: 14px; }
-  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .8px;
-              color: var(--dim); margin: 0 0 10px; font-weight: 600; }
-  button { font: inherit; background: #21262d; color: var(--ink); border: 1px solid var(--edge);
-           border-radius: 7px; padding: 8px 14px; cursor: pointer; }
-  button:hover { background: #2b323b; }
-  #drop { border: 1px dashed var(--edge); border-radius: 8px; padding: 16px; text-align: center;
-          color: var(--dim); font-size: 13px; margin-top: 10px; }
-  #drop.over { border-color: var(--open); color: var(--ink); }
-  .status { font-family: var(--mono); font-size: 12px; color: var(--dim); margin-top: 8px; }
-  .warn { color: var(--warn); }
-  dl.meta { margin: 0; font-size: 12px; color: var(--dim); font-family: var(--mono); }
-  dl.meta div { display: flex; gap: 10px; padding: 2px 0; }
-  dl.meta dt { min-width: 120px; color: #6e7681; }
-  dl.meta dd { margin: 0; }
-  .hole { color: var(--warn); }
+  /* ── cells with weight. Not chips ───────────────────────────────────────── */
+  .cell { display: block; min-height: 46px; border-radius: var(--r);
+          border: 1px solid transparent; padding: var(--s-2) var(--s-1) var(--s-1);
+          cursor: default; transition: border-color var(--speed), background var(--speed); }
+  .cell .lab { display: block; text-transform: uppercase;
+               letter-spacing: var(--tr-wide); font-size: var(--t-2xs); }
+  .cell .when { display: block; color: var(--dim); font-size: var(--t-2xs);
+                margin-top: 3px; }
+
+  /* OPEN is the only state that gets a field, because it is the only state the
+     page is asking you to do something about. */
+  .c-open { background-color: var(--field-open); border-color: var(--ember);
+            color: var(--cell-open-ink); }
+  .c-open .lab { color: var(--cell-open-ink); font-weight: 600; }
+
+  /* DONE recedes: a well rather than a highlight, with its date beneath. */
+  .c-completed { background-color: var(--field-done); border-color: var(--rule); }
+  .c-completed .lab { color: var(--ok-t); }
+
+  /* HATCH for the two states that are not solid facts. Repeating stripes read
+     as "not filled in" without spending a colour — which matters, because every
+     colour in this palette already means something. */
+  .c-conditional { border-color: var(--brass); color: var(--cell-hatch-ink);
+    background-image: repeating-linear-gradient(-45deg,
+      transparent 0 5px, var(--hatch-ink) 5px 6px); }
+  .c-conditional .lab { color: var(--cell-hatch-ink); font-weight: 600; }
+  .c-unknown { border-color: var(--rule3); color: var(--cell-unk-ink);
+    background-image: repeating-linear-gradient(-45deg,
+      transparent 0 3px, var(--hatch-ink) 3px 4px); }
+  .c-unknown .lab { color: var(--cell-unk-ink); }
+  .c-not_looked { color: var(--faint); border-color: transparent; }
+  .c-not_looked .lab { color: var(--faint); }
+  .cell:hover { border-color: var(--rule3); }
+  .c-open:hover { border-color: var(--ember-t); }
+
+  /* ── the legend is the product ──────────────────────────────────────────── */
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: var(--s-4) var(--s-5); margin: var(--s-4) 0 var(--s-6);
+            padding-top: var(--s-4); border-top: 1px solid var(--rule); }
+  .legend > div { display: grid; grid-template-columns: 38px 1fr; gap: var(--s-3);
+                  align-items: start; }
+  .legend .sw { width: 38px; height: 26px; border-radius: var(--r);
+                border: 1px solid var(--rule); }
+  .legend dt { font-size: var(--t-2xs); color: var(--txt); margin-bottom: 2px; }
+  .legend dd { margin: 0; font-size: var(--t-xs); color: var(--mut); line-height: 1.5; }
+
+  /* ── panels ─────────────────────────────────────────────────────────────── */
+  .panel { background-color: var(--surface-1); border: 1px solid var(--rule);
+           border-radius: var(--r); box-shadow: var(--shadow-1);
+           padding: var(--s-4) var(--s-5) var(--s-5); margin-bottom: var(--s-4); }
+  .panel h2 { font-size: var(--t-2xs); color: var(--mut); margin: 0 0 var(--s-3); }
+  button { font-family: var(--mono); font-size: var(--t-xs);
+           text-transform: uppercase; letter-spacing: var(--tr-wide);
+           background-color: var(--surface-2); color: var(--bone);
+           border: 1px solid var(--rule3); border-radius: var(--r);
+           padding: var(--s-2) var(--s-4); cursor: pointer;
+           transition: background var(--speed), border-color var(--speed); }
+  button:hover { background-color: var(--surface-0); border-color: var(--brass); }
+  button:focus-visible { outline: 2px solid var(--brass-t); outline-offset: 2px; }
+  #drop { border: 1px dashed var(--rule3); border-radius: var(--r); padding: var(--s-4);
+          text-align: center; color: var(--mut); font-size: var(--t-sm);
+          margin-top: var(--s-3); transition: border-color var(--speed), color var(--speed); }
+  #drop.over { border-color: var(--brass); color: var(--bone); background-color: var(--surface-2); }
+  code { font-family: var(--mono); font-size: .92em; }
+  .status { font-size: var(--t-xs); color: var(--mut); margin-top: var(--s-2); }
+  .warn { color: var(--warn-t); }
+  dl.meta { margin: 0; font-size: var(--t-xs); }
+  dl.meta div { display: grid; grid-template-columns: 152px 1fr; gap: var(--s-3);
+                padding: var(--s-2) 0; border-top: 1px solid var(--rule); }
+  dl.meta div:first-child { border-top: 0; padding-top: 0; }
+  dl.meta dt { font-size: var(--t-2xs); color: var(--dim); }
+  dl.meta dd { margin: 0; color: var(--txt); word-break: break-word; }
+  .hole { color: var(--warn-t); }
+  .colophon { color: var(--faint); font-size: var(--t-2xs); line-height: 1.6;
+              margin-top: var(--s-6); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+  @media (max-width: 560px) {
+    main { padding: var(--s-5) var(--s-4) var(--s-6); }
+    .count { font-size: var(--t-2xl); }
+    dl.meta div { grid-template-columns: 1fr; gap: 0; }
+  }
 </style>
 
 <main>
@@ -95,8 +316,10 @@
   <div class="sub">What you still owe this week. Your log never leaves this machine.</div>
 
   <div class="lead">
-    <div class="count none" id="count">—</div>
-    <div class="leadsub" id="countsub">No log loaded yet.</div>
+    <div class="headline">
+      <div class="count none" id="count">—</div>
+      <div class="tally" id="countsub">No log loaded yet.</div>
+    </div>
     <ul class="openlist" id="openlist"></ul>
     <div id="condhead" hidden>
       <p class="sub" style="margin:16px 0 0">These turn on the reset hour, which has never been
@@ -105,18 +328,52 @@
     </div>
   </div>
 
-  <table id="grid" hidden>
-    <thead><tr><th class="boss">Raid</th></tr></thead>
-    <tbody></tbody>
-  </table>
-  <div class="key" id="key" hidden>
-    <b style="color:var(--open)">open</b> still to do &nbsp;·&nbsp;
-    <b style="color:var(--done)">done</b> observed this week &nbsp;·&nbsp;
-    <b style="color:#9fd0ff">dep.</b> turns on the reset hour &nbsp;·&nbsp;
-    <b style="color:var(--unk)">?</b> cannot tell &nbsp;·&nbsp;
-    <b style="color:var(--none)">–</b> not looked at.
-    Hover any cell for the reason.
+  <div class="gridwrap">
+    <table id="grid" hidden>
+      <thead><tr><th class="boss">Raid</th></tr></thead>
+      <tbody></tbody>
+    </table>
   </div>
+
+  <!-- THE LEGEND IS THE PRODUCT.
+       A swatch and a one-word gloss would be decoration. The sentence under
+       "unsure" — killed on the boundary day, side of the reset unknown — is the
+       single most useful thing on the page, because it is the only place a
+       player learns that the answer exists and we have not measured the hour
+       yet. It is written out in full, deliberately, and not shortened. -->
+  <dl class="legend" id="key" hidden>
+    <div>
+      <span class="sw c-open"></span>
+      <div><dt>Open</dt><dd>No kill seen at this tier since the reset, and the log covers
+        the whole period. This is what you still owe.</dd></div>
+    </div>
+    <div>
+      <span class="sw c-completed"></span>
+      <div><dt>Done</dt><dd>A kill observed at this tier, in this period, with the date it
+        happened. Later kills of the same boss are recorded and not counted.</dd></div>
+    </div>
+    <div>
+      <span class="sw c-conditional"></span>
+      <div><dt>Unsure</dt><dd>Killed on the boundary day itself, so which side of the reset
+        it fell is unknown — the reset <em>hour</em> has never been measured. The cell names
+        the exact instant that would settle it.</dd></div>
+    </div>
+    <div>
+      <span class="sw c-unknown"></span>
+      <div><dt>Unresolved</dt><dd>A kill this period at a tier the game did not state, so one
+        of this raid's five cells is done and we cannot say which.</dd></div>
+    </div>
+    <div>
+      <span class="sw c-not_looked"></span>
+      <div><dt>Not looked</dt><dd>The log does not cover this period. Not the same as
+        &ldquo;you have not done it&rdquo;, and never shown as open.</dd></div>
+    </div>
+    <div>
+      <span class="sw" style="border-style:dashed"></span>
+      <div><dt>Hover any cell</dt><dd>Every cell carries its own reason, in its own words,
+        including which boss completed it and what the raid contains.</dd></div>
+    </div>
+  </dl>
 
   <div class="panel">
     <h2>Your log</h2>
@@ -130,6 +387,14 @@
     <h2>What this is based on</h2>
     <dl class="meta" id="metalist"></dl>
   </div>
+
+  <!-- OFL 1.1 requires the notice to travel with the font. The faces are
+       subsetted and embedded in this file, so the notice lives here. -->
+  <p class="sub" style="margin-top:32px;font-size:10px;line-height:1.5">
+    Typefaces: Cinzel, Saira Condensed, IBM Plex Mono and Public Sans, each under the
+    SIL Open Font License 1.1 &mdash; subsetted and embedded in this file, never fetched.
+    See <code>assets/fonts/LICENSES.md</code>.
+  </p>
 </main>
 
 <script>
@@ -370,7 +635,16 @@ function render() {
        told the user a comfortable lie, and this is the sentence that refuses. */
     subEl.textContent = "The log does not cover this week yet — so this is “I do not know”, not “nothing is done”.";
   } else {
-    countEl.textContent = g.openCount + (g.openCount === 1 ? " raid still open" : " raids still open");
+    /* THE COUNT IS THE HERO and the word beside it is not part of the figure,
+       so it is set separately: the number carries --lava-t and the display
+       face, the unit carries the label treatment. */
+    countEl.textContent = "";
+    const n = document.createElement("span");
+    n.textContent = String(g.openCount);
+    const u = document.createElement("span");
+    u.className = "unit";
+    u.textContent = g.openCount === 1 ? "raid still open" : "raids still open";
+    countEl.appendChild(n); countEl.appendChild(u);
     countEl.className = "count " + (g.openCount ? "open" : "none");
     const bits = [];
     if (g.conditionalCount) bits.push(g.conditionalCount + " turning on the reset hour");
@@ -408,10 +682,17 @@ function render() {
   const table = document.getElementById("grid");
   const head = table.tHead.rows[0];
   while (head.cells.length > 1) head.deleteCell(1);
+  /* THE COLUMN NAMES ARE THE GAME'S OWN. Normal, Awakened, Adaptive, Fused,
+     Refined come out of the client's instance line, derived by this module, and
+     no other tool prints them. Hiding them behind a tooltip on "D0" threw away
+     the most distinctive thing the page knows. */
   LockoutCore.DIFFICULTY_LABELS.forEach((lab, i) => {
     const th = document.createElement("th");
-    th.textContent = "D" + i;
-    th.title = lab;
+    const d = document.createElement("span");
+    d.className = "dnum";
+    d.textContent = "D" + i;
+    th.appendChild(d);
+    th.appendChild(document.createTextNode(lab));
     head.appendChild(th);
   });
 
@@ -429,10 +710,27 @@ function render() {
       const cell = document.createElement("td");
       const span = document.createElement("span");
       span.className = "cell c-" + c.state;
-      span.textContent = c.state === "completed" ? "done"
+      /* A CELL WITH WEIGHT, not a chip. The state is a word, and a completion
+         carries the DATE it happened underneath — which is the one thing a
+         player wants from a green square and never gets. */
+      const lab = document.createElement("span");
+      lab.className = "lab";
+      lab.textContent = c.state === "completed" ? "done"
         : c.state === "open" ? "open"
-        : c.state === "conditional" ? "dep."
-        : c.state === "unknown" ? "?" : "–";
+        : c.state === "conditional" ? "unsure"
+        : c.state === "unknown" ? "unresolved" : "—";
+      span.appendChild(lab);
+      const when = document.createElement("span");
+      when.className = "when";
+      if (c.state === "completed") {
+        /* A FIELD, NOT A REGEX OVER OUR OWN PROSE. This read the date back out
+           of `because` until the pattern was mangled and every date silently
+           disappeared — the view kept rendering, just with nothing in it. */
+        when.textContent = c.completedAt ? c.completedAt.slice(5, 10) : "";
+      } else if (c.state === "conditional" && c.decidedBy && c.decidedBy.pivot) {
+        when.textContent = "if before " + c.decidedBy.pivot.slice(11, 16);
+      }
+      if (when.textContent) span.appendChild(when);
       /* The row is the raid, so the tooltip has to say what the raid contains —
          otherwise a player reading "Plane of Fear" has no idea which bosses it
          stands for, which is the confusion this relabelling exists to remove. */

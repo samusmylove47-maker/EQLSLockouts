@@ -65,6 +65,53 @@ test('BUILD: the page is self-contained — no network of any kind', () => {
   for (const banned of ['http://', 'https://', '<link ', '<img ', '@import', 'fetch(', 'XMLHttpRequest']) {
     assert.ok(!html.includes(banned), `the page must not contain ${banned}`);
   }
+
+  // THE FONT HOSTS, BY NAME, on the Director's order of 27 Aug 2026 — and the
+  // reason is a real failure this project has already had.
+  //
+  // eqlsource.com loads Cinzel, Saira Condensed, IBM Plex Mono and Public Sans
+  // from fonts.googleapis.com. We have PUBLISHED criticism of another app for
+  // exactly that — "It fetches its typeface from Google each time it launches,
+  // which discloses your IP address to Google" — so taking the shortcut we told
+  // its author not to take is not available to us.
+  //
+  // `https://` above already covers these. Naming them anyway is deliberate:
+  // the generic ban says WHAT is forbidden and this says WHY, so the next person
+  // reaching for a <link> to match the site's type reads the reason in the
+  // failure message instead of deleting the assertion that annoyed them.
+  //
+  // **That is how the Auras sentence went stale on us**: the app changed under a
+  // published claim and nothing was watching. This is the watcher.
+  for (const host of ['fonts.googleapis.com', 'fonts.gstatic.com']) {
+    assert.ok(!html.includes(host),
+      `the page must not reference ${host} — fonts are subsetted and inlined at build time, ` +
+      `because "Your log never leaves this machine" has to be true of the page itself`);
+  }
+});
+
+test('BUILD: every font is inlined as a data: URI, or there are none', () => {
+  // The other half of the same promise. Banning the host is not enough: a
+  // @font-face with a bare relative src would also break the single-file
+  // guarantee, silently, and only for someone who opened the page from
+  // somewhere other than the directory it was built in.
+  const { html } = build();
+  const faces = html.match(/@font-face\s*\{[^}]*\}/g) || [];
+  for (const face of faces) {
+    const src = /src\s*:\s*([^;]+);/.exec(face);
+    assert.ok(src, `a @font-face must declare a src:\n${face}`);
+    assert.match(src[1], /url\(\s*["']?data:/,
+      `every @font-face src must be a data: URI — this one is not:\n${face}`);
+  }
+  // And if faces exist at all, they must actually be woff2 payloads rather than
+  // an empty or truncated blob that renders as a fallback nobody notices.
+  for (const face of faces) {
+    const b64 = /data:[^;,]*;base64,([A-Za-z0-9+/=]+)/.exec(face);
+    if (!b64) continue;
+    const buf = Buffer.from(b64[1], 'base64');
+    assert.equal(buf.subarray(0, 4).toString('ascii'), 'wOF2',
+      'an inlined font must begin with the woff2 signature "wOF2"');
+    assert.ok(buf.length > 1000, 'a font under 1KB is a truncated payload, not a face');
+  }
 });
 
 test('BUILD: the filename is content-hashed', () => {
@@ -74,4 +121,68 @@ test('BUILD: the filename is content-hashed', () => {
   // would bust caches on every build and stop meaning anything.
   const again = build();
   assert.equal(again.name, name);
+});
+
+test('BUILD: both grounds exist, and no colour is defined ONLY in a media block', () => {
+  // The site is theme-aware — 4 prefers-color-scheme and 10 data-theme in the
+  // authoritative stylesheet, and 700 of 717 published pages ship a switcher.
+  // I first reported the opposite, from a working tree 43 commits stale.
+  const { html } = build();
+  const css = html.slice(html.indexOf('<style>'), html.indexOf('</style>'));
+
+  assert.match(css, /@media \(prefers-color-scheme: light\)/, 'a daylight ground must exist');
+  assert.match(css, /:root:not\(\[data-theme="dark"\]\)/, 'and be guarded so an explicit dark choice wins');
+  assert.match(css, /:root\[data-theme="light"\]/);
+  assert.match(css, /:root\[data-theme="dark"\]/, 'both toggle directions, or one of them cannot be undone');
+  assert.match(css, /body\s*\{[^}]*background-color:\s*var\(--surface-0\)/,
+    'body needs an explicit token background or it borrows the host ground');
+
+  // EVERY token defined in a media or [data-theme] block must ALSO exist on the
+  // bare :root. A colour that lives only inside a conditional block is undefined
+  // for whoever the condition does not match, and an undefined custom property
+  // fails silently — which is how this project once shipped `border-top: 1px
+  // solid var(--line)` computing to a width of zero on its busiest page.
+  const bare = css.slice(css.indexOf(':root {'), css.indexOf('@media (prefers-color-scheme: light)'));
+  const declared = new Set((bare.match(/--[a-z0-9-]+(?=\s*:)/g) || []));
+  const scoped = css.slice(css.indexOf('@media (prefers-color-scheme: light)'));
+  const missing = [...new Set(scoped.match(/--[a-z0-9-]+(?=\s*:)/g) || [])]
+    .filter((t) => !declared.has(t));
+  assert.deepEqual(missing, [], `these are defined only under a condition: ${missing.join(', ')}`);
+});
+
+test('BUILD: no custom property is delivered through a `background` SHORTHAND', () => {
+  // A REAL BUG, found in a browser and not by any of this. Chromium does not
+  // re-resolve `background: var(--x)` when --x changes on :root, so flipping the
+  // OS theme with the page open left every cell painted in the other ground's
+  // colour while its text switched. `background-color: var(--x)` re-resolves.
+  //
+  // It survives a reload, so it only ever bit a viewer whose theme changed while
+  // they were looking — which is exactly the viewer a scheduled dark mode makes.
+  const { html } = build();
+  const css = html.slice(html.indexOf('<style>'), html.indexOf('</style>'));
+  const bad = css.match(/[;{]\s*background:\s*var\(/g) || [];
+  assert.deepEqual(bad, [], 'use background-color, not the background shorthand, with a custom property');
+});
+
+test('BUILD: the licence notice ships with the fonts it describes', () => {
+  // OFL 1.1 clause 1 requires the notice to travel with the font. The faces are
+  // embedded in the page, so the page has to point at the notice, and the notice
+  // has to exist.
+  const { html } = build();
+  const faces = html.match(/@font-face/g) || [];
+  if (!faces.length) return;                       // system-stack build, nothing to notice
+  assert.match(html, /SIL Open Font License/, 'the page must carry the licence line');
+  assert.ok(fs.existsSync(path.join(ROOT, 'assets', 'fonts', 'LICENSES.md')),
+    'assets/fonts/LICENSES.md must exist');
+  const lic = fs.readFileSync(path.join(ROOT, 'assets', 'fonts', 'LICENSES.md'), 'utf8');
+
+  // The two RESERVED FONT NAMES must not appear as a CSS family in the page.
+  // IBM Plex Mono reserves "Plex" and Saira Condensed reserves "Saira"; OFL
+  // clause 3 forbids a Modified Version — which a subset is — from using them.
+  for (const reserved of ['IBM Plex Mono', 'Saira Condensed']) {
+    assert.ok(!new RegExp(`font-family:\s*'${reserved}'`).test(html),
+      `${reserved} carries a reserved font name and must be renamed in CSS`);
+  }
+  assert.match(lic, /Reserved Font Name/i, 'the notice must explain the rename');
+  assert.match(lic, /name.{0,20}table/i, 'and must state the gap: the rename is CSS-only');
 });
