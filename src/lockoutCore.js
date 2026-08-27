@@ -397,15 +397,47 @@ const INSTANCE_INVITE_RE = /^(.+?) has asked you to join the instance: (.+?)\.\s
 //   The Ruins of Old Paineel - Group 2 (Adaptive) group instance at D2
 //   The Plane of Fear 4 (Refined)                 raid  instance at D4
 //
-// The third shape is the trap. `- Group` with no index is still an INSTANCE
-// and must not fall through to the open-world branch just because the client
-// declined to name a difficulty. It reports `difficulty: null`, which the
-// projection renders as "not recorded" — not as D0.
+// The third shape is the trap, AND I READ IT BACKWARDS FOR TWO WEEKS.
 //
-// `- Solo` does not occur. Clearance: `grep -F " - Solo"` over the 68 distinct
-// zone strings extracted from all 8 files in state/logs returned 0. The shape
-// is still parsed, because zero occurrences is not zero forever and the code
-// costs one alternation.
+// This comment used to say `- Group` with no index means "difficulty not
+// recorded — not D0". **It means D0 and nothing else.** The client omits the
+// index and the label exactly when the index is zero.
+//
+// The correction cost a shipped tool that answered nothing. Every kill in a
+// Normal instance carried `difficultyStated: false`, and one such kill blanked
+// a whole row of the grid to `unknown`. The owner ran it after a week of
+// raiding and got "0 of 25 done".
+//
+// MEASURED, all 16 log files, 26 Aug 2026 — the counts are the proof:
+//
+//   line shape                                   0    1    2    3    4
+//   `has asked you to join the instance: ...`   12   16   13   19   18
+//   `You have entered <Zone> - Group N (L).`     0   16   13   19   17
+//   `You have entered <Zone> - Group.`          12    -    -    -    -
+//
+//   grep -acE "You have entered .* - (Group|Solo) 0 \(" <file>   ->  0, every file
+//
+// Tiers 1, 2 and 3 match invite-for-entry EXACTLY. Tier 4 is 18 invites to 17
+// entries — one invite not accepted, which is what an invite is. And tier 0 is
+// 12 invites to 12 bare entries and **not one entry line anywhere that states
+// an index of 0**. Three of the twelve are directly paired on 26 Aug 2026:
+//
+//   17:52:12  Shangfei has asked you to join the instance: The Plane of Hate - Group 0 (Normal).
+//   17:55:57  You have entered The Plane of Hate - Group.
+//
+// so the same instance is written both ways, three minutes apart, by the same
+// client. The tier is STATED — by omission, which is a statement once the
+// convention is measured. It is carried as `difficultyFromOmission` so any
+// caller can see which rule assigned it, and a test asserts the 0-index entry
+// line stays absent: the day one appears, the rule is dead and must be told so.
+//
+// `- Solo` DOES NOT GET THIS RULE, and the asymmetry is deliberate. `grep -a
+// -- " - Solo"` over all 16 files returns **0** on every one — no entry line,
+// no invite line, nothing. So there is no observation to extend the rule with,
+// and extending it would be inventing a number. Bare `- Solo` therefore keeps
+// `difficulty: null`, which degrades a cell to `unknown` — the old, safe,
+// useless answer. **The owner's alt+Z window shows a `Solo 3` lock, so the
+// shape is real and our logs have simply never seen one.** That gap is open.
 const INSTANCE_FULL_RE = /^(.+?)(\s+-\s+(?:Group|Solo))?\s+(\d+)\s+\(([^)]+)\)$/;
 const INSTANCE_BARE_RE = /^(.+?)\s+-\s+(Group|Solo)$/;
 
@@ -424,22 +456,32 @@ function parseInstanceName(name) {
       // consulted to flag a disagreement — it never overrides the game.
       difficultyLabel: m[4],
       labelMatchesTable: DIFFICULTY_LABELS[index] === m[4],
+      difficultyFromOmission: false,   // the client wrote the number itself
     };
   }
 
   if ((m = INSTANCE_BARE_RE.exec(name))) {
+    // The omission IS the statement — for Group, where it is measured 12 times
+    // out of 12 with no counterexample in 16 files. For Solo, where it is
+    // measured zero times, it is not.
+    const isGroup = m[2] === 'Group';
     return {
       zone: m[1],
       instanced: true,
-      group: m[2] === 'Group',
+      group: isGroup,
       solo: m[2] === 'Solo',
-      difficulty: null,           // stated by the game as absent, not as zero
-      difficultyLabel: null,
-      labelMatchesTable: null,
+      difficulty: isGroup ? 0 : null,
+      difficultyLabel: isGroup ? DIFFICULTY_LABELS[0] : null,
+      labelMatchesTable: isGroup ? true : null,
+      // Which rule assigned the tier: `true` means "the client wrote no index,
+      // and no index means zero". Carried all the way to the kill so a cell can
+      // say how it knows, and so this one inference stays findable if it is
+      // ever wrong.
+      difficultyFromOmission: isGroup,
     };
   }
 
-  return { zone: name, instanced: false, group: false, solo: false, difficulty: null, difficultyLabel: null, labelMatchesTable: null };
+  return { zone: name, instanced: false, group: false, solo: false, difficulty: null, difficultyLabel: null, labelMatchesTable: null, difficultyFromOmission: false };
 }
 
 // Parses one raw log line into an event, or null if it is not one we model.
@@ -575,35 +617,104 @@ const WEEKLY_TASK_IS_PER_BOSS = false;
 //    raids-measured.json and dies up to FIVE times in one visit, where each of
 //    the five dies exactly once per visit. A lockout boss dies once.
 //
-// 4. **`singleBoss` IS UNPROVEN FOR TWO OF THE THREE.** Every Nagafen's Lair
-//    group visit also kills King Tranix, Warlord Skarlon and Magus Rokyl; every
-//    Permafrost visit also kills Giant wooly spider. None of the four appears as
-//    a boss in raids-measured.json, which is weak evidence they are not lockout
-//    bosses — and we hold no alt+Z reading for either zone, which is what would
-//    settle it. Only The Ruins of Old Paineel is genuinely single: all seven of
-//    its group visits killed Master Yael and nothing else.
+// 4. **`singleBoss` WAS FALSE FOR TWO OF THE THREE, and is now measured.**
+//    The owner's alt+Z window lists FOUR bosses under Nagafen's Lair. The
+//    corpus agrees independently. Counting group visits and asking which mobs
+//    die EXACTLY ONCE ON EVERY VISIT — the signature that separates a lockout
+//    boss from trash that always spawns:
+//
+//      Nagafen's Lair, 15 group visits
+//        King Tranix 14/15 · Lord Nagafen 14/15 · Magus Rokyl 14/15
+//        Warlord Skarlon 12/15
+//        (a fire giant warrior is also 14/15 — but up to SIXTEEN per visit)
+//
+//      The Permafrost Caverns, 12 group visits
+//        Lady Vox 12/12 · Giant wooly spider 12/12 · A priest of Nagafen 12/12
+//        an ice giant diplomat 10/12
+//        (an ice giant is also 12/12 — but up to SEVEN per visit)
+//
+//    "Killed on every visit" alone is worthless; it is universality PLUS
+//    exactly-one-per-visit that discriminates, and the trash above shows why.
+//
+//    **A PRIEST OF NAGAFEN WAS HIDING BEHIND ITS ARTICLE.** Nobody had named
+//    it, in the window or in any order, and it carries Lady Vox's exact
+//    signature. It is the same trap as `a dracoliche`: the leading article
+//    reads as trash and is not.
+//
+//    ~~"Only The Ruins of Old Paineel is genuinely single: all seven of its
+//    group visits killed Master Yael and nothing else."~~ **THE SECOND HALF IS
+//    FALSE.** Over 25 group visits Paineel also kills an elemental channeler
+//    (20/25), a flighty fiend (17/25) and an elemental warrior (7/25). Master
+//    Yael is the only mob at 25/25, so Paineel is single-REQUIRED-boss — but
+//    "and nothing else" was a claim I never measured.
+//
+// 5. **THERE IS A THIRD KILL-LINE SHAPE AND THIS MODULE DOES NOT PARSE IT.**
+//    `<Name> died.` — 47 lines across the 16 files, 8 of them inside a
+//    `- Group` instance. It is NOT parsed, and that is a decision rather than
+//    an oversight: the shape covers player and pet deaths as well as mob
+//    deaths. `Shara died.` and `Avenrae died.` are both in it, so reading it as
+//    a kill line would score the owner's own death as a boss kill.
+//
+//    **It touches none of the ten roster bosses** — searched all 16 files for
+//    every roster spelling in a `died.` line and got zero — so the grid is
+//    unaffected today. Where it DOES matter is the roster question above:
+//    Warlord Skarlon and an ice giant diplomat each die twice in this shape,
+//    which is most of the gap between their counts and 15/15 and 12/12.
+//    Parsing it safely needs a way to tell a mob death from a player death,
+//    and we do not have one yet.
 //
 // **NOT A DISCOVERED ROSTER, AND DELIBERATELY NOT YET.** A tracker that learns
 // its raids from observed timer rows beats one that ships a list — but if
 // `/dzlisttimers` logs, the roster discovers itself for free and anything built
 // now is thrown away. This list is the interim, and it is small on purpose.
 const RAIDS = Object.freeze([
+  // TWO LISTS, AND THEY ARE NOT THE SAME LIST.
+  //
+  //   `bosses`   COMPLETION KEYS. Killing any one of these marks the cell done.
+  //   `alsoDies` measured to die exactly once on (nearly) every group visit,
+  //              and NOT used to complete anything.
+  //
+  // The split is the whole of my answer to "the roster ships as single-boss".
+  // It is wrong that these zones hold one boss — the window says four and the
+  // corpus agrees. But **promoting them to completion keys can only fail in the
+  // dangerous direction.** Lord Nagafen already dies on every visit where
+  // Tranix does, so adding Tranix buys nothing; the one case it changes is a
+  // group that kills Tranix and then WIPES on Nagafen, where the tool would
+  // report the raid done and the player would miss it. That is precisely the
+  // failure this tool exists to prevent.
+  //
+  // So they are recorded, named in the tooltip, and inert — until the
+  // shared-lock question is settled by an alt+Z reading for these zones.
+  // **Director: promoting `alsoDies` to `bosses` is a one-line change and it
+  // is yours, not mine.**
   {
     key: "Nagafen's Lair",
-    label: 'Lord Nagafen',            // single-boss raid: the boss name is the right label
+    label: 'Lord Nagafen',
     bosses: Object.freeze(['Lord Nagafen']),
+    alsoDies: Object.freeze(['King Tranix', 'Magus Rokyl', 'Warlord Skarlon']),
+    singleBoss: false,                // the window lists four; measured 14/15, 14/15, 12/15
     weeklyTaskObserved: true,
   },
   {
     key: 'The Permafrost Caverns',
     label: 'Lady Vox',
+    // A priest of Nagafen carries Lady Vox's exact signature — 12/12 visits,
+    // exactly once — and NOBODY had named it, in the window or in any order.
+    // Its leading article is what hid it, the same way `a dracoliche` hid.
+    alsoDies: Object.freeze(['Giant wooly spider', 'A priest of Nagafen', 'an ice giant diplomat']),
     bosses: Object.freeze(['Lady Vox']),
+    singleBoss: false,
     weeklyTaskObserved: true,
   },
   {
     key: 'The Ruins of Old Paineel',
     label: 'Master Yael',
     bosses: Object.freeze(['Master Yael']),
+    // Master Yael is the only mob at 25/25. The three below are common but not
+    // universal, so they do not carry the boss signature — this is the one zone
+    // of the three that really is single-boss.
+    alsoDies: Object.freeze([]),
+    singleBoss: true,
     weeklyTaskObserved: true,
   },
   {
@@ -613,12 +724,16 @@ const RAIDS = Object.freeze([
     // window writes "Dracoliche", the game writes "a dracoliche", and a name
     // that does not match renders as a raid still owed.
     bosses: Object.freeze(['Terror', 'Dread', 'Fright', 'a dracoliche', 'Cazic-Thule']),
+    alsoDies: Object.freeze([]),
+    singleBoss: false,
     weeklyTaskObserved: false,
   },
   {
     key: 'The Plane of Hate',
     label: 'Plane of Hate',
     bosses: Object.freeze(['Innoruuk, the Prince of Hate', 'Maestro of Rancor']),
+    alsoDies: Object.freeze([]),
+    singleBoss: false,
     weeklyTaskObserved: false,
   },
 ].map(Object.freeze));
@@ -954,6 +1069,11 @@ function createState(character, opts) {
       key: r.key,
       label: r.label,
       bosses: r.bosses.slice(),
+      // Measured to die once on (nearly) every group visit, and NOT completion
+      // keys — see the two-lists note above RAIDS. Copied into the state so a
+      // restored snapshot renders the same tooltip as a live one.
+      alsoDies: (r.alsoDies || []).slice(),
+      singleBoss: r.singleBoss === true,
       // Observed in OUR corpus; not a property of the raid. See the note above.
       weeklyTaskObserved: r.weeklyTaskObserved === true,
     })),
@@ -1132,15 +1252,18 @@ function applyLine(state, line) {
         group: ev.group,
         difficulty: ev.difficulty,
         difficultyLabel: ev.difficultyLabel,
-        // Whether the GAME stated a difficulty on the line that produced this
-        // record. A `- Group` zone-in with no index is a real instance whose
-        // difficulty this line did not state — and the invite for that same
-        // instance, seconds earlier, usually did state it. So a record with
-        // difficultyStated:false may be the SAME instance as a stated one in the
-        // same zone. We do not merge them, because merging would be inference;
-        // we flag it, so `instances` is read as an upper bound on distinct
-        // instances rather than a count of them.
+        // Whether the GAME stated a difficulty for this record — by writing the
+        // index, or by omitting it, which for `- Group` means zero and is
+        // measured 12/12. `difficultyFromOmission` says which of the two.
+        //
+        // What still cannot be counted: an instance entered as `- Group` and one
+        // entered as `- Group 0 (Normal)` would key the same, but the second
+        // shape has never occurred, so that collision is theoretical. The real
+        // caveat stands — `instances` is an upper bound on distinct instances,
+        // because re-entering the same instance after a zone-out is
+        // indistinguishable from entering a new one at the same tier.
         difficultyStated: ev.difficulty !== null,
+        difficultyFromOmission: ev.difficultyFromOmission === true,
         seen: 0,
       });
       rec.seen++;
@@ -1157,6 +1280,7 @@ function applyLine(state, line) {
             difficulty: ev.difficulty,
             difficultyLabel: ev.difficultyLabel,
             difficultyStated: ev.difficulty !== null,
+            difficultyFromOmission: ev.difficultyFromOmission === true,
             enteredCivil: civil,
           }
         : null; // a bare zone name is the OPEN WORLD, which is not a grid cell
@@ -1192,6 +1316,10 @@ function applyLine(state, line) {
         group: inst ? inst.group : null,
         difficulty: inst ? inst.difficulty : null,
         difficultyStated: inst ? inst.difficultyStated : false,
+        // TRUE when the tier came from the omission rule rather than a written
+        // index. A cell completed on such a kill says so, so the one inference
+        // in the chain is visible at the point it is used.
+        difficultyFromOmission: inst ? inst.difficultyFromOmission === true : false,
         instanced: Boolean(inst),
         secondsSinceZoneIn: inst ? (civil - inst.enteredCivil) / 1000 : null,
       });
@@ -1522,15 +1650,25 @@ function projectPeriod(state) {
 // So the open cells lead and the completed ones recede. A grid that foregrounds
 // completions is a scoreboard; this is a checklist of what is still owed.
 //
-// FOUR CELL STATES, and the distinction between the last two is the whole point:
+// FIVE CELL STATES. The distinction between the last two is the whole point,
+// and `conditional` is the one that stops the tool being useless:
 //
-//   completed   a kill observed at that difficulty since the last reset
-//   available   no kill since the reset, AND coverage spans the whole period
-//   unknown     evidence exists that cannot be assigned to this cell — either a
-//               kill at a difficulty the game did not state, or a kill on the
-//               boundary day itself, whose side of the turnover is unknowable
-//               because the reset HOUR has never been measured
-//   not_looked  coverage does not span the period — fresh install, no backfill
+//   completed    a kill observed at that difficulty since the last reset
+//   available    no kill since the reset, AND coverage spans the whole period
+//   conditional  a kill at that difficulty ON THE BOUNDARY DAY. Which side of
+//                the turnover it fell is unknowable because the reset HOUR has
+//                never been measured — but the instant that decides it IS
+//                known, so the cell carries it: "completed if the reset fell at
+//                or before 22:37:12, still open if it fell after".
+//   unknown      evidence exists that cannot be assigned to this cell at all —
+//                a kill at a difficulty the game did not state
+//   not_looked   coverage does not span the period — fresh install, no backfill
+//
+// **`conditional` was `unknown` until 26 Aug 2026, and that cost us the tool.**
+// The owner ran the shipped build after a week of raiding and got "0 of 25 done
+// · 15 uncertain". Every one of those cells knew the exact instant that decided
+// it and said nothing. A refusal to guess is right; a refusal to help is not,
+// and they are not the same refusal.
 //
 // **`not_looked` must never render as `available`.** "I have not looked" and
 // "you have not done it" are the same picture and different facts, and a fresh
@@ -1618,7 +1756,25 @@ function projectGrid(state, now) {
   // the safe direction, but it is an assumption presented as a fact, and this
   // module does not do that.
   //
-  // So: evaluate BOTH, and where they disagree the cell is `unknown`.
+  // So: evaluate BOTH, and where they disagree, SAY WHICH WAY EACH ONE FALLS.
+  //
+  // An earlier revision collapsed the disagreement to a bare `unknown`, and the
+  // owner ran that build and learned nothing from it. A cell that cannot decide
+  // still knows a great deal: it knows the exact instant that decides it. So it
+  // says "done if the reset was at or before 22:37 on Tue 25 Aug, open if it was
+  // after" — which is the same refusal to guess, and is actually usable.
+  //
+  // THE WHOLE PROBLEM IN ONE LINE. A kill at time k counts for the current
+  // period if and only if `T <= k`, where T is the reset instant, and all we
+  // know about T is which DAY it falls on. So for each tier, take the LATEST
+  // kill k of that raid at that tier:
+  //
+  //   k at or after the end of the boundary day   ->  T <= k always      -> done
+  //   k before the start of the boundary day      ->  T >  k always      -> open
+  //   k inside the boundary day                   ->  DEPENDS, pivot = k
+  //
+  // The pivot is the LATEST such kill, not the earliest: any reset at or before
+  // it leaves at least one kill inside the period.
   const onBoundaryDay = nowCivil >= boundaryDayStart && nowCivil < boundaryDayEnd;
   const priorBoundaryStart = boundaryDayStart - 7 * 86400000;
 
@@ -1633,7 +1789,14 @@ function projectGrid(state, now) {
     const under = (from, d) => {
       const dayEnd = from + 86400000;
       const period = mine.filter((k) => k.civil >= dayEnd);
-      const onDay = mine.filter((k) => k.civil >= from && k.civil < dayEnd);
+      // PER TIER, and this used to be the bug. `onDay` and `unstated` were
+      // both computed across the whole row, so ONE ambiguous kill blanked all
+      // five cells of a raid — including cells where no kill of any kind had
+      // happened and the honest answer was plainly `open`. Eight kills produced
+      // twelve `unknown` cells that way.
+      const onDay = mine
+        .filter((k) => k.civil >= from && k.civil < dayEnd && k.difficultyStated && k.difficulty === d)
+        .sort((a, b) => a.civil - b.civil);
       const unstated = period.filter((k) => k.instanced && !k.difficultyStated);
       const done = period
         .filter((k) => k.difficultyStated && k.difficulty === d)
@@ -1661,11 +1824,31 @@ function projectGrid(state, now) {
                (done.length > 1 ? ` (and ${done.length - 1} later kill(s) this period, not counted)` : ''),
         };
       }
-      if (unstated.length) {
-        return { s: 'unknown', done, repeats: 0, why: `${unstated.length} kill(s) this period at a tier the game did not state` };
-      }
+      // A KILL ON THE BOUNDARY DAY DECIDES THE CELL — we just do not know which
+      // way, and we know exactly what would tell us. So the cell carries the
+      // instant instead of a shrug. The pivot is the LATEST such kill: any
+      // reset at or before it leaves at least one kill inside the period.
       if (onDay.length) {
-        return { s: 'unknown', done, repeats: 0, why: `${onDay.length} kill(s) on ${RESET_RULE.weekdayName} itself; the reset hour is not recorded` };
+        const pivot = onDay[onDay.length - 1];
+        return {
+          s: 'conditional',
+          done,
+          repeats: 0,
+          pivot,
+          doneIf: `the reset fell at or before ${formatCivil(pivot.at)}`,
+          openIf: `the reset fell after ${formatCivil(pivot.at)}`,
+          why:
+            `completed if ${`the reset fell at or before ${formatCivil(pivot.at)}`}, still open if it fell after — ` +
+            `${onDay.length} kill(s) at D${d} on the reset day itself` +
+            (onDay.length > 1 ? ` (${formatCivil(onDay[0].at).slice(11)}..${formatCivil(pivot.at).slice(11)})` : '') +
+            `, and the reset HOUR has never been measured`,
+        };
+      }
+      if (unstated.length) {
+        // Survives the omission rule only for a bare `- Solo` instance or a kill
+        // with no zone-in before it. One of this row's five cells may be done
+        // and we cannot say which — so every cell of the row carries it.
+        return { s: 'unknown', done, repeats: 0, why: `${unstated.length} kill(s) this period at a tier the game did not state — one of this raid's five tiers may be done` };
       }
       return { s: 'open', done, repeats: 0, why: 'no kill observed since the reset, and coverage spans the period' };
     };
@@ -1676,6 +1859,11 @@ function projectGrid(state, now) {
 
       let cellState;
       let because;
+      // Non-null only when the cell is `conditional`: the instant that decides
+      // it, and which way it falls on each side. This is the whole of the
+      // "stop collapsing to ?" change — the structure a UI needs to render
+      // "done if the reset was before 22:37, open if after" instead of a shrug.
+      let decidedBy = null;
       if (!spans) {
         cellState = 'not_looked';
         because = coverageStart === null
@@ -1683,14 +1871,38 @@ function projectGrid(state, now) {
           : holes.length
             ? `no record of ${holes.map((h) => `${h.hours.toFixed(1)}h`).join(' + ')} inside this period`
             : 'coverage does not span this period';
-      } else if (h1.s === h2.s) {
+      } else if (h1.s === h2.s && h1.why === h2.why) {
         cellState = h1.s;
         because = h1.why;
+        decidedBy = h1.pivot
+          ? { pivot: formatCivil(h1.pivot.at), doneIf: h1.doneIf, openIf: h1.openIf }
+          : null;
       } else {
-        cellState = 'unknown';
+        // THE TWO HYPOTHESES DISAGREE, which happens only on the boundary day
+        // itself. Name both branches; do not collapse them to a shrug.
+        //
+        //   H1 — the turnover has already happened today
+        //   H2 — it has not, so the period is still last week's
+        //
+        // This used to emit a bare `unknown`. It now emits the same refusal to
+        // guess with the two outcomes attached, because a player who is told
+        // "done if the reset already happened, open if not" can look at the
+        // clock and decide; a player told "?" cannot do anything at all.
+        cellState = 'conditional';
+        const say = (h) => (h.s === 'conditional' ? `${h.doneIf} — ${h.s}` : h.s);
         because =
-          `today is ${RESET_RULE.weekdayName} and the reset hour is not recorded, so it is ` +
-          `unknown whether the turnover has happened yet: "${h1.s}" if it has, "${h2.s}" if it has not`;
+          `today is ${RESET_RULE.weekdayName} and the reset hour has never been measured, so ` +
+          `whether the turnover has happened yet is unknown: "${say(h1)}" if it has, ` +
+          `"${say(h2)}" if it has not`;
+        decidedBy = {
+          pivot: h1.pivot ? formatCivil(h1.pivot.at) : null,
+          doneIf: h1.s === 'completed' || h2.s === 'completed'
+            ? `the turnover has ${h1.s === 'completed' ? 'already happened' : 'not happened yet'}`
+            : h1.doneIf || h2.doneIf || null,
+          openIf: h1.s === 'open' || h2.s === 'open'
+            ? `the turnover has ${h1.s === 'open' ? 'already happened' : 'not happened yet'}`
+            : h1.openIf || h2.openIf || null,
+        };
       }
 
       cells.push({
@@ -1699,7 +1911,14 @@ function projectGrid(state, now) {
         // What this row contains, so a player never has to know which boss we
         // picked to stand for the zone.
         bosses: entry.bosses.slice(),
-        singleBoss: entry.bosses.length === 1,
+        // NOT `bosses.length === 1`. That derived it from the completion-key
+        // list and so asserted "Nagafen's Lair is a single-boss raid" purely
+        // because we had only listed one key — a claim about the game read off
+        // our own configuration. It is now a measured field on the entry.
+        singleBoss: entry.singleBoss === true,
+        // Measured to die exactly once on (nearly) every group visit, and
+        // deliberately NOT completion keys — see the note above RAIDS.
+        alsoDies: (entry.alsoDies || []).slice(),
         // Whether a weekly task for this boss was ever seen in our corpus. NOT
         // a claim that the boss can or cannot carry one — the task goes to the
         // first three raids of the week, whichever they are.
@@ -1708,6 +1927,8 @@ function projectGrid(state, now) {
         difficultyLabel: DIFFICULTY_LABELS[d],
         state: cellState,
         because,
+        // See the declaration above. Null unless `state === 'conditional'`.
+        decidedBy,
         // WHAT KIND OF FACT THIS IS. `completed` is OBSERVED — a kill line, in
         // the log, at that tier, in this period. `open` is INFERRED, and only
         // under the one-completion-per-tier-per-week model the owner supplied:
@@ -1715,7 +1936,13 @@ function projectGrid(state, now) {
         // coverage spans the period. `unknown` and `not_looked` are neither.
         evidence: cellState === 'completed' ? 'observed'
           : cellState === 'open' ? 'inferred from the one-per-week model'
+          : cellState === 'conditional' ? 'conditional on the reset hour, which is not measured'
           : 'not established',
+        // TRUE when the tier that resolved this cell came from the omission rule
+        // — the client wrote `- Group` with no index, which is measured 12/12 to
+        // mean Normal. Surfaced per cell so the one inference in the chain is
+        // visible exactly where it is relied on.
+        tierFromOmission: (h1.done || []).some((k) => k.difficultyFromOmission === true),
         // Later kills of the same boss at the same tier in the same period.
         // Recorded, never counted: a kill proves completion, not consumption.
         repeatKills: h1.repeats || 0,
@@ -1739,10 +1966,12 @@ function projectGrid(state, now) {
       // the grid without it being available to render alongside.
       evidenceNote:
         '"completed" is OBSERVED: a kill line at that tier in this period. ' +
-        '"open" is INFERRED from the one-completion-per-tier-per-week model ' +
-        'model — it means no kill was seen, which counts as evidence of absence ' +
-        'only because coverage spans the period. A kill proves completion, not ' +
-        'consumption: repeats are recorded and not counted.',
+        '"open" is INFERRED from the one-completion-per-tier-per-week model — it ' +
+        'means no kill was seen, which counts as evidence of absence only ' +
+        'because coverage spans the period. "conditional" is a kill we found ' +
+        'that falls on the reset day itself: the cell names the instant that ' +
+        'decides it, because the reset HOUR has never been measured. A kill ' +
+        'proves completion, not consumption: repeats are recorded and not counted.',
       nowIsOnBoundaryDay: onBoundaryDay,
       coverageSpansPeriod: spans,
       // Stretches of the period we have no record of, longer than a raid takes.
@@ -1775,6 +2004,11 @@ function projectGrid(state, now) {
     // OPEN FIRST. This ordering is the feature.
     open: by('open'),
     openCount: by('open').length,
+    // Cells whose answer turns on the unmeasured reset hour. Each one carries
+    // `decidedBy` — the instant, and which way it falls on each side. These are
+    // NOT `uncertain`: they are answered, with a stated condition.
+    conditional: by('conditional'),
+    conditionalCount: by('conditional').length,
     uncertain: by('unknown'),
     uncertainCount: by('unknown').length,
     notLooked: by('not_looked'),

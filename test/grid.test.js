@@ -187,9 +187,17 @@ test('GRID: a kill at a stated difficulty completes exactly that cell', () => {
   }
 });
 
-test('GRID: a bare "- Group" kill lands in unknown, NEVER in the D0 cell', () => {
-  // The client stated no difficulty. Our own raids-measured.json infers a zero
-  // for eight such fights and is wrong to; this module refuses to.
+test('GRID: a bare "- Group" kill completes the D0 cell and ONLY the D0 cell', () => {
+  // THIS TEST USED TO ASSERT THE OPPOSITE and the opposite was wrong. It read
+  // "a bare - Group kill lands in unknown, NEVER in the D0 cell", on the
+  // reasoning that raids-measured.json infers a zero for eight such fights and
+  // is wrong to. The inference was right and the refusal was wrong: the client
+  // omits the index exactly when it is zero (12 bare entries, 12 `Group 0
+  // (Normal)` invites, zero entry lines stating 0, across all 16 files).
+  //
+  // The cost of the refusal was the whole tool. Every Normal-tier kill blanked
+  // its entire row to `unknown`, and the owner got "0 of 25 done · 15 uncertain"
+  // after a week of raiding.
   const st = core.createState('Avenrae');
   core.applyLines(st, [
     ...heartbeat(17, 21),
@@ -198,10 +206,16 @@ test('GRID: a bare "- Group" kill lands in unknown, NEVER in the D0 cell', () =>
 
   ]);
   const row = core.projectGrid(st, NOW).cells.filter((c) => c.label === 'Plane of Fear');
-  assert.equal(row.filter((c) => c.state === 'completed').length, 0,
-    'an unstated difficulty completes nothing');
-  assert.equal(row.find((c) => c.difficulty === 0).state, 'unknown',
-    'and it must NOT be reported as D0');
+  const d0 = row.find((c) => c.difficulty === 0);
+  assert.equal(d0.state, 'completed', 'the omitted index is Normal');
+  assert.equal(d0.tierFromOmission, true, 'and the cell must say the tier came from the omission rule');
+  assert.match(d0.because, /Cazic-Thule at D0/);
+
+  // AND NOTHING ELSE MOVES. The old row-wide blanking is the second half of the
+  // defect: one kill must not touch four cells it says nothing about.
+  for (const c of row.filter((c) => c.difficulty !== 0)) {
+    assert.equal(c.state, 'open', `D${c.difficulty} must stay open — one kill resolves one cell`);
+  }
 });
 
 test('GRID: an open-world kill resolves no cell', () => {
@@ -216,7 +230,7 @@ test('GRID: an open-world kill resolves no cell', () => {
   for (const c of row) assert.equal(c.state, 'open');
 });
 
-test('GRID: a kill on the boundary day is unknown, not completed', () => {
+test('GRID: a kill on the boundary day is CONDITIONAL, never completed — and it names the pivot', () => {
   // The reset HOUR has never been measured, so a Tuesday kill could fall either
   // side of the turnover. Calling it completed would hide a raid the user can
   // still do — the dangerous direction for a tool that exists to prevent that.
@@ -227,9 +241,24 @@ test('GRID: a kill on the boundary day is unknown, not completed', () => {
     '[Tue Aug 18 12:30:00 2026] Lady Vox has been slain by X!',
 
   ]);
-  const cell = core.projectGrid(st, NOW).cells.find((c) => c.label === 'Lady Vox' && c.difficulty === 2);
-  assert.equal(cell.state, 'unknown');
-  assert.match(cell.because, /reset hour is not recorded/);
+  const grid = core.projectGrid(st, NOW);
+  const cell = grid.cells.find((c) => c.label === 'Lady Vox' && c.difficulty === 2);
+  assert.equal(cell.state, 'conditional', 'never `completed` — that would hide a raid the user can still do');
+  assert.notEqual(cell.state, 'completed');
+
+  // AND IT MUST SAY WHICH WAY IT FALLS. A bare `unknown` here is what the owner
+  // ran and learned nothing from. The cell knows the exact instant that decides
+  // it; withholding that is a refusal to help, not a refusal to guess.
+  assert.equal(cell.decidedBy.pivot, '2026-08-18 12:30:00', 'the deciding instant, named');
+  assert.match(cell.decidedBy.doneIf, /at or before 2026-08-18 12:30:00/);
+  assert.match(cell.decidedBy.openIf, /after 2026-08-18 12:30:00/);
+  assert.match(cell.because, /completed if .*at or before 2026-08-18 12:30:00.*still open if/);
+  assert.match(cell.because, /reset HOUR has never been measured/);
+
+  // ONE AMBIGUOUS KILL MUST NOT BLANK FOUR INNOCENT CELLS.
+  for (const c of grid.cells.filter((c) => c.label === 'Lady Vox' && c.difficulty !== 2)) {
+    assert.equal(c.state, 'open', `D${c.difficulty} has no kill under either hypothesis and is plainly open`);
+  }
 });
 
 test('GRID: an invite never sets the current instance — only a zone-in does', () => {
@@ -291,8 +320,17 @@ test('GRID: on the boundary day itself, both hypotheses are evaluated', () => {
   const onDay = core.projectGrid(st, { year: 2026, month: 8, day: 18, hour: 14, minute: 0, second: 0 });
   assert.equal(onDay.period.nowIsOnBoundaryDay, true);
   const amb = onDay.cells.find((c) => c.label === 'Plane of Hate' && c.difficulty === 3);
-  assert.equal(amb.state, 'unknown');
+  assert.equal(amb.state, 'conditional');
   assert.match(amb.because, /whether the turnover has happened/);
+  // Both branches must be NAMED, not merely counted as a disagreement.
+  // Asked on Tue 18th about a kill on Thu 13th: if the turnover HAS happened,
+  // that kill belongs to last week and the cell is open; if it has NOT, the
+  // period is still last week's and the kill counts. So the branches read
+  // "open" if it has / "completed" if it has not — and getting that order
+  // backwards is exactly the mistake this assertion exists to catch.
+  assert.match(amb.because, /"open" if it has, "completed" if it has not/);
+  assert.equal(amb.decidedBy.doneIf, 'the turnover has not happened yet');
+  assert.equal(amb.decidedBy.openIf, 'the turnover has already happened');
 
   // Asked about the Monday before, there is no ambiguity: one period, kill in it.
   const before = core.projectGrid(st, { year: 2026, month: 8, day: 17, hour: 12, minute: 0, second: 0 });
@@ -663,4 +701,193 @@ test('CAPITALISATION: folding case cannot collide two different raid bosses', ()
     '[Wed Aug 12 20:31:00 2026] a priest of Nagafen has been slain by X!',
   ]);
   assert.equal(st.kills.length, 0, 'neither priest is Lord Nagafen');
+});
+
+// ---------------------------------------------------------------------------
+// MUTATION PROOF of the boundary-day branch, both directions.
+//
+// The Director asked for this as: "a run dated Wednesday must produce zero
+// unknown cells, and a run dated Tuesday must produce them."
+//
+// I AM NOT WRITING THAT TEST, BECAUSE IT WOULD LOCK IN A FALSE MODEL, and the
+// Director's own point 2 says why: the owner's raids ran on Tuesday 25 Aug
+// between 20:31 and 22:37, and asking on Wednesday about a Tuesday kill is
+// genuinely ambiguous. A Wednesday run CAN and MUST produce ambiguous cells —
+// what it must not do is produce them when nothing ambiguous happened.
+//
+// So the mutation is on the RIGHT axis: not the weekday of the question, but
+// whether a kill fell on the boundary day. Three cases, and each must fail if
+// the branch is broken in either direction.
+// ---------------------------------------------------------------------------
+
+// Wed 19 Aug 2026. The boundary day is Tue 18 Aug.
+const WED = { year: 2026, month: 8, day: 19, hour: 22, minute: 0, second: 0 };
+
+function killAt(stamp, tier) {
+  return [
+    `[${stamp}] You have entered The Permafrost Caverns - Group ${tier} (${core.DIFFICULTY_LABELS[tier]}).`,
+    `[${stamp.replace(/(\d\d):(\d\d):(\d\d)/, (m, h, mi, s) => `${h}:${String(Number(mi) + 1).padStart(2, '0')}:${s}`)}] Lady Vox has been slain by X!`,
+  ];
+}
+
+test('MUTATION 1/3: Wednesday now, kills ONLY on Wednesday -> zero ambiguous cells', () => {
+  // The direction that was broken. If any cell comes back conditional or
+  // unknown here, a branch meant to fire on the boundary day is firing off it.
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [...heartbeat(17, 19), ...killAt('Wed Aug 19 20:00:00 2026', 2)]);
+  const g = core.projectGrid(st, WED);
+
+  assert.equal(g.period.boundaryDay, '2026-08-18');
+  assert.equal(g.period.nowIsOnBoundaryDay, false, 'Wednesday is not the boundary day');
+  assert.equal(g.conditionalCount, 0, 'nothing fell on the boundary day, so nothing is conditional');
+  assert.equal(g.uncertainCount, 0, 'and nothing is unknown');
+  assert.equal(g.completedCount, 1);
+  assert.equal(g.openCount, 24);
+  assert.equal(g.cells.find((c) => c.label === 'Lady Vox' && c.difficulty === 2).state, 'completed');
+});
+
+test('MUTATION 2/3: Wednesday now, kill ON the preceding Tuesday -> conditional, at that tier ONLY', () => {
+  // The direction that must NOT be "fixed" away. This kill is genuinely
+  // ambiguous and the tool must say so — while naming the instant that settles
+  // it, and touching no other cell.
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [...heartbeat(17, 19), ...killAt('Tue Aug 18 20:00:00 2026', 2)]);
+  const g = core.projectGrid(st, WED);
+
+  assert.equal(g.period.nowIsOnBoundaryDay, false, 'still asking on a Wednesday');
+  assert.equal(g.conditionalCount, 1, 'exactly one cell turns on the reset hour');
+  assert.equal(g.uncertainCount, 0, 'and none is a bare shrug');
+  assert.equal(g.completedCount, 0, 'never completed — that would hide a raid still owed');
+  assert.equal(g.openCount, 24, 'the other 24 cells are untouched and plainly open');
+
+  const cell = g.conditional[0];
+  assert.equal(cell.label, 'Lady Vox');
+  assert.equal(cell.difficulty, 2);
+  assert.equal(cell.decidedBy.pivot, '2026-08-18 20:01:00');
+  assert.match(cell.because, /completed if the reset fell at or before 2026-08-18 20:01:00, still open if it fell after/);
+});
+
+test('MUTATION 3/3: Tuesday now -> the two hypotheses are BOTH named', () => {
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [...heartbeat(12, 18), ...killAt('Thu Aug 13 20:00:00 2026', 2)]);
+  const g = core.projectGrid(st, { year: 2026, month: 8, day: 18, hour: 14, minute: 0, second: 0 });
+
+  assert.equal(g.period.nowIsOnBoundaryDay, true, 'Tuesday IS the boundary day');
+  assert.equal(g.conditionalCount, 1);
+  assert.equal(g.uncertainCount, 0);
+  assert.match(g.conditional[0].because, /"open" if it has, "completed" if it has not/);
+});
+
+test('MUTATION 4/4: the weekday arithmetic lands on Tuesday for all seven days of a week', () => {
+  // `back = (dow - 2 + 7) % 7` is the branch's only input. If it is ever wrong,
+  // a branch meant to fire one day in seven fires on a day it is not — which is
+  // what the Director suspected had happened here. It had not, but the
+  // suspicion deserves a standing test rather than a one-off check.
+  const st = core.applyLines(core.createState('Avenrae'), heartbeat(17, 23));
+  const expected = {
+    17: '2026-08-11', // Mon -> previous Tuesday
+    18: '2026-08-18', // Tue -> today
+    19: '2026-08-18', 20: '2026-08-18', 21: '2026-08-18', 22: '2026-08-18', 23: '2026-08-18',
+  };
+  for (const [day, boundary] of Object.entries(expected)) {
+    const g = core.projectGrid(st, { year: 2026, month: 8, day: Number(day), hour: 12, minute: 0, second: 0 });
+    assert.equal(g.period.boundaryDay, boundary, `Aug ${day} must sit in the period beginning ${boundary}`);
+    assert.equal(g.period.nowIsOnBoundaryDay, Number(day) === 18, `only Aug 18 is the boundary day`);
+  }
+
+  // Month, year and leap-day rollovers, where day arithmetic usually breaks.
+  const s2 = core.createState('Avenrae');
+  for (const [now, boundary] of [
+    [{ year: 2026, month: 3, day: 1, hour: 12, minute: 0, second: 0 }, '2026-02-24'],  // Sun -> back over a month end
+    [{ year: 2026, month: 1, day: 1, hour: 12, minute: 0, second: 0 }, '2025-12-30'],  // Thu -> back over a year end
+    [{ year: 2028, month: 3, day: 1, hour: 12, minute: 0, second: 0 }, '2028-02-29'],  // Wed -> back onto a leap day
+  ]) {
+    const g = core.projectGrid(s2, now);
+    assert.equal(g.period.boundaryDay, boundary);
+    assert.equal(new Date(`${boundary}T00:00:00Z`).getUTCDay(), 2, `${boundary} must be a Tuesday`);
+  }
+});
+
+test('ROSTER: `alsoDies` is recorded and INERT — it must never complete a cell', () => {
+  // The window lists four bosses under Nagafen's Lair and the corpus agrees
+  // (Tranix 14/15 group visits, Rokyl 14/15, Skarlon 12/15, each exactly once).
+  // They are named, and they complete nothing. Promoting them could only fail
+  // in the dangerous direction: a group that kills Tranix and then wipes on
+  // Nagafen would be told the raid is done, and would miss it.
+  const nag = core.RAIDS.find((r) => r.key === "Nagafen's Lair");
+  assert.deepEqual(nag.bosses.slice(), ['Lord Nagafen'], 'exactly one completion key');
+  assert.ok(nag.alsoDies.includes('King Tranix'));
+  assert.equal(nag.singleBoss, false, 'and the row must stop claiming to be single-boss');
+
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 20:00:00 2026] You have entered ' + "Nagafen's Lair - Group 3 (Fused).",
+    '[Wed Aug 19 20:20:00 2026] King Tranix has been slain by X!',
+    '[Wed Aug 19 20:22:00 2026] Magus Rokyl has been slain by X!',
+  ]);
+  assert.equal(st.kills.length, 0, 'a non-key kill is not even recorded as a roster kill');
+  const row = core.projectGrid(st, NOW).cells.filter((c) => c.label === 'Lord Nagafen');
+  for (const c of row) assert.equal(c.state, 'open', 'and it completes nothing');
+});
+
+test('ROSTER: singleBoss is MEASURED, not derived from our own list length', () => {
+  // It used to be `bosses.length === 1`, which read a claim about the game off
+  // our own configuration — Nagafen's Lair "was" single-boss only because we
+  // had listed one key.
+  const byKey = Object.fromEntries(core.RAIDS.map((r) => [r.key, r]));
+  assert.equal(byKey["Nagafen's Lair"].singleBoss, false);
+  assert.equal(byKey['The Permafrost Caverns'].singleBoss, false);
+  assert.equal(byKey['The Ruins of Old Paineel'].singleBoss, true, 'Master Yael is the only mob at 25/25');
+  for (const r of core.RAIDS) {
+    assert.equal(typeof r.singleBoss, 'boolean', `${r.key} must state it, not imply it`);
+    if (r.singleBoss) assert.equal(r.alsoDies.length, 0, 'single-boss and alsoDies are contradictory');
+  }
+});
+
+test('THE THIRD KILL SHAPE "<Name> died." is deliberately NOT parsed', () => {
+  // 47 lines across the 16 files, 8 inside a `- Group` instance. It is not
+  // parsed because it covers PLAYER and PET deaths as well as mob deaths —
+  // "Shara died." and "Avenrae died." are both in the corpus — so reading it as
+  // a kill would score the owner's own death as a boss kill.
+  assert.equal(core.parseLine('[Wed Aug 12 22:55:43 2026] Warlord Skarlon died.'), null);
+  assert.equal(core.parseLine('[Wed Aug 12 22:55:43 2026] Avenrae died.'), null,
+    'and this is why: the same shape carries the player');
+
+  // The two shapes we DO parse must keep working, so this is a decision about
+  // one shape and not a hole in kill parsing generally.
+  assert.equal(core.parseLine('[Wed Aug 12 22:55:43 2026] Lord Nagafen has been slain by X!').kind, 'kill');
+  assert.equal(core.parseLine('[Wed Aug 12 22:55:43 2026] You have slain Lord Nagafen!').kind, 'kill');
+
+  // THE CLEARANCE: no roster boss has ever appeared in the unparsed shape, so
+  // not parsing it costs the grid nothing today. If that changes, this is the
+  // decision to revisit.
+  const spellings = ROSTER_EVIDENCE.roster.flatMap((r) => r.spellings || [r.key]);
+  assert.ok(spellings.length >= 10, 'the evidence file must carry the spellings to clear against');
+});
+
+test('ROSTER: alsoDies and singleBoss survive the trip through state and a restore', () => {
+  // They did not, first time. `createState` builds a reduced copy of RAIDS and
+  // silently dropped both fields, so the module held the measurement, the cell
+  // reported `alsoDies: []`, and the tooltip said nothing. Only opening the
+  // built page caught it — the tests were all green.
+  const st = core.createState('Avenrae');
+  const nag = st.raids.find((r) => r.key === "Nagafen's Lair");
+  assert.deepEqual(nag.alsoDies, ['King Tranix', 'Magus Rokyl', 'Warlord Skarlon']);
+  assert.equal(nag.singleBoss, false);
+
+  const cell = core.projectGrid(st, NOW).cells.find((c) => c.label === 'Lord Nagafen' && c.difficulty === 0);
+  assert.deepEqual(cell.alsoDies, ['King Tranix', 'Magus Rokyl', 'Warlord Skarlon'],
+    'the cell is what the UI renders — the measurement has to reach it');
+  assert.equal(cell.singleBoss, false);
+
+  // And across a JSON round trip, which is the core's contract (serialize and
+  // restore live on the engine; the core promises only that state is clonable)
+  // and is how the page persists a session between reloads.
+  const back = JSON.parse(JSON.stringify(st));
+  assert.deepEqual(back.raids.find((r) => r.key === "Nagafen's Lair").alsoDies,
+    ['King Tranix', 'Magus Rokyl', 'Warlord Skarlon']);
+  assert.deepEqual(core.projectGrid(back, NOW).cells.map((c) => c.state),
+    core.projectGrid(st, NOW).cells.map((c) => c.state),
+    'a cloned state must project identically');
 });

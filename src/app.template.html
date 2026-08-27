@@ -58,7 +58,14 @@
           border: 1px solid transparent; cursor: default; }
   .c-open { color: var(--open); border-color: #4a3a12; background: #241d0c; font-weight: 600; }
   .c-completed { color: var(--done); background: #10261a; }
+  /* CONDITIONAL is not "cannot tell". It is answered, with a stated condition,
+     so it reads closer to done than to a shrug and carries its own colour. */
+  .c-conditional { color: #9fd0ff; background: #101f2e; border-color: #23405c; }
   .c-unknown { color: var(--unk); background: #1d1630; }
+  .condlist { margin: 12px 0 0; padding: 0; list-style: none; }
+  .condlist li { font-family: var(--mono); font-size: 13px; margin-bottom: 7px; }
+  .condlist .arm { color: var(--dim); display: block; padding-left: 14px; }
+  .condlist .arm b { color: #9fd0ff; font-weight: 600; }
   .c-not_looked { color: var(--none); }
 
   .key { color: var(--dim); font-size: 12px; margin: 10px 0 22px; }
@@ -91,6 +98,11 @@
     <div class="count none" id="count">—</div>
     <div class="leadsub" id="countsub">No log loaded yet.</div>
     <ul class="openlist" id="openlist"></ul>
+    <div id="condhead" hidden>
+      <p class="sub" style="margin:16px 0 0">These turn on the reset hour, which has never been
+      measured. We know exactly what would settle each one:</p>
+      <ul class="condlist" id="condlist"></ul>
+    </div>
   </div>
 
   <table id="grid" hidden>
@@ -100,6 +112,7 @@
   <div class="key" id="key" hidden>
     <b style="color:var(--open)">open</b> still to do &nbsp;·&nbsp;
     <b style="color:var(--done)">done</b> observed this week &nbsp;·&nbsp;
+    <b style="color:#9fd0ff">dep.</b> turns on the reset hour &nbsp;·&nbsp;
     <b style="color:var(--unk)">?</b> cannot tell &nbsp;·&nbsp;
     <b style="color:var(--none)">–</b> not looked at.
     Hover any cell for the reason.
@@ -340,6 +353,15 @@ function render() {
   const subEl = document.getElementById("countsub");
   const listEl = document.getElementById("openlist");
   listEl.innerHTML = "";
+  const condEl = document.getElementById("condlist");
+  const condHeadEl = document.getElementById("condhead");
+  condEl.innerHTML = "";
+  condHeadEl.hidden = true;
+  /* The two arms are strings this module builds from log data, never markup,
+     but they reach innerHTML — so they are escaped at the boundary rather than
+     trusted because of where they came from. */
+  const esc = (t) => String(t).replace(/[&<>"']/g, (ch) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 
   if (g.notLookedCount === 25) {
     countEl.textContent = "not looked";
@@ -351,6 +373,7 @@ function render() {
     countEl.textContent = g.openCount + (g.openCount === 1 ? " raid still open" : " raids still open");
     countEl.className = "count " + (g.openCount ? "open" : "none");
     const bits = [];
+    if (g.conditionalCount) bits.push(g.conditionalCount + " turning on the reset hour");
     if (g.uncertainCount) bits.push(g.uncertainCount + " uncertain");
     if (g.notLookedCount) bits.push(g.notLookedCount + " not looked at");
     bits.push(g.completedCount + " of 25 done");
@@ -359,6 +382,26 @@ function render() {
       const li = document.createElement("li");
       li.innerHTML = c.label + ' <span class="tier">D' + c.difficulty + " " + c.difficultyLabel + "</span>";
       listEl.appendChild(li);
+    }
+    /* A CELL THAT CANNOT DECIDE STILL KNOWS WHAT WOULD DECIDE IT.
+       This block is the whole of the 26 Aug change. The owner ran a build that
+       printed "15 uncertain" and learned nothing from it, while every one of
+       those cells knew the exact instant that settled it. Printing the instant
+       is the same refusal to guess and is actually usable. */
+    if (g.conditionalCount) {
+      condHeadEl.hidden = false;
+      for (const c of g.conditional) {
+        const li = document.createElement("li");
+        li.textContent = c.label + " D" + c.difficulty + " " + c.difficultyLabel;
+        const a = document.createElement("span");
+        a.className = "arm";
+        a.innerHTML = "<b>done</b> if " + esc(c.decidedBy.doneIf);
+        const b = document.createElement("span");
+        b.className = "arm";
+        b.innerHTML = "<b>open</b> if " + esc(c.decidedBy.openIf);
+        li.appendChild(a); li.appendChild(b);
+        condEl.appendChild(li);
+      }
     }
   }
 
@@ -388,6 +431,7 @@ function render() {
       span.className = "cell c-" + c.state;
       span.textContent = c.state === "completed" ? "done"
         : c.state === "open" ? "open"
+        : c.state === "conditional" ? "dep."
         : c.state === "unknown" ? "?" : "–";
       /* The row is the raid, so the tooltip has to say what the raid contains —
          otherwise a player reading "Plane of Fear" has no idea which bosses it
@@ -395,6 +439,8 @@ function render() {
       const BR = String.fromCharCode(10);
       span.title = c.because +
         (c.repeatKills ? "  (+" + c.repeatKills + " repeat kill(s))" : "") +
+        (c.alsoDies && c.alsoDies.length ? BR + BR + "also dies here, every visit, and NOT counted as completing it: " +
+          c.alsoDies.join(", ") : "") +
         (c.singleBoss ? "" : BR + BR + "contains: " + c.bosses.join(", ") + BR +
           "(one cell per raid assumes these bosses share a lock — the alt+Z " +
           "window is consistent with that and does not prove it)");

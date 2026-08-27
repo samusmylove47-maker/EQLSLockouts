@@ -98,15 +98,43 @@ test('group instance: zone, - Group, index, adjective', () => {
   assert.equal(ev.difficulty, 1);
 });
 
-test('THE TRAP: "- Group" with no index is still an instance, difficulty not recorded', () => {
-  // This shape occurs 6 times across 2 zones in our corpus and would fall
-  // through to the open-world branch under a naive pattern. It must report
-  // difficulty null — meaning "the game did not say" — and never D0.
+test('THE TRAP, AND IT WAS BACKWARDS: bare "- Group" IS D0', () => {
+  // This test used to assert `difficulty === null` — "the game did not say" —
+  // on the reasoning that defaulting to 0 would be inventing a number.
+  // IT WAS THE OTHER WAY ROUND. The client omits the index exactly when the
+  // index is zero, and treating the omission as "unknown" is what made the
+  // shipped tool answer "0 of 25 done" for a player who had raided all week.
+  //
+  // Measured over all 16 log files on 26 Aug 2026: 12 invites name `Group 0
+  // (Normal)`, there are exactly 12 bare `- Group` zone-ins, and NOT ONE entry
+  // line anywhere states an index of 0. See the block comment above
+  // INSTANCE_BARE_RE for the full table.
   const ev = core.parseLine('[Mon Aug 10 17:48:46 2026] You have entered The Permafrost Caverns - Group.');
   assert.equal(ev.instanced, true, 'must be recognised as an instance');
   assert.equal(ev.group, true);
   assert.equal(ev.zone, 'The Permafrost Caverns');
-  assert.equal(ev.difficulty, null, 'difficulty is not recorded, and must not be defaulted to 0');
+  assert.equal(ev.difficulty, 0, 'the omitted index means zero — measured 12/12');
+  assert.equal(ev.difficultyLabel, 'Normal');
+  assert.equal(ev.difficultyFromOmission, true, 'and it must be flagged as the omission rule, not a written index');
+
+  // The asymmetry is deliberate and load-bearing. `- Solo` has ZERO
+  // observations in 16 files — `grep -a -- " - Solo"` returns 0 on every one —
+  // so the rule has nothing to stand on there and must not be extended to it.
+  const solo = core.parseLine('[Mon Aug 10 17:48:46 2026] You have entered The Permafrost Caverns - Solo.');
+  assert.equal(solo.instanced, true);
+  assert.equal(solo.solo, true);
+  assert.equal(solo.difficulty, null, 'no bare Solo has ever been observed; do not extend the rule to it');
+  assert.equal(solo.difficultyFromOmission, false);
+});
+
+test('THE COUNTEREXAMPLE THAT WOULD KILL THE OMISSION RULE still parses', () => {
+  // The rule rests on "no entry line ever states index 0". If one ever appears,
+  // the rule is dead and this is how we would find out: the full shape must
+  // still parse, and must NOT be flagged as coming from the omission rule.
+  const ev = core.parseLine('[Mon Aug 10 17:48:46 2026] You have entered The Permafrost Caverns - Group 0 (Normal).');
+  assert.equal(ev.difficulty, 0);
+  assert.equal(ev.difficultyLabel, 'Normal');
+  assert.equal(ev.difficultyFromOmission, false, 'a written 0 is stated, not inferred — the two must stay distinguishable');
 });
 
 test('the instance invite carries the same grammar', () => {

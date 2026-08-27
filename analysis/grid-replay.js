@@ -22,7 +22,9 @@ const DIRS = [
   'C:\\Users\\Lindsey\\Desktop\\EQL Source\\eql-source\\state\\logs',
   'C:\\Users\\Lindsey\\Desktop\\EQL Source',
 ];
-const MARK = { completed: '##', open: ' .', unknown: ' ?', not_looked: ' -' };
+// '~~' is CONDITIONAL: a kill on the reset day itself. The cell knows the
+// exact instant that decides it and prints it below, rather than shrugging.
+const MARK = { completed: '##', open: ' .', conditional: ' ~', unknown: ' ?', not_looked: ' -' };
 
 function logFiles() {
   const out = [];
@@ -51,6 +53,7 @@ function logFiles() {
 
     process.stdout.write(`\n${'='.repeat(72)}\n  ${ch} — as of ${core.formatCivil(now)}\n${'='.repeat(72)}\n\n`);
     const bits = [`${grid.openCount} still open`];
+    if (grid.conditionalCount) bits.push(`${grid.conditionalCount} turning on the reset hour`);
     if (grid.uncertainCount) bits.push(`${grid.uncertainCount} uncertain`);
     if (grid.notLookedCount) bits.push(`${grid.notLookedCount} not looked at`);
     process.stdout.write(`  ${bits.join('   ·   ')}      (${grid.completedCount} of 25 done)\n\n`);
