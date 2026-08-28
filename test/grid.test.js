@@ -916,3 +916,33 @@ test('GRID: a completion carries its date as a FIELD, not inside prose', () => {
     assert.equal(c.completedBy, null);
   }
 });
+
+test('THE INFERENCE HAZARD IS STATED IN THE MODULE, and stays stated', () => {
+  // Every other caveat in LOCKOUT_MODEL describes an error that more data would
+  // eventually expose. This one describes an error that no amount of data ever
+  // will: kill timestamps are real, plentiful, and precisely wrong for dating a
+  // lockout, so a tracker built on them passes its tests forever.
+  //
+  // A comment can be deleted by a refactor with nobody noticing. This assertion
+  // is the thing that notices.
+  const h = core.LOCKOUT_MODEL.inferenceHazard;
+  assert.equal(typeof h, 'string', 'LOCKOUT_MODEL must carry inferenceHazard');
+  assert.match(h, /NO VOLUME\s+OF KILL DATA WILL EVER REVEAL THE ERROR/,
+    'the sentence itself must survive — it is the deliverable, not a summary of one');
+  assert.match(h, /6,133/, 'and must carry the measurement that establishes it');
+  assert.match(h, /zero spread/);
+
+  // The two facts the hazard rests on must remain true of the model, or the
+  // sentence is describing a model we no longer ship.
+  assert.equal(core.LOCKOUT_MODEL.anchorEvent, null,
+    'anchorEvent must stay null: the anchor is not in the log');
+  assert.equal(core.LOCKOUT_MODEL.commonOrigin, true);
+
+  // And nothing in the public output may quietly supply the anchor a caller
+  // would need in order to do the inference this warns against.
+  const st = core.applyLines(core.createState('Avenrae'), fixtureLines);
+  const json = JSON.stringify(core.projectGrid(st, NOW));
+  for (const banned of ['lockoutStart', 'lockedAt', 'lockoutExpires', 'expiresAt', 'anchorAt']) {
+    assert.ok(!json.includes(banned), `the grid must not emit ${banned} — it does not know it`);
+  }
+});

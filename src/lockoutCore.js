@@ -904,6 +904,30 @@ const LOCKOUT_MODEL = Object.freeze({
   commonOriginTolerance: 'about 1 second',
   anchorEvent: null,   // NOT RECORDED — see below
 
+  // ── THE ONE THAT CANNOT BE CAUGHT LATER ──────────────────────────────────
+  //
+  // Promoted out of `caveats`, where it was the third bullet of an array
+  // nobody reads, because of what makes it different from every other caveat
+  // in this file: **every other error here is discoverable by collecting more
+  // data. This one is not.**
+  //
+  // A tracker that infers lockout expiry from kill timestamps is measuring a
+  // different event from the one that matters. It will look right. Its tests
+  // will pass. A month of real user data will not contradict it, because kill
+  // timestamps are real, plentiful, and precisely wrong for this. The only
+  // thing that exposes the mistake is the alt+Z window, which is not in the log
+  // and which no amount of log-reading will ever produce.
+  //
+  // So the warning has to live in the code, next to the field it protects,
+  // rather than in a document that will not be open at the moment somebody
+  // decides that kill times are "close enough".
+  inferenceHazard:
+    'IF A FUTURE VERSION INFERS LOCKOUT EXPIRY FROM KILL TIMESTAMPS, NO VOLUME ' +
+    'OF KILL DATA WILL EVER REVEAL THE ERROR. 14 locks earned across 6,133 ' +
+    'seconds of kills showed ONE value with zero spread; per-kill stamping ' +
+    'would have shown 14 values spread over 1h42m. The anchor is not in the ' +
+    'log. anchorEvent stays null until something measures it.',
+
   // THE ANCHOR IS NOT RECORDED, and an earlier revision overstated this too.
   // The moment the screenshot was taken is unknown — there is no file, no
   // timestamp, no independent clock — so the "common instant" was derived from
@@ -1122,6 +1146,12 @@ function createState(character, opts) {
 }
 
 const MAX_EVENTS = 5000;
+
+// The positive-control set gets its OWN bound rather than borrowing one.
+// Measured occupancy: 600 replies across all 16 log files, ~340 for the busiest
+// single character over 434 MB. See the note at the insert site for what
+// overflowing costs — it degrades a refusal to `unknown`, never the reverse.
+const MAX_VOIDLING_REPLIES = 5000;
 // The dedupe index is deliberately far larger than the provenance log. The
 // owner's own corpus produces ~12k observations for one character, so a bound
 // of 5000 was actively corrupting counts.
@@ -1173,7 +1203,26 @@ function applyLine(state, line) {
   if (ev.kind === 'voidling-reply') {
     if (!state.voidlingReplies.includes(civil)) {
       state.voidlingReplies.push(civil);
-      if (state.voidlingReplies.length > MAX_EVENTS) state.voidlingReplies.shift();
+      // THE BOUND, AND ITS COST, BOTH STATED — Session C's clause 7.
+      //
+      // This was bounded already, at MAX_EVENTS, by sharing a constant with a
+      // structure it has nothing to do with. That is not a stated bound; it is
+      // an accident that happens to hold. A host embedding this does a backfill
+      // of about 5.25 million lines on load and is entitled to know what grows.
+      //
+      // WHAT IT COSTS WHEN IT OVERFLOWS, which is the part a bound is useless
+      // without: the OLDEST seconds are dropped first. A refusal older than the
+      // surviving window therefore loses its positive control and is reported
+      // `unknown` rather than `refused`. That is the safe direction — the module
+      // stops claiming a refusal it can no longer corroborate. It can never
+      // manufacture a false `refused`, because a refusal requires a reply
+      // present in this set.
+      //
+      // HEADROOM, MEASURED rather than hoped for: `grep -ac "Voidling says, '"`
+      // over all 16 log files returns 600 replies in total, and the busiest
+      // single character contributes about 340 across 434 MB and three weeks.
+      // The bound is roughly 15x the observed occupancy for one character.
+      if (state.voidlingReplies.length > MAX_VOIDLING_REPLIES) state.voidlingReplies.shift();
     }
     return state;
   }
@@ -1580,11 +1629,29 @@ function classifyRequests(state) {
     collapsed.push(r);
   }
 
+  // SORT ONCE, THEN BINARY SEARCH — the other half of clause 7.
+  //
+  // This was `.some()` per request over the reply array: O(requests x replies).
+  // Both are bounded at 5,000, so the worst case was 25 million comparisons on a
+  // structure a host builds during a 5.25M-line backfill on its main process.
+  //
+  // At MEASURED volumes it was never close: ~340 replies against ~40 requests
+  // for the busiest character, so about 13,600 comparisons. The hazard was
+  // theoretical. It is now absent rather than merely unlikely, which is the
+  // difference between a bound you can hand someone and one you have to explain.
+  const sortedReplies = state.voidlingReplies.slice().sort((a, b) => a - b);
+  const replyInRange = (lo, hi) => {
+    let a = 0, b = sortedReplies.length;
+    while (a < b) {                       // first index with value >= lo
+      const mid = (a + b) >> 1;
+      if (sortedReplies[mid] < lo) a = mid + 1; else b = mid;
+    }
+    return a < sortedReplies.length && sortedReplies[a] <= hi;
+  };
+
   return collapsed.map((r) => {
     const grant = assignments.find((a) => a.civil >= r.civil && a.civil - r.civil <= GRANT_WINDOW_MS);
-    const control = state.voidlingReplies.some(
-      (v) => v >= r.civil - CONTROL_BEFORE_MS && v <= r.civil + CONTROL_AFTER_MS
-    );
+    const control = replyInRange(r.civil - CONTROL_BEFORE_MS, r.civil + CONTROL_AFTER_MS);
     return {
       at: formatCivil(r.at),
       civil: r.civil,
@@ -2135,6 +2202,12 @@ const THRESHOLDS = Object.freeze({
   CONTROL_AFTER_MS,
   COLLAPSE_MS,              // repeated `danger` inside this is one attempt
   MAX_EVENTS,               // dedupe horizon, in observations
+  // EXPORTED SO A HOST CAN SEE ITS OWN CEILING. Session C embeds this in an
+  // Electron renderer that backfills ~5.25M lines on load; a bound it cannot
+  // read is a bound it has to take on trust. See the insert site for what
+  // overflowing costs — a refusal degrades to `unknown`, never to a false
+  // `refused`.
+  MAX_VOIDLING_REPLIES,
 });
 
 module.exports = {

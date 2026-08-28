@@ -591,3 +591,47 @@ test('CONTRACT 7: the character is an input and state refuses to be shared', () 
   assert.equal(core.characterFromLogFilename('not-a-log.txt'), null);
   assert.equal(core.createState('Avenrae').character, 'Avenrae');
 });
+
+test('CLAUSE 7: the positive-control set is bounded, and overflow degrades the SAFE way', () => {
+  // Session C raised this and it is real: a host that backfills 5.25 million
+  // lines on its main process is entitled to know what grows without limit.
+  //
+  // Measured occupancy for scale: 600 Voidling replies across all 16 log files,
+  // ~340 for the busiest single character over 434 MB and three weeks. The bound
+  // is roughly 15x that.
+  assert.equal(typeof core.THRESHOLDS.MAX_VOIDLING_REPLIES, 'number',
+    'the bound must be published in THRESHOLDS, not implied by a shared constant');
+  assert.ok(core.THRESHOLDS.MAX_VOIDLING_REPLIES >= 1000, 'and comfortably above measured occupancy');
+
+  const st = core.createState('Avenrae');
+  // Overrun the bound with distinct seconds.
+  const lines = [];
+  for (let i = 0; i < core.THRESHOLDS.MAX_VOIDLING_REPLIES + 500; i++) {
+    const d = 1 + (i % 27), h = (i * 7) % 24, m = (i * 13) % 60, s = (i * 31) % 60;
+    const p = (n) => String(n).padStart(2, '0');
+    lines.push(`[Mon Jan ${p(d)} ${p(h)}:${p(m)}:${p(s)} 2026] Voidling says, 'hail'`);
+  }
+  core.applyLines(st, lines);
+  assert.ok(st.voidlingReplies.length <= core.THRESHOLDS.MAX_VOIDLING_REPLIES,
+    `the set must stay bounded; got ${st.voidlingReplies.length}`);
+
+  // THE DIRECTION OF THE FAILURE, which is the whole point of a bound.
+  // A refusal is only reported when a reply corroborates it. Drop the replies
+  // and a refusal must become `unknown` — it must NEVER become a false
+  // `refused`, and it must never silently become `granted`.
+  const withControl = core.createState('Avenrae');
+  core.applyLines(withControl, [
+    "[Mon Aug 10 18:00:00 2026] You say, 'danger'",
+    "[Mon Aug 10 18:00:02 2026] Voidling says, 'Your hubris risks our very reality itself.'",
+  ]);
+  const before = core.classifyRequests(withControl);
+  assert.equal(before[0].result, 'refused', 'with the control present, a refusal is reportable');
+  assert.equal(before[0].positiveControl, true);
+
+  // Now the same request with the control evicted.
+  withControl.voidlingReplies = [];
+  const after = core.classifyRequests(withControl);
+  assert.equal(after[0].result, 'unknown', 'without it, the module stops claiming a refusal');
+  assert.equal(after[0].positiveControl, false);
+  assert.notEqual(after[0].result, 'granted', 'and must never invent a grant');
+});
