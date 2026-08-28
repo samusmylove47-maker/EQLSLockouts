@@ -30,13 +30,31 @@ const ROSTER_EVIDENCE = JSON.parse(
 // fills a range with ordinary stamped lines, the way a running client does.
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+// THIS HELPER WAS ITSELF THE DEFECT, and every grid test below rested on it.
+//
+// It used to emit FOUR ISOLATED LINES A DAY, at 01:00, 07:00, 13:00 and 19:00.
+// Four instants observe essentially nothing — the spans between them are zero
+// length — so the coverage those tests asserted `open` against was 0.0% of the
+// period. The module accepted it because the old gate only asked whether any
+// single gap exceeded 24 hours, and 6-hour gaps do not.
+//
+// So the suite was green on exactly the input an adversarial pass later used to
+// make the module report "25 raids still open" on seven lines of log. The tests
+// were not merely failing to catch the bug; they were built on it.
+//
+// A running client writes continuously. This now emits a CONTIGUOUS BLOCK per
+// day — four hours of lines two minutes apart, which is an ordinary evening and
+// measures ~16% of a week, against the 12–48% real periods measure in our own
+// corpus.
 function heartbeat(fromDay, toDay, month = 8, year = 2026) {
   const out = [];
+  const p = (n) => String(n).padStart(2, '0');
   for (let d = fromDay; d <= toDay; d++) {
-    for (const h of [1, 7, 13, 19]) {
-      const dt = new Date(Date.UTC(year, month - 1, d, h, 0, 0));
-      const p = (n) => String(n).padStart(2, '0');
-      out.push(`[${DAYS[dt.getUTCDay()]} ${MONTHS[month - 1]} ${p(d)} ${p(h)}:00:00 ${year}] You have entered Nektulos Forest.`);
+    const dt = new Date(Date.UTC(year, month - 1, d, 18, 0, 0));
+    for (let m = 0; m < 240; m += 2) {
+      const x = new Date(dt.getTime() + m * 60000);
+      out.push(`[${DAYS[x.getUTCDay()]} ${MONTHS[month - 1]} ${p(x.getUTCDate())} ` +
+               `${p(x.getUTCHours())}:${p(x.getUTCMinutes())}:00 ${year}] You have entered Nektulos Forest.`);
     }
   }
   return out;
@@ -768,8 +786,14 @@ test('MUTATION 2/3: Wednesday now, kill ON the preceding Tuesday -> conditional,
 });
 
 test('MUTATION 3/3: Tuesday now -> the two hypotheses are BOTH named', () => {
+  // Covers from the PRIOR boundary day (Tue 11 Aug), not just from the 12th.
+  // On the boundary day both windows are live, so coverage is now judged over
+  // the whole range that could be the period — a week further back. A fixture
+  // that starts inside that range leaves a 42-hour hole at its head and the
+  // grid correctly answers `not_looked`. Widening the fixture is the fix; the
+  // module is right.
   const st = core.createState('Avenrae');
-  core.applyLines(st, [...heartbeat(12, 18), ...killAt('Thu Aug 13 20:00:00 2026', 2)]);
+  core.applyLines(st, [...heartbeat(11, 18), ...killAt('Thu Aug 13 20:00:00 2026', 2)]);
   const g = core.projectGrid(st, { year: 2026, month: 8, day: 18, hour: 14, minute: 0, second: 0 });
 
   assert.equal(g.period.nowIsOnBoundaryDay, true, 'Tuesday IS the boundary day');
@@ -1017,6 +1041,8 @@ const GRID_SHAPE = [
   'period.coverageAssumption',
   'period.coverageFrom',
   'period.coverageGapToleranceHours',
+  'period.coverageObservedFraction',
+  'period.coverageObservedMinimum',
   'period.coverageGaps',
   'period.coverageGaps[].from',
   'period.coverageGaps[].hours',
@@ -1253,4 +1279,84 @@ test('NO COUNTDOWN IN PROSE EITHER — the hole the key-name ban left open', () 
   // it is a measurement, not a prediction — so it must still be there.
   assert.match(core.RESET_RULE.measuredBracketPacific, /\d\d:\d\d/,
     'the measured bracket is evidence and must not be scrubbed by this rule');
+});
+
+test('NOT LOOKED: seven lines across a week must never read as 25 open', () => {
+  // THE WORST DEFECT THIS MODULE HAS HAD, found by an adversarial pass two days
+  // before handover. The coverage gate tested only the LARGEST single gap
+  // against 24 hours, so seven zone-in lines spaced 23 hours apart — and
+  // nothing else — reported `coverageSpansPeriod: true`, zero holes, and
+  // **25 raids still open**. A rule about the biggest hole says nothing about
+  // how much of the period was seen at all, and near-zero observation passed it
+  // trivially. Nine unrelated combat lines were enough to flip a whole week.
+  //
+  // That is exactly the comfortable lie the not_looked state exists to prevent.
+  const DAYS_ = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const pad = (n) => String(n).padStart(2, '0');
+  const sparse = [];
+  let t = Date.UTC(2026, 7, 18, 1, 0, 0);
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(t);
+    sparse.push(`[${DAYS_[d.getUTCDay()]} Aug ${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:00 2026] You have entered Nektulos Forest.`);
+    t += 23 * 3600000;
+  }
+  const st = core.applyLines(core.createState('Avenrae'), sparse);
+  const g = core.projectGrid(st, { year: 2026, month: 8, day: 24, hour: 1, minute: 0, second: 0 });
+
+  assert.equal(g.period.nowIsOnBoundaryDay, false, 'and it is not a boundary-day quirk');
+  assert.equal(g.openCount, 0, 'seven lines cannot clear a week');
+  assert.equal(g.notLookedCount, 25);
+  assert.equal(g.period.coverageSpansPeriod, false);
+  assert.match(g.notLooked[0].because, /only 0\.0% of this period is in the log/,
+    'and it must say WHICH test failed, not "coverage does not span"');
+
+  // THE OTHER DIRECTION, so the fix cannot be "call everything not_looked".
+  // Four hours an evening for six days is ordinary play and must still answer.
+  const dense = [];
+  let d0 = Date.UTC(2026, 7, 18, 18, 0, 0);
+  for (let day = 0; day < 6; day++) {
+    for (let m = 0; m < 240; m += 2) {
+      const x = new Date(d0 + m * 60000);
+      dense.push(`[${DAYS_[x.getUTCDay()]} Aug ${pad(x.getUTCDate())} ${pad(x.getUTCHours())}:${pad(x.getUTCMinutes())}:00 2026] You have entered Nektulos Forest.`);
+    }
+    d0 += 86400000;
+  }
+  const g2 = core.projectGrid(core.applyLines(core.createState('Avenrae'), dense),
+    { year: 2026, month: 8, day: 24, hour: 1, minute: 0, second: 0 });
+  assert.equal(g2.notLookedCount, 0, 'ordinary play must still get an answer');
+  assert.equal(g2.openCount, 25);
+  assert.ok(g2.period.coverageObservedFraction > 0.05);
+});
+
+test('THRESHOLDS are asserted, because mutating them was silent', () => {
+  // Mutation testing found that CONTROL_BEFORE_MS 20s -> 24h, GRANT_WINDOW_MS
+  // 3s -> 10min and CONTROL_AFTER_MS 5s -> 1h ALL passed the entire suite. The
+  // first is not cosmetic: with the control window widened to a day, a Voidling
+  // line six hours before a `danger` turns classifyRequests from ["unknown"] to
+  // ["refused"] — the module MANUFACTURES a lockout, in the one direction it is
+  // built never to fail, with every test green.
+  //
+  // No test asserted any of these values. They are published in THRESHOLDS
+  // precisely so they are not hidden, and a published constant that nothing
+  // checks is a constant that can drift.
+  const T = core.THRESHOLDS;
+  assert.equal(T.GRANT_WINDOW_MS, 3000, 'a grant follows its request within seconds');
+  assert.equal(T.CONTROL_BEFORE_MS, 20000, 'the control window is SECONDS — widen it and refusals are invented');
+  assert.equal(T.CONTROL_AFTER_MS, 5000);
+  assert.equal(T.COLLAPSE_MS, 6000);
+  assert.equal(T.MAX_EVENTS, 5000);
+  assert.equal(T.MAX_VOIDLING_REPLIES, 5000);
+
+  // And the behaviour the first one protects, asserted directly rather than
+  // trusted to the number.
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    "[Mon Aug 10 12:00:00 2026] Voidling says, 'Your hubris risks our very reality itself.'",
+    "[Mon Aug 10 18:00:00 2026] You say, 'danger'",
+  ]);
+  const rows = core.classifyRequests(st);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].result, 'unknown',
+    'a Voidling line SIX HOURS earlier is not a control for this request');
+  assert.equal(rows[0].positiveControl, false);
 });

@@ -51,6 +51,49 @@ conversation before it ships, not after.
 
 ---
 
+## The coverage gate was broken, and it was broken in the one direction that matters
+
+Found by an adversarial pass **two days before this handover**, and fixed here.
+
+`not_looked` existed so that "I have not looked" could never render as "you
+have not done it". **It was defeatable in seven lines.** The gate asked only
+whether any SINGLE gap exceeded 24 hours, so seven zone-in lines spaced 23 hours
+apart — and nothing else — reported `coverageSpansPeriod: true`, zero holes,
+and **25 raids still open**. Nine unrelated combat lines flipped a whole week.
+
+A rule about the largest hole says nothing about how much of the period was seen.
+
+**Worse: our own test helper was that input.** `heartbeat()` emitted four
+isolated lines a day, which observes 0.0% of a week. Every grid test asserting
+`open` rested on coverage the module should never have accepted. It now emits
+contiguous blocks, which is what a running client writes.
+
+**The fix, with the measurement behind it.** Coverage now also requires an
+observed FRACTION of the period, floored at 5%:
+
+| period | observed |
+|---|---|
+| Avenrae 04 / 11 / 18 Aug | 12.2% · 35.7% · 27.1% |
+| Shara 04 / 11 / 18 Aug | 35.8% · 42.3% · 48.2% |
+| the seven-line defect | **0.0%** |
+
+Still a judgement, like the 24 hours — but one with measured daylight on both
+sides. `period.coverageObservedFraction` and `coverageObservedMinimum` are
+published so a UI can show the number instead of trusting our threshold.
+
+**And coverage is now judged over the range that COULD be the period.** On the
+boundary day two windows are live; coverage previously measured only the first,
+so asking at 14:00 on a Tuesday after a fully observed week returned
+`not_looked` because the fourteen hours since midnight were unobserved.
+
+**What this changes for real data, and you should expect it:** Shara's grid now
+reads **25 not_looked** where it read 9 open / 16 conditional. She has 42.8% of
+the week observed — well past the floor — but a **24.51-hour hole from 14 Aug
+23:59**, which the old window did not reach and which is long enough to hide a
+raid night. The tool now says so. That is the feature.
+
+---
+
 ## Four findings that inverted at least once while we built this
 
 Each of these was believed backwards by someone competent — in three cases by

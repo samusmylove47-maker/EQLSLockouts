@@ -2281,7 +2281,23 @@ function projectGrid(state, now) {
   // small holes cannot add up to a missing evening without anyone seeing it.
   const GAP_REPORT_MS = 60 * 60 * 1000;
 
-  const periodFrom = boundaryDayStart;
+  // COVERAGE IS JUDGED OVER THE RANGE THAT COULD BE THE PERIOD, not over one
+  // hypothesis's guess at it.
+  //
+  // On the boundary day two windows are live — the period may have begun this
+  // morning, or may still be last Tuesday's — and the cells already evaluate
+  // both. Coverage did not: it measured only the first, so a player asking at
+  // 14:00 on a Tuesday, after a fully observed week, was told `not_looked`
+  // because the fourteen hours since midnight happened to be unobserved.
+  //
+  // That is the wrong kind of caution. We HAVE observed the range in question;
+  // what we do not know is where inside it the period starts, and that is
+  // exactly what the `conditional` state is for. So coverage looks back over
+  // both windows and lets the cells carry the ambiguity.
+  const onBoundaryDayForCoverage = nowCivil >= boundaryDayStart && nowCivil < boundaryDayEnd;
+  const periodFrom = onBoundaryDayForCoverage
+    ? boundaryDayStart - 7 * 86400000
+    : boundaryDayStart;
   const periodTo = nowCivil;
   const relevant = (state.spans || [])
     .filter((sp) => sp.to >= periodFrom && sp.from <= periodTo)
@@ -2301,11 +2317,55 @@ function projectGrid(state, now) {
   // The ones big enough to change the answer.
   const holes = allGaps.filter((g) => g.to - g.from > PERIOD_GAP_TOLERANCE_MS);
 
+  // HOW MUCH OF THE PERIOD DID WE ACTUALLY OBSERVE?
+  //
+  // THE DEFECT THIS FIXES WAS THE WORST ONE IN THE MODULE, and an adversarial
+  // pass found it two days before handover. The gate below used to be
+  // `holes.length === 0` alone — no SINGLE gap longer than 24 hours. **Seven
+  // zone-in lines spaced 23 hours apart, and nothing else, cleared it**: every
+  // gap 23h < 24h, zero holes, `coverageSpansPeriod: true`, and the grid
+  // reported **25 raids still open**. Nine unrelated combat lines are enough to
+  // flip a whole week from `not_looked` to `open`.
+  //
+  // That is precisely the comfortable lie this module exists not to tell, and
+  // the max-gap test could never have caught it: a rule about the LARGEST hole
+  // says nothing about how much of the period was seen at all. Near-zero
+  // observation passes it trivially.
+  //
+  // MEASURED, over the real corpus, per Tuesday-to-Tuesday period:
+  //
+  //   Avenrae  04 Aug  12.2%   11 Aug  35.7%   18 Aug  27.1%
+  //   Shara    04 Aug  35.8%   11 Aug  42.3%   18 Aug  48.2%
+  //   the seven-line defect case ............  0.0%
+  //
+  // So a floor of 5% separates every real period from the degenerate one with
+  // roughly a 7x margin below the lowest real figure that also clears max-gap.
+  // IT IS STILL A JUDGEMENT, like the 24 hours above, and it is labelled one —
+  // but it is a judgement with measured daylight on both sides of it rather
+  // than a number chosen because it sounded careful.
+  //
+  // A light week that genuinely falls below the floor reports `not_looked`,
+  // which is the honest answer: we did not watch enough of the week to say
+  // anything about it. The fraction is published either way so a caller can
+  // show it rather than take our word for the threshold.
+  const periodLength = Math.max(1, periodTo - periodFrom);
+  let observedMs = 0;
+  let cursorObs = periodFrom;
+  for (const sp of relevant) {
+    const a = Math.max(sp.from, periodFrom);
+    const b = Math.min(sp.to, periodTo);
+    if (b > a && b > cursorObs) observedMs += b - Math.max(a, cursorObs);
+    cursorObs = Math.max(cursorObs, b);
+  }
+  const observedFraction = observedMs / periodLength;
+  const MIN_OBSERVED_FRACTION = 0.05;
+
   const spans =
     coverageStart !== null &&
     coverageEnd !== null &&
     relevant.length > 0 &&
-    holes.length === 0;
+    holes.length === 0 &&
+    observedFraction >= MIN_OBSERVED_FRACTION;
 
   // IS `now` ITSELF ON THE BOUNDARY DAY? Then the period start is ambiguous.
   //
@@ -2432,7 +2492,12 @@ function projectGrid(state, now) {
           ? 'no lines seen at all'
           : holes.length
             ? `no record of ${holes.map((h) => `${h.hours.toFixed(1)}h`).join(' + ')} inside this period`
-            : 'coverage does not span this period';
+            // The new branch, and it must say WHICH test failed. "Coverage does
+            // not span this period" was true of both and told a reader nothing.
+            : observedFraction < MIN_OBSERVED_FRACTION
+              ? `only ${(observedFraction * 100).toFixed(1)}% of this period is in the log — ` +
+                `too little to say anything about it either way`
+              : 'coverage does not span this period';
       } else if (h1.s === h2.s && h1.why === h2.why) {
         cellState = h1.s;
         because = h1.why;
@@ -2571,6 +2636,12 @@ function projectGrid(state, now) {
         'Gaps over 24 h make a cell not_looked; that threshold is a judgement, ' +
         'not a measurement, and every gap is listed in coverageGaps regardless.',
       coverageGapToleranceHours: 24,
+      // WHAT FRACTION OF THIS PERIOD WAS ACTUALLY OBSERVED, published so a
+      // caller can show it instead of trusting our threshold. Real periods in
+      // our corpus run 12%–48%; a live tailer that started this morning is a
+      // few percent and should be told so rather than shown 25 open cells.
+      coverageObservedFraction: Number(observedFraction.toFixed(4)),
+      coverageObservedMinimum: MIN_OBSERVED_FRACTION,
       coverageFrom: coverageStart === null ? null : formatCivil(fromCivil(coverageStart)),
       coverageTo: coverageEnd === null ? null : formatCivil(fromCivil(coverageEnd)),
     },
