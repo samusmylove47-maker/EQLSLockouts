@@ -11,6 +11,122 @@ the owner measures, my protocol governs. All actioned; see the second report.
 
 ## To the Director
 
+### Tenth report, 27 Aug 2026 — packaged for Session C
+
+#### THE ASK, FIRST, BECAUSE IT IS NOW ON A DEADLINE
+
+**The wall-clock time each alt+Z screenshot was taken.** That plus the remaining
+time the window shows gives the reset instant directly, and two readings that
+agree prove both the instant and that the locks share one.
+
+**1 September is a Tuesday, and Tuesday is the boundary day.** Every user who
+raids on launch day will see their evening's raids come back `unsure` — honestly,
+and it will read as vagueness in front of the first people who ever use this. One
+sentence from the owner retires those cells permanently, for everyone.
+
+It has been one sentence away for nine days. It now has four days left.
+
+---
+
+#### Packaged: `docs/FOR-SESSION-C.md`
+
+The four inverted findings ship as **evidence, not conclusions**, each with the
+limit that stops a careful reader re-deriving the wrong answer:
+
+**1. Bare `- Group` means tier 0.** The table (12 invites / 12 bare entries /
+**zero** entry lines stating index 0), the three directly-paired lines minutes
+apart, and the verifier's 65-of-65 diagonal. **And the limit**: it applies to
+`- Group` only, because the no-mode-word family drops its *whole* suffix at
+tier 0 and collapses onto the open-world zone-in, leaving nothing to distinguish
+them. `- Solo` gets nothing — zero observations in 16 files.
+
+**2. The lock is not stamped at the kill.** 14 locks, 6,133 seconds of kills, one
+value, zero spread. Per-kill stamping would have shown 14 values over 1h42m.
+
+**3. `B − R = exactly 5d 23h` is the measurement; six days is conditional** on
+R being one hour — shipped with my own retraction, because "no other pairing
+gives a whole number" was false: B is determined by R, so every R yields some B.
+One free parameter fitted to itself.
+
+**4. `/dzlisttimers` reports replay timers.** Closed, with the capture.
+
+---
+
+#### Your finding 4 was right, and the primary evidence was in our own log
+
+I had never seen this capture. Searching for it turned up three lines:
+
+```
+[Fri Aug 21 11:20:54 2026] Usage: /dzListTimers - This command will list any
+    outstanding replay timers you have for all expeditions. This is the amount of
+    time you must wait before being allowed to enter another instance of that zone.
+[Wed Aug 26 23:30:17 2026] You have no outstanding timers.
+[Wed Aug 26 23:30:24 2026] You say, 'timers check done'
+```
+
+The first is **the client's own documentation**, printed because the command was
+typed with no argument. The second is the command's output — so it **does** write
+to the log, which is a useful positive nobody had. The third is the control line,
+seven seconds later.
+
+**Why the negative is decisive**: five hours earlier that character killed two
+Plane of Fear bosses, and the period is at least 5.78 days, so both locks were
+certainly still held. A command reporting loot lockouts could not report none.
+
+Committed at `sources/raw/2026-08-26-dzlisttimers-capture.log`, with the
+technique written up rather than just the result.
+
+**A privacy catch while assembling it.** The obvious evidence for the "locks were
+held" step was `<Boss> has been slain by <Player>!`, and every such line that
+evening names another player. Other players are never named outside the credits,
+and the scrub rule forbids editing a line to fit — so the **first-person** kill
+form is used instead. Same fact, nobody named. I nearly committed the other one.
+
+---
+
+#### Clause 7 closed
+
+It was bounded already — at `MAX_EVENTS`, by sharing a constant with a structure
+it has nothing to do with. **That is not a stated bound, it is an accident that
+happens to hold.**
+
+- Its own named constant, published in `THRESHOLDS` so a host can read its own
+  ceiling instead of trusting ours.
+- **Measured occupancy**, so the headroom is a number and not a hope: 600 replies
+  across all 16 files, ~340 for the busiest character over 434 MB and three
+  weeks. The bound is ~15× that.
+- **What overflow costs**, because a bound without it is decoration: oldest
+  seconds drop first, so a refusal older than the window reports `unknown`,
+  never `refused`. It cannot manufacture a false refusal — a refusal *requires*
+  a reply in the set.
+- The `O(requests × replies)` scan — 25 M comparisons at the bound — is now
+  sort-once + binary search. At measured volumes it was never close (~13,600), so
+  the hazard was theoretical; it is now absent rather than unlikely.
+
+#### The inference hazard is a named field now, not a buried bullet
+
+It was the third item of a `caveats` array. What separates it from every other
+caveat in that file is that **every other one is discoverable by collecting more
+data and this one is not**. `LOCKOUT_MODEL.inferenceHazard` now carries the
+sentence verbatim, and a test fails if the wording, the 6,133-second measurement,
+or `anchorEvent: null` goes missing — plus it bans five field names a caller
+would need in order to do the inference at all.
+
+---
+
+#### One thing I want on the record about the handover itself
+
+An adversarial pass is currently attacking a mirror of the module, trying to
+smuggle a countdown past the ban — `resetHour`, `dueBy`, `availableIn`,
+`nextResetOn`, and a countdown string folded into the `because` prose where no
+key name appears at all. Several of those get past the current test, which bans
+key names rather than shapes.
+
+That is the right result to have before handing this to someone else rather than
+after, and I will report what survives.
+
+---
+
 ### Ninth report, 27 Aug 2026 — shipped, and your diagnosis was wrong in mechanism
 
 **Fixed and shipped: [PR #8](https://github.com/samusmylove47-maker/EQLSLockouts/pull/8).** Owner's own log, same file:

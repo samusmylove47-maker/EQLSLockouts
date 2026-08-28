@@ -946,3 +946,311 @@ test('THE INFERENCE HAZARD IS STATED IN THE MODULE, and stays stated', () => {
     assert.ok(!json.includes(banned), `the grid must not emit ${banned} — it does not know it`);
   }
 });
+
+// ---------------------------------------------------------------------------
+// THE OUTPUT SHAPE IS AN ALLOWLIST, NOT A BAN LIST
+//
+// The existing countdown ban lists key names — secondsRemaining, expiresAt and
+// so on — and an adversarial pass walked straight past it. Working against a
+// mirror of this module it added `resetHour: 5`, `nextResetOn`,
+// `hoursUntilNextReset`, `availableIn: {days, hours}`, `dueBy`, `resetsAt`,
+// `nextAvailableInHours`, `estimatedResetAt` — and, worst of the set, a
+// countdown folded into the `because` PROSE, where no key name appears at all.
+//
+// A ban list can only forbid what somebody already thought of. This module is
+// about to be embedded in an application built by people who did not write it
+// and who will, quite reasonably, want to add fields. So the test is inverted:
+// **every key in the public output must be declared here.** A new field fails
+// the suite until a human adds it deliberately, and that is the moment to ask
+// whether it is a fact or a guess.
+//
+// Regenerate deliberately, never reflexively:
+//   node -e "..." (see analysis/; walk the output and print sorted paths)
+// ---------------------------------------------------------------------------
+const GRID_SHAPE = [
+  'cells',
+  'cells[].alsoDies',
+  'cells[].because',
+  'cells[].bosses',
+  'cells[].completedAt',
+  'cells[].completedBy',
+  'cells[].decidedBy',
+  'cells[].difficulty',
+  'cells[].difficultyLabel',
+  'cells[].evidence',
+  'cells[].label',
+  'cells[].raid',
+  'cells[].repeatKills',
+  'cells[].shapes',
+  'cells[].singleBoss',
+  'cells[].state',
+  'cells[].tierFromOmission',
+  'cells[].weeklyTaskObserved',
+  'completed',
+  'completedCount',
+  'conditional',
+  'conditionalCount',
+  'notLooked',
+  'notLookedCount',
+  'notLooked[].alsoDies',
+  'notLooked[].because',
+  'notLooked[].bosses',
+  'notLooked[].completedAt',
+  'notLooked[].completedBy',
+  'notLooked[].decidedBy',
+  'notLooked[].difficulty',
+  'notLooked[].difficultyLabel',
+  'notLooked[].evidence',
+  'notLooked[].label',
+  'notLooked[].raid',
+  'notLooked[].repeatKills',
+  'notLooked[].shapes',
+  'notLooked[].singleBoss',
+  'notLooked[].state',
+  'notLooked[].tierFromOmission',
+  'notLooked[].weeklyTaskObserved',
+  'open',
+  'openCount',
+  'period',
+  'period.boundaryDay',
+  'period.boundaryWeekday',
+  'period.coverageAssumption',
+  'period.coverageFrom',
+  'period.coverageGapToleranceHours',
+  'period.coverageGaps',
+  'period.coverageGaps[].from',
+  'period.coverageGaps[].hours',
+  'period.coverageGaps[].to',
+  'period.coverageGaps[].tolerated',
+  'period.coverageHoles',
+  'period.coverageHoles[].from',
+  'period.coverageHoles[].hours',
+  'period.coverageHoles[].to',
+  'period.coverageSpansPeriod',
+  'period.coverageTo',
+  'period.evidenceNote',
+  'period.hourKnown',
+  'period.nowIsOnBoundaryDay',
+  'resetRule',
+  'resetRule.hour',
+  'resetRule.measuredBracketContainsRule',
+  'resetRule.measuredBracketPacific',
+  'resetRule.note',
+  'resetRule.provenance',
+  'resetRule.source',
+  'resetRule.weekday',
+  'resetRule.weekdayName',
+  'uncertain',
+  'uncertainCount',
+];
+
+const VIEW_SHAPE = [
+  'bosses',
+  'bosses[].available',
+  'bosses[].available.provenance',
+  'bosses[].available.value',
+  'bosses[].boss',
+  'bosses[].cadence',
+  'bosses[].lastAssigned',
+  'bosses[].lastAssigned.hoursAgo',
+  'bosses[].lastAssigned.provenance',
+  'bosses[].lastAssigned.value',
+  'bosses[].lastCompleted',
+  'bosses[].lastCompleted.hoursAgo',
+  'bosses[].lastCompleted.provenance',
+  'bosses[].lastCompleted.value',
+  'bosses[].task',
+  'bosses[].timesAssigned',
+  'bosses[].timesCompleted',
+  'caveats',
+  'character',
+  'coverage',
+  'coverage.from',
+  'coverage.note',
+  'coverage.provenance',
+  'coverage.to',
+  'dropped',
+  'dropped.beyondDedupeHorizon',
+  'dropped.duplicate',
+  'dropped.unstamped',
+  'grants',
+  'grants.items',
+  'grants.items[].at',
+  'grants.items[].item',
+  'grants.provenance',
+  'grants.total',
+  'instances',
+  'instances[].difficulty',
+  'instances[].difficultyFromOmission',
+  'instances[].difficultyLabel',
+  'instances[].difficultyStated',
+  'instances[].group',
+  'instances[].seen',
+  'instances[].zone',
+  'now',
+  'period',
+  'period.provenance',
+  'period.reason',
+  'period.value',
+  'requests',
+  'requests[].at',
+  'requests[].boss',
+  'requests[].civil',
+  'requests[].positiveControl',
+  'requests[].result',
+  'reset',
+  'reset.basis',
+  'reset.brackets',
+  'reset.brackets[].after',
+  'reset.brackets[].afterCivil',
+  'reset.brackets[].afterWeekday',
+  'reset.brackets[].before',
+  'reset.brackets[].beforeCivil',
+  'reset.brackets[].beforeWeekday',
+  'reset.brackets[].boss',
+  'reset.brackets[].cadence',
+  'reset.brackets[].crossesPossibleDstShift',
+  'reset.brackets[].fromRefusal',
+  'reset.brackets[].task',
+  'reset.brackets[].widthHours',
+  'reset.caveats',
+  'reset.intersectionHours',
+  'reset.intersects',
+  'reset.narrowest',
+  'reset.narrowest.after',
+  'reset.narrowest.afterCivil',
+  'reset.narrowest.afterWeekday',
+  'reset.narrowest.before',
+  'reset.narrowest.beforeCivil',
+  'reset.narrowest.beforeWeekday',
+  'reset.narrowest.boss',
+  'reset.narrowest.cadence',
+  'reset.narrowest.crossesPossibleDstShift',
+  'reset.narrowest.fromRefusal',
+  'reset.narrowest.task',
+  'reset.narrowest.widthHours',
+  'reset.provenance',
+  'reset.value',
+  'version',
+];
+function shapeOf(o, pre = '', acc = new Set()) {
+  if (Array.isArray(o)) { for (const v of o) shapeOf(v, pre + '[]', acc); return acc; }
+  if (o && typeof o === 'object') {
+    for (const k of Object.keys(o)) { const p = pre ? pre + '.' + k : k; acc.add(p); shapeOf(o[k], p, acc); }
+    return acc;
+  }
+  return acc;
+}
+
+test('SHAPE: the grid emits exactly the declared keys, and nothing else', () => {
+  const st = core.applyLines(core.createState('Avenrae'), fixtureLines);
+  const got = [...shapeOf(core.projectGrid(st, NOW))].sort();
+  const added = got.filter((k) => !GRID_SHAPE.includes(k));
+  const gone = GRID_SHAPE.filter((k) => !got.includes(k));
+  assert.deepEqual(added, [],
+    'UNDECLARED FIELD(S) in the grid. If this is a new fact, add it to GRID_SHAPE ' +
+    'deliberately — and while you are there, check it carries a provenance and is ' +
+    'not a countdown: ' + added.join(', '));
+  assert.deepEqual(gone, [], 'declared field(s) vanished from the grid: ' + gone.join(', '));
+});
+
+test('SHAPE: the per-boss view emits exactly the declared keys', () => {
+  const st = core.applyLines(core.createState('Avenrae'), fixtureLines);
+  const got = [...shapeOf(core.project(st, NOW))].sort();
+  const added = got.filter((k) => !VIEW_SHAPE.includes(k));
+  const gone = VIEW_SHAPE.filter((k) => !got.includes(k));
+  assert.deepEqual(added, [], 'UNDECLARED FIELD(S) in the view: ' + added.join(', '));
+  assert.deepEqual(gone, [], 'declared field(s) vanished from the view: ' + gone.join(', '));
+});
+
+test('NO COUNTDOWN IN PROSE EITHER — the hole the key-name ban left open', () => {
+  // The attack that got furthest did not add a field at all. It appended
+  // " — 41.5h left" to `because`, which the UI renders verbatim and which no
+  // key-name ban and no shape allowlist can see. A countdown is a countdown
+  // wherever it lives.
+  //
+  // THIS TEST WAS VACUOUS ON ITS FIRST WRITING and passed against a grid that
+  // was carrying the countdown. It walked the committed fixture, which produces
+  // 25 not_looked cells and nothing else, so the smuggled branch — guarded on
+  // `cellState === 'open'` — never ran. A detector that has only been run on a
+  // fixture has not been run; that is the third time this project has learned it.
+  //
+  // So the state below is built to exercise EVERY cell state, and the coverage
+  // assertion underneath makes it impossible for this test to go quiet again.
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    ...heartbeat(17, 21),
+    // completed — after the boundary day
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Wed Aug 19 20:30:00 2026] Innoruuk, the Prince of Hate has been slain by X!',
+    // conditional — ON the boundary day
+    '[Tue Aug 18 12:00:00 2026] You have entered The Permafrost Caverns - Group 2 (Adaptive).',
+    '[Tue Aug 18 12:30:00 2026] Lady Vox has been slain by X!',
+    // unknown — an instance whose tier the game did not state
+    '[Thu Aug 20 19:00:00 2026] You have entered The Ruins of Old Paineel - Solo.',
+    '[Thu Aug 20 19:20:00 2026] Master Yael has been slain by X!',
+  ]);
+  const grid = core.projectGrid(st, NOW);
+
+  const seen = new Set(grid.cells.map((c) => c.state));
+  for (const needed of ['completed', 'open', 'conditional', 'unknown']) {
+    assert.ok(seen.has(needed),
+      `this test is only meaningful if a ${needed} cell exists — it does not, so it proves nothing`);
+  }
+  // not_looked needs coverage that does NOT span, so it gets its own grid.
+  const fresh = core.projectGrid(core.createState('Avenrae'), NOW);
+  assert.equal(fresh.notLookedCount, 25);
+
+  const strings = [];
+  const walk = (o) => {
+    if (typeof o === 'string') { strings.push(o); return; }
+    if (Array.isArray(o)) { o.forEach(walk); return; }
+    if (o && typeof o === 'object') { Object.values(o).forEach(walk); }
+  };
+  walk(grid);
+  walk(fresh);
+  walk(core.project(st, NOW));
+  assert.ok(strings.length > 50, 'the walk must actually reach the prose');
+
+  // Shapes a countdown takes in English. Deliberately broad: a false positive
+  // costs one conversation, a miss costs the property this module exists for.
+  const COUNTDOWN = [
+    /\d+(\.\d+)?\s*h(ours?)?\s+(left|remaining|to go|until)/i,
+    /\d+(\.\d+)?\s*d(ays?)?\s+(left|remaining|to go|until)/i,
+    /\b(in|within)\s+\d+(\.\d+)?\s*(second|minute|hour|day)/i,
+    /\b(resets?|available|expires?|unlocks?)\s+(in|at)\s+\d/i,
+    /\bcountdown\b/i,
+  ];
+
+  // THE DETECTOR IS PROVEN TO DETECT, in the same breath as it is used.
+  // Every pattern above was silently broken when this test was first written:
+  // a shell heredoc ate \d, \s and \. while leaving \b intact, so the array
+  // looked plausible and matched nothing at all. The suite went green against
+  // a module that was carrying the exact countdown this test exists to catch.
+  // That was the fourth file corrupted the same way in one day, every time
+  // with no error anywhere.
+  //
+  // So the detector is fired at known-bad strings before it is trusted on
+  // real ones. A regex that cannot catch its own example is not a test.
+  const MUST_CATCH = [
+    'Terror at D3 on 2026-08-19 — 41.5h left',
+    'no kill observed since the reset, 3 days remaining',
+    'available in 2 hours',
+    'resets at 5',
+    'a countdown nobody asked for',
+  ];
+  for (const bad of MUST_CATCH) {
+    assert.ok(COUNTDOWN.some((re) => re.test(bad)),
+      `the countdown detector is broken — it does not match ${JSON.stringify(bad)}`);
+  }
+  for (const str of strings) {
+    for (const re of COUNTDOWN) {
+      assert.ok(!re.test(str), `a countdown reached the output as prose: ${JSON.stringify(str.slice(0, 120))}`);
+    }
+  }
+
+  // The measured bracket is the ONE place a clock time legitimately appears —
+  // it is a measurement, not a prediction — so it must still be there.
+  assert.match(core.RESET_RULE.measuredBracketPacific, /\d\d:\d\d/,
+    'the measured bracket is evidence and must not be scrubbed by this rule');
+});
