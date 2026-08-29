@@ -159,6 +159,18 @@ own LF. **I hexdumped my instrument, not the file.**
   safe **only** with exact equality, never substring.
 - `a dracoliche` and `the Hand of Veeshan` are **real bosses with leading
   articles**. The "article means trash" heuristic is wrong.
+- **KILLING BLOWS TRUNCATE TO REMAINING HIT POINTS.** The client reports damage
+  APPLIED, capped at the target's remaining HP, not the value rolled. Measured
+  here over the live log on eight deterministic spell sources: **5 of 5
+  below-modal hits landed on the tick the target died (100%), against 49 of
+  2,805 at-modal hits (1.7%)** — a ~59x difference. Any maximum, mean or
+  histogram over a set including killing blows is contaminated downward, worst
+  on the fights that end quickest. Filter on a same-timestamp death first.
+  We model no damage line; this is recorded so a later version does not.
+- **A NULL RESULT FROM A BADLY AIMED TEST IS NOT A NULL RESULT.** My first pass
+  at the above found nothing, because I had the capture groups backwards and was
+  keying melee lines on attacker+target — and "a rock golem" names many mobs, so
+  the death-tick match diluted to noise. I nearly reported the absence.
 - **THERE IS A THIRD KILL SHAPE, `<Name> died.`** — 47 lines, 8 inside group
   instances, and it carries PLAYER deaths too (`Shara died.`, `Avenrae died.`).
   Deliberately unparsed. Any roster derived from two shapes under-counts.

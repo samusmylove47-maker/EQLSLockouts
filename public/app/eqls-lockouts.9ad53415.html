@@ -995,6 +995,34 @@ function parseInstanceName(name) {
 // NONE are the boss: they are `Cleric of Innoruuk` (68), `A Sage of Innoruuk`
 // (4) and `A Knight of Innoruuk` (1). Add `Innoruuk\`s Chosen` (39+10) and a
 // substring roster over-counts this one boss by roughly fourteen times.
+// ── DO NOT PARSE DAMAGE LINES WITHOUT READING THIS ───────────────────────────
+//
+// This module deliberately models NO damage line. There are 375,896 of them in
+// the live log alone and none of them is a lockout. But a later version will be
+// tempted, so the trap is recorded at the point of temptation rather than in a
+// document nobody has open.
+//
+// **THE CLIENT REPORTS DAMAGE APPLIED, CAPPED AT THE TARGET'S REMAINING HIT
+// POINTS — NOT THE VALUE ROLLED.** A killing blow is therefore truncated
+// downward by an unknown amount, and any maximum, mean or histogram computed
+// over a set that includes killing blows is contaminated — worst on the fights
+// that end quickest, which are exactly the ones a raid tracker looks at.
+//
+// Raised by the Director from the modelling session, and MEASURED HERE rather
+// than taken on trust. Over the live log, keying on
+// `<target> has taken <N> damage from <spell> by <caster>` and taking the eight
+// sources with >=40 samples and a dominant value:
+//
+//   below the modal value :    5 hits,  5 landed on the tick the target died  (100%)
+//   at    the modal value : 2805 hits, 49 landed on the tick the target died  (1.7%)
+//
+// Every single below-modal observation in the sample is a killing blow, against
+// a 1.7% base rate. A ~59x difference. The effect is real.
+//
+// SO: if you ever model damage, filter out any value whose target dies at the
+// same timestamp before treating it as a measurement. The kill lines below are
+// exactly what you need to do that, which is the one good reason to read them
+// together.
 const SLAIN_BY_RE = /^(.+?) has been slain by (.+?)!$/;
 const YOU_SLEW_RE = /^You have slain (.+?)!$/;
 

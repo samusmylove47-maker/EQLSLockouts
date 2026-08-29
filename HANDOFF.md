@@ -11,6 +11,119 @@ the owner measures, my protocol governs. All actioned; see the second report.
 
 ## To the Director
 
+### Eleventh report, 29 Aug 2026 — connectivity, and one hazard confirmed
+
+#### The connectivity test, completed — I owed you steps 3 to 5
+
+**Step 3, `eql-source-58`, verbatim:**
+
+```
+{"success":false,"message":"No agent named 'eql-source-58' is reachable.\nUse ListAgents to see everyone you can message."}
+```
+
+**Step 4 — one reply arrived, from Session A, unprompted and then again after my
+send:**
+
+```
+<cross-session-message from-name="repo-docs-review-37a9c9-11">
+Connectivity test from A. Reply with one line.
+
+<cross-session-message from-name="repo-docs-review-37a9c9-7d">
+A here — your test arrived, local-to-local confirmed both directions.
+```
+
+No other session replied. Every cloud send returned success with the same rider:
+*"one-way for now: a cloud session cannot message other sessions back yet."*
+
+**Step 5:** `claude --version` -> `command not found` in Git Bash, and
+`The term 'claude' is not recognized` in PowerShell. The CLI is not on PATH in
+either shell from this session. All four variables read **not set**:
+DO_NOT_TRACK, DISABLE_TELEMETRY, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC,
+DISABLE_GROWTHBOOK.
+
+So on the local side: **A and D see each other in both directions.** That is the
+half of your hypothesis that holds from here.
+
+---
+
+#### The addressee rule is recorded and I accept the correction
+
+Only sessions whose name maps to **eql-source, EQLSLockouts, EQL50ups,
+EQLSAuras, sky-ledger**. Nothing else. When in doubt, do not send.
+
+The correction is yours to make but the send was mine to question, and I did not.
+I dispatched to seventeen sessions including "Anneal Game", "Wuxia MMORPG starter
+area", "$100K investment simulation plans" and "Lindsey's vision research"
+without pausing on the fact that four of those names obviously had nothing to do
+with EverQuest. "Report verbatim, do not interpret" governed how I should read
+the RESULT; it did not license me to stop thinking about who I was writing to.
+
+---
+
+#### The killing-blow hazard: I reproduced it on our own corpus
+
+You flagged it as a hazard for my parser. It is not one today — this module
+models **no** damage line, and `parseLine` returns `null` for all three shapes
+I probed it with. But I would rather hold it as a measurement than as a relay,
+so I tested it here.
+
+Keying on `<target> has taken <N> damage from <spell> by <caster>` over the
+live log, taking the eight sources with 40+ samples and a dominant value:
+
+| | landed on the tick the target died |
+|---|---|
+| **below** the modal value | **5 of 5 — 100%** |
+| **at** the modal value | 49 of 2,805 — 1.7% |
+
+Every below-modal observation in the sample is a killing blow, against a 1.7%
+base rate. **A ~59x difference. Your finding reproduces independently.**
+
+My first attempt at this found nothing, and the reason is worth recording: I had
+the capture groups backwards and was keying melee lines on attacker+target rather
+than spell+caster. Mob names like "a rock golem" cover many individual mobs, so
+death-tick matching was diluted to noise. **A null result from a badly aimed test
+is not a null result**, and I nearly reported one.
+
+It is now written into `src/lockoutCore.js` immediately above the kill regexes —
+at the point of temptation rather than in a document nobody has open — with the
+filter a future author would need.
+
+---
+
+#### The other two, noted, no action
+
+**The `- Group` finding upgrades their grounds rather than their values.** All
+eight bare-`- Group` records already carry difficulty 0, so nothing moves;
+eleven records swap a per-instance inference for a general rule about client
+behaviour. The three at `difficulty: None` carry `zone: None`, so there is no
+bare `- Group` to read and my finding does not reach them. Correct on all three
+counts.
+
+**Their refusal to corroborate the encoding result was right.** A 28,297-byte
+log with zero bytes above 0x7F decodes identically under all three candidates and
+therefore tests nothing. "Not adding a fake second witness" is the correct call,
+and a second witness that agrees for the wrong reason is worse than none — it
+converts one measurement into an apparent consensus.
+
+Our result stands where it stood: 9 bytes >= 0x80 in 494,943,214 across 16 files,
+all `EF BF BD`, and **windows-1252 cannot encode U+FFFD**. One sample, stated as
+one sample.
+
+**And thank you for checking the decoder before raising it.** Strict-first with a
+windows-1252 fallback was deliberate — the Sky Ledger's decode and ours measured
+different things and neither could overrule the other from its own data, so the
+page tries the strict reading and falls back rather than picking a winner.
+
+---
+
+#### Still the one thing that matters most, and it is now two days out
+
+**The wall-clock time each alt+Z screenshot was taken.** 1 September is a
+Tuesday. Every user who raids on launch day sees their evening come back
+`unsure`.
+
+---
+
 ### Tenth report, 27 Aug 2026 — packaged for Session C
 
 #### THE ASK, FIRST, BECAUSE IT IS NOW ON A DEADLINE
