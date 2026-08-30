@@ -100,6 +100,33 @@ const RULES = [
     cost: 'an @import pulls a stylesheet from another origin' },
   { id: 'css-url', re: /url\(\s*["']?([^"')]+)/gi, url: 1,
     cost: 'a CSS url() pointing at another origin' },
+  // image-set() takes a bare STRING as well as url(), and the string form is the
+  // recommended one for retina backgrounds — so css-url never saw it.
+  // The quote may be entity-encoded, because inside style="..." it has to be:
+  //   <div style="background-image:image-set(&#39;//host/x.png&#39; 1x)">
+  // That is the realistic form, not an exotic one, and it is how this rule
+  // evaded its own test until the entity alternation was added.
+  { id: 'css-image-set', url: 1,
+    re: /image-set\s*\(\s*(?:["']|&#0*39;|&quot;|&apos;)((?:https?:)?\/\/[^"'&\s)]+)/gi,
+    cost: 'a CSS image-set() pointing at another origin' },
+  // ── TAG-AGNOSTIC, BECAUSE ENUMERATING TAGS LOSES ─────────────────────────
+  // link/img/script covered three of the eleven elements that fetch. An
+  // adversarial pass got REAL third-party requests through iframe, object,
+  // embed, <source>, <video poster>, <input type=image>, <svg><image> and
+  // meta-refresh — each verified twice, by a separate origin's request log and
+  // by a real Chromium, which is what Electron runs.
+  // So this matches the URL-BEARING ATTRIBUTE rather than the tag, and covers
+  // elements nobody has invented yet.
+  // NOTE: the tag-agnostic subresource scan is NOT a regex rule — see
+  // scanTags() below. One regex trying to capture tag, attributes and URL at
+  // once dropped from 11 evasions caught to 5, silently. Matching the tag and
+  // then searching inside it is two simple steps that can each be checked.
+  // meta refresh buries its URL inside `content="0;url=..."`, so no attribute
+  // rule can see it. It is a top-level navigation: it discloses the reader's IP
+  // AND their Referer, which is worse than a subresource, not better.
+  { id: 'meta-refresh', url: 1,
+    re: /<meta\b[^>]*http-equiv\s*=\s*["']?refresh["']?[^>]*content\s*=\s*["'][^"']*url\s*=\s*((?:https?:)?\/\/[^"'\s>]+)/gi,
+    cost: 'a meta refresh navigates the reader to another origin on load' },
   // EGRESS — the separate guarantee. These are how a log LEAVES a machine.
   { id: 'fetch', re: /\bfetch\s*\(/gi, cost: 'EGRESS: can transmit' },
   { id: 'xhr', re: /\bXMLHttpRequest\b/gi, cost: 'EGRESS: can transmit' },
@@ -153,37 +180,111 @@ function fetchesOnLoad(rel) {
   return v.split(/\s+/).some((t) => FETCHING_REL.has(t));
 }
 
+// THE `//` LINE-COMMENT STRIP IS GONE, AND IT WAS A REAL HOLE.
+//
+// `//` is not a comment in HTML or CSS. Stripping lines that begin with it
+// deleted PROTOCOL-RELATIVE URLS sitting on their own line inside a CSS url(),
+// leaving an empty `url( )` that the rule then skipped — while a browser trims
+// the whitespace and fetches it. An adversarial pass demonstrated the fetch
+// arriving at a separate origin.
+//
+// The stripper now removes only real comments, and every rule runs against BOTH
+// the stripped text and the raw text, unioned. A false positive from a URL
+// inside a comment costs one conversation; a missed fetch costs the guarantee.
+// TAG-AGNOSTIC SUBRESOURCE SCAN.
+//
+// Enumerating which elements fetch is the losing game — link/img/script covered
+// three of the eleven an adversarial pass got real third-party requests through
+// (iframe, object, embed, source, video poster, input type=image, svg image,
+// and more). So this walks every tag and looks for a URL-bearing attribute,
+// which covers elements nobody has invented yet.
+//
+// Two tags are excluded because they provably do not fetch on load: <a>/<area>,
+// which fetch only when clicked, and a <link> whose rel is metadata.
+const URL_ATTR = /\b(src|srcset|xlink:href|href|data|poster|action|formaction|ping|background)\s*=\s*["']?\s*([^"'\s>]+)/gi;
+function scanTags(body, push) {
+  const tagRe = /<([a-zA-Z][\w:-]*)\b([^>]*)>/g;
+  let t;
+  while ((t = tagRe.exec(body)) !== null) {
+    const tag = t[1].toLowerCase();
+    const attrs = t[2] || '';
+    if (tag === 'a' || tag === 'area') continue;
+    if (tag === 'link') {
+      const rel = /\brel\s*=\s*["']?([^"'>]+)/i.exec(attrs);
+      if (rel && !fetchesOnLoad(rel[1])) continue;
+    }
+    URL_ATTR.lastIndex = 0;
+    let a;
+    while ((a = URL_ATTR.exec(attrs)) !== null) {
+      const value = a[2].trim();
+      if (!isOutbound(value)) continue;
+      push({ tag, attr: a[1], value, index: t.index });
+    }
+  }
+}
+
 function stripComments(html) {
   return html
     .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/^[ \t]*\/\/.*$/gm, ' ');
+    .replace(/\/\*[\s\S]*?\*\//g, ' ');
 }
 
 function audit(html, opts) {
   const label = (opts && opts.label) || '(unnamed document)';
-  const body = stripComments(html);
+  // BOTH TEXTS, UNIONED. A hit that exists only in the raw text is a hit the
+  // stripper ate, and the stripper eating a real fetch is the failure that
+  // matters; a URL genuinely inside a comment costs one conversation.
+  const stripped = stripComments(html);
   const findings = [];
+  const seenHit = new Set();
   for (const rule of RULES) {
+   for (const body of (stripped === html ? [html] : [stripped, html])) {
     rule.re.lastIndex = 0;
     let m;
     while ((m = rule.re.exec(body)) !== null) {
       const hit = m[0];
-      // A data: URI is self-contained by definition; it is the whole technique
-      // this project uses for its fonts.
-      if (/data:/i.test(hit)) continue;
-      // For the URL-classifying rules, judge the captured value rather than the
-      // tag it sat in. Same-origin references are not outbound.
+      // THE data: EXEMPTION WAS A SKELETON KEY, and this is the worst of the
+      // four holes an adversarial pass found. It tested the WHOLE MATCHED TAG,
+      // so one `data:` substring anywhere in it disarmed the check for a real
+      // remote URL in the same tag:
+      //
+      //     <img src="//third.party/real.png" alt="data:image/x">
+      //
+      // reported clean while genuinely fetching from another origin — proved by
+      // that origin's own request log. The lazy-load idiom (a data: placeholder
+      // beside a real src) hits this BY ACCIDENT, which makes it the likeliest
+      // of the lot. Without the alt attribute the same page was caught, so the
+      // token was doing the damage on its own.
+      //
+      // So the exemption now applies to the VALUE, never to its surroundings —
+      // and for the value-anchored rules it is redundant by construction,
+      // because a data: value cannot match `(?:https?:)?//`.
       if (rule.url) {
         const raw = (m[rule.url] || '').trim();
         if (!isOutbound(raw)) continue;
+      } else if (/data:/i.test(hit)) {
+        continue;
       }
       // A <link> only matters if its rel is one the browser acts on.
       if (rule.rel) {
         const relAttr = /\brel\s*=\s*["']?([^"'>]+)/i.exec(m[rule.rel] || '');
         if (relAttr && !fetchesOnLoad(relAttr[1])) continue;
       }
+      // The two tags that carry a URL and do not fetch it on load.
+      if (rule.tag) {
+        const tag = String(m[rule.tag] || '').toLowerCase();
+        if (tag === 'a' || tag === 'area') continue;         // clicked, not fetched
+        if (tag === 'link') {
+          const rel = /\brel\s*=\s*["']?([^"'>]+)/i.exec(m[rule.relFrom] || '');
+          if (rel && !fetchesOnLoad(rel[1])) continue;
+        }
+      }
       const at = body.slice(0, m.index).split('\n').length;
+      // Deduped across the two passes: the same reference found in both the
+      // stripped and the raw text is one finding, not two.
+      const key = rule.id + '|' + hit;
+      if (seenHit.has(key)) continue;
+      seenHit.add(key);
       findings.push({
         rule: rule.id,
         kind: EGRESS.has(rule.id) ? 'egress'
@@ -194,7 +295,24 @@ function audit(html, opts) {
       });
       if (findings.length > 500) break;
     }
+   }
   }
+  // The tag walk, over both texts, deduped like the rules above.
+  for (const body of (stripped === html ? [html] : [stripped, html])) {
+    scanTags(body, (hit) => {
+      const key = 'ext-ref|' + hit.tag + '|' + hit.value;
+      if (seenHit.has(key)) return;
+      seenHit.add(key);
+      findings.push({
+        rule: 'ext-ref',
+        kind: 'fetch',
+        line: body.slice(0, hit.index).split('\n').length,
+        text: `<${hit.tag} ${hit.attr}="${hit.value.slice(0, 80)}">`,
+        cost: 'an external subresource — fetched on load, from another origin',
+      });
+    });
+  }
+
   const fetches = findings.filter((f) => f.kind === 'fetch');
   const egress = findings.filter((f) => f.kind === 'egress');
   const navigational = findings.filter((f) => f.kind === 'navigational');

@@ -1048,6 +1048,32 @@ function parseInstanceName(name) {
 // infer a killing blow from the damage number. The kill regexes below are
 // exactly what implements the safe version, which is the one good reason to read
 // them together.
+// ── DAMAGE, PARSED FOR SESSION E AND DELIBERATELY NOT ACCUMULATED ───────────
+//
+// The Director ruled that E does not build a second ingestion layer, and E asked
+// for these rather than forking. The `- Group` inversion is the argument: it
+// propagated three ways because three implementations read the same line
+// separately. One parse, one place to be wrong, one place to fix.
+//
+// **`applyLine` IGNORES EVERY ONE OF THESE.** There are 375,896 damage lines in
+// the live log alone; accumulating them would destroy the state size, the
+// idempotence guarantee and the backfill budget this module is measured on.
+// `parseLine` returns the row and the caller accumulates. That split is the
+// whole design and it is why adding this costs the lockout tracker nothing.
+//
+// ON `on_kill`, WHICH E ASKED FOR AS A FIELD: IT CANNOT BE DECIDED HERE.
+// Whether a hit was the killing blow depends on a line that has not arrived yet.
+// This is the Voidling closing-line lesson exactly — `applyLine` classifies
+// nothing, and a windowed pass decides with the whole picture visible. Deciding
+// it per-line is how I produced a false 0.474 h bracket in August. So the row
+// carries the timestamp and the target, and the caller joins against the kill
+// lines below at the same stamp. That join is the safe filter both E and I
+// already agreed on after E refuted the modal-value shortcut.
+const DAMAGE_SELF_RE = /^You hit yourself for (\d+) points of ([a-z]+) damage by (.+?)\.$/;
+const DAMAGE_MELEE_RE = /^(.+?) (slash|slashes|hit|hits|crush|crushes|pierce|pierces|bash|bashes|kick|kicks|claw|claws|bite|bites|punch|punches|strike|strikes|gore|gores|maul|mauls) (.+?) for (\d+) points of ([a-z]+ )?damage\.$/;
+const DAMAGE_SPELL_RE = /^(.+?) ha[sve]+ taken (\d+) damage from (.+?) by (.+?)\.$/;
+const SONG_PULSE_RE = /^Your voice booms\.$/;
+
 const SLAIN_BY_RE = /^(.+?) has been slain by (.+?)!$/;
 const YOU_SLEW_RE = /^You have slain (.+?)!$/;
 
@@ -1585,6 +1611,34 @@ function parseLine(line) {
   }
   // parseLine stays OPEN TO ANY NAME. Whether a slain thing is a raid boss is a
   // roster question, decided later; nothing here filters by roster.
+  // SELF-DAMAGE FIRST, and the order is load-bearing: `You hit yourself ...`
+  // also matches the melee shape below, and E measured that counting it inflated
+  // a character's apparent output by 3.7% — worst on exactly the support builds
+  // a damage tool gets pointed at. E named Cannibalize; in OUR corpus the same
+  // shape carries `Lifetap Strike` (9) and `Lifebite` (2) and Cannibalize does
+  // not appear at all. So the exclusion keys on the SHAPE, never on a spell
+  // allowlist, which would have missed both of ours.
+  if ((m = DAMAGE_SELF_RE.exec(message))) {
+    return { kind: 'self-damage', at, actor: 'You', target: 'You',
+             amount: Number(m[1]), damageType: m[2], spell: m[3], outgoing: false };
+  }
+  if ((m = DAMAGE_MELEE_RE.exec(message))) {
+    const actor = m[1] === 'You' ? 'You' : m[1];
+    return { kind: 'damage', at, actor, target: m[3], amount: Number(m[4]),
+             damageType: (m[5] || '').trim() || 'melee', spell: null,
+             byYou: m[1] === 'You', outgoing: true, form: 'melee' };
+  }
+  if ((m = DAMAGE_SPELL_RE.exec(message))) {
+    return { kind: 'damage', at, actor: m[4], target: m[1], amount: Number(m[2]),
+             damageType: 'spell', spell: m[3],
+             byYou: m[4] === 'you' || m[4] === 'You', outgoing: true, form: 'spell' };
+  }
+  // E's buff-uptime primitive: Amplification's own pulse on the 6-second tick,
+  // 16,788 of them in the live log. It reads memorised state off the lines
+  // instead of off a screenshot, which is what E needs for the 2659/3177 split.
+  if (SONG_PULSE_RE.test(message)) {
+    return { kind: 'song-pulse', at, song: 'Amplification', source: 'Your voice booms.' };
+  }
   if ((m = SLAIN_BY_RE.exec(message))) {
     return { kind: 'kill', at, slain: m[1], killer: m[2], byYou: false };
   }
@@ -1745,6 +1799,23 @@ function applyLine(state, line) {
   }
 
   const civil = civilOf(ev.at);
+
+  // DAMAGE AND SONG PULSES LEAVE NO TRACE IN THE STATE, and the early return
+  // has to be HERE — above the dedupe index, not merely above `events`.
+  //
+  // Caught by a test the moment I added them: the live log holds 375,896 damage
+  // lines and 16,788 song pulses. Every one was taking a slot in `state.seen`,
+  // which is bounded at 200,000 — so a single character's damage would have
+  // evicted the entire lockout dedupe index and `dropped.beyondDedupeHorizon`
+  // would have started firing on real kills. The engine was also emitting a
+  // change event per damage line, which the adapter test caught.
+  //
+  // `parseLine` returns the row for Session E; `applyLine` does not want it.
+  // That split is what makes the addition free for this module.
+  if (ev.kind === 'damage' || ev.kind === 'self-damage' || ev.kind === 'song-pulse') {
+    return state;
+  }
+
   // A Voidling reply is a PRESENCE CONTROL, not an event. It never enters
   // `events` and never emits a change, because several players share one NPC
   // and the count is meaningless. It is recorded below as a set of seconds.
