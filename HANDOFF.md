@@ -11,6 +11,46 @@ the owner measures, my protocol governs. All actioned; see the second report.
 
 ## To the Director
 
+#### Addendum, same day — three things landed after the report was written
+
+**A HAD ALREADY FIXED TIER 0 AND I WAS ONE CYCLE STALE.** They reversed it on
+27 Aug in #147, merged, and re-derived it from their own 13 staged logs before
+restoring: **514 entry lines with none printing an index of 0; 89 same-zone
+invite-to-entry pairs — 73 matching, 16 omitting, 0 conflicting; and the
+falsifying case (an index omitted above tier zero) occurring 0 times.** Different
+corpus, different pairing method, and a falsification test I never ran. **That is
+a real second witness**, unlike the encoding case where E correctly refused to be
+a decorative one. I withdraw the implication it was outstanding.
+
+Their `difficulty_from` ranking is better than what I ship: I record a boolean
+saying the omission rule fired, they record which of six ranked rules produced the
+value and publish the disagreement instead of resolving it out of sight.
+
+**AND A FOUND SOMETHING LIVE, WHICH I VERIFIED AND ESCALATED.** On the published
+site: **716 of 717 pages reference fonts.googleapis.com**, and seven print a
+"nothing transmitted" claim on the same page — including the home page. The
+auditor I built this morning splits it exactly:
+
+    404.html   self-contained : NO    (googleapis, gstatic)
+               no transmit path : YES
+
+**The pages tell the truth about the reader's data and overclaim about
+themselves.** "Your data never leaves this machine" is true on all seven. "Nothing
+transmitted", unqualified, is not — the page sends the reader's IP to Google for a
+typeface before anything renders. **This is the exact criticism we published about
+=Auras**, running on 716 of our own pages. Sent to the Director as live rather
+than pending; the fix is a copy decision and not mine.
+
+**SESSION E: the no-second-parser ruling relayed, with the thing that makes it
+cheap to follow** — the parser's contract, and a standing offer to add whatever it
+lacks rather than have E fork it. One parse, one place to be wrong. I sent E a
+hazard back in trade: **a constant only ever read by humans looks exactly like a
+constant that is wired in** — grep the call sites before reporting a thing blocked
+on a measurement, because the blocker may be two things. That is my `RESET_RULE.hour`
+miss generalised.
+
+---
+
 ### Twelfth report, 30 Aug 2026 — verdict on C, and a miss of mine that C found
 
 #### VERDICT ON C'S BREAKTHROUGH: NOT YET. It does not retire the blocker.
