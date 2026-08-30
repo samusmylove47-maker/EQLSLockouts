@@ -1806,8 +1806,49 @@ function projectGrid(state, now) {
   const nowDay = Date.UTC(now.year, now.month - 1, now.day);
   const dow = new Date(nowDay).getUTCDay();
   const back = (dow - RESET_RULE.weekday + 7) % 7;
-  const boundaryDayStart = nowDay - back * 86400000;
-  const boundaryDayEnd = boundaryDayStart + 86400000;
+  let boundaryDayStart = nowDay - back * 86400000;
+  let boundaryDayEnd = boundaryDayStart + 86400000;
+
+  // ── THE HOUR, IF WE EVER MEASURE ONE, AND IT HAD NOWHERE TO GO ─────────────
+  //
+  // SESSION C FOUND THIS AND IT IS A REAL MISS OF MINE. For eleven days I asked
+  // the owner for the reset hour as though the number were the whole blocker.
+  // It was not. `RESET_RULE.hour` had **zero uses** in this entire module — no
+  // destructuring, no index access, nothing. The boundary was a whole DAY and
+  // the hour never entered a computation; it existed as an attributed field and
+  // as the words "the reset hour has never been measured".
+  //
+  // So a perfect hour, handed over today, would have changed **not one cell**.
+  // The blocker was always two things and I only ever named one: the number, and
+  // a code path that consumes it. This is the code path.
+  //
+  // WHAT IT DOES WHEN THE HOUR IS KNOWN. The period stops being a day with two
+  // live hypotheses and becomes an INSTANT. A kill is then either inside the
+  // period or outside it, and the `conditional` state — which exists solely to
+  // carry this ambiguity — stops arising at all.
+  //
+  // WHAT IT DOES WHEN THE HOUR IS NULL, which is today: nothing. Every value
+  // below is identical to what it was, and the two-hypothesis machinery runs
+  // exactly as before. This is dormant until something measures the hour.
+  //
+  // THE CONSTANT STAYS IN ITS ONE ATTRIBUTED FIELD. `RESET_RULE.hour` is read
+  // here and nowhere else, and the test that fails when a reset constant appears
+  // outside that field is unaffected — reading the attributed field is the
+  // permitted case; copying its value somewhere else is not.
+  const resetHour = RESET_RULE.hour;
+  const hourKnown = typeof resetHour === 'number' && resetHour >= 0 && resetHour < 24;
+  let periodStart = null;          // the exact instant, or null while unmeasured
+  if (hourKnown) {
+    periodStart = boundaryDayStart + resetHour * 3600000;
+    // If the turnover has NOT yet happened today, the live period is last
+    // week's. With a day-granular boundary this was unknowable and produced the
+    // conditional cells; with an hour it is arithmetic.
+    if (nowCivil < periodStart) {
+      periodStart -= 7 * 86400000;
+      boundaryDayStart -= 7 * 86400000;
+      boundaryDayEnd = boundaryDayStart + 86400000;
+    }
+  }
 
   const coverageStart = state.firstSeen;
   const coverageEnd = state.lastSeen;
@@ -1967,14 +2008,19 @@ function projectGrid(state, now) {
     // Evaluate one hypothesis: what does the grid say if the period began at
     // `from`? Returns the cell state for difficulty `d`, ignoring coverage.
     const under = (from, d) => {
-      const dayEnd = from + 86400000;
+      // WHEN THE HOUR IS KNOWN there is no ambiguous day: the period opens at an
+      // instant, so `dayEnd` collapses onto it and the `onDay` bucket below is
+      // empty by construction. Nothing else in this function changes, which is
+      // the point — the hour narrows the boundary rather than rewriting the
+      // logic that reads it.
+      const dayEnd = hourKnown ? periodStart : from + 86400000;
       const period = mine.filter((k) => k.civil >= dayEnd);
       // PER TIER, and this used to be the bug. `onDay` and `unstated` were
       // both computed across the whole row, so ONE ambiguous kill blanked all
       // five cells of a raid — including cells where no kill of any kind had
       // happened and the honest answer was plainly `open`. Eight kills produced
       // twelve `unknown` cells that way.
-      const onDay = mine
+      const onDay = hourKnown ? [] : mine
         .filter((k) => k.civil >= from && k.civil < dayEnd && k.difficultyStated && k.difficulty === d)
         .sort((a, b) => a.civil - b.civil);
       const unstated = period.filter((k) => k.instanced && !k.difficultyStated);
@@ -2035,7 +2081,10 @@ function projectGrid(state, now) {
 
     for (let d = 0; d < DIFFICULTY_LABELS.length; d++) {
       const h1 = under(boundaryDayStart, d);
-      const h2 = onBoundaryDay ? under(priorBoundaryStart, d) : h1;
+      // ONE HYPOTHESIS ONCE THE HOUR IS KNOWN. The second exists only to carry
+      // "we do not know whether the turnover has happened yet", which an instant
+      // answers outright.
+      const h2 = (onBoundaryDay && !hourKnown) ? under(priorBoundaryStart, d) : h1;
 
       let cellState;
       let because;
@@ -2157,7 +2206,13 @@ function projectGrid(state, now) {
     period: {
       boundaryDay: formatCivil(fromCivil(boundaryDayStart)).slice(0, 10),
       boundaryWeekday: RESET_RULE.weekdayName,
-      hourKnown: false,
+      // TRUE once the reset hour is measured and this projection used it.
+      // While false, the boundary is a whole day and `conditional` cells carry
+      // the ambiguity; the moment it is true they stop arising at all.
+      hourKnown,
+      // The exact instant the live period opened, or null while the hour is
+      // unmeasured. This is the field a UI can finally say "since" with.
+      periodStartedAt: periodStart === null ? null : formatCivil(fromCivil(periodStart)),
       // Stated once, at the top of the projection, so a caller cannot render
       // the grid without it being available to render alongside.
       evidenceNote:

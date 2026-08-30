@@ -1057,6 +1057,7 @@ const GRID_SHAPE = [
   'period.evidenceNote',
   'period.hourKnown',
   'period.nowIsOnBoundaryDay',
+  'period.periodStartedAt',
   'resetRule',
   'resetRule.hour',
   'resetRule.measuredBracketContainsRule',
@@ -1359,4 +1360,75 @@ test('THRESHOLDS are asserted, because mutating them was silent', () => {
   assert.equal(rows[0].result, 'unknown',
     'a Voidling line SIX HOURS earlier is not a control for this request');
   assert.equal(rows[0].positiveControl, false);
+});
+
+test('THE HOUR HAS SOMEWHERE TO GO NOW — and had nowhere before', () => {
+  // SESSION C FOUND THIS, and it is a real miss of mine. For eleven days I asked
+  // the owner for the reset hour as though the number were the whole blocker.
+  // `RESET_RULE.hour` had ZERO uses in the module — no destructuring, no index
+  // access. The boundary was a whole day; the hour never entered a computation.
+  // A perfect hour handed over would have changed NOT ONE CELL.
+  //
+  // This test is the proof that it now would. It drives the code path by
+  // substituting a RESET_RULE that carries an hour, which is the same shape the
+  // real one takes the day it is measured.
+  const DAYS_ = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const pad = (n) => String(n).padStart(2, '0');
+  const line = (day, h, m, text) =>
+    `[${DAYS_[new Date(Date.UTC(2026, 7, day)).getUTCDay()]} Aug ${pad(day)} ${pad(h)}:${pad(m)}:00 2026] ${text}`;
+
+  // Two kills on the BOUNDARY DAY, Tue 18 Aug — one at 06:00, one at 20:00.
+  // With the hour unmeasured both are ambiguous. With a 12:00 reset they are on
+  // opposite sides of it, and that is the whole point.
+  const lines = [
+    ...heartbeat(11, 21),
+    line(18, 6, 0, 'You have entered The Plane of Hate - Group 3 (Fused).'),
+    line(18, 6, 10, 'Innoruuk, the Prince of Hate has been slain by X!'),
+    line(18, 20, 0, 'You have entered The Permafrost Caverns - Group 3 (Fused).'),
+    line(18, 20, 10, 'Lady Vox has been slain by X!'),
+  ];
+  const NOW_ = { year: 2026, month: 8, day: 21, hour: 18, minute: 0, second: 0 };
+
+  // ---- as shipped: hour unmeasured ----
+  const st = core.applyLines(core.createState('Avenrae'), lines);
+  const before = core.projectGrid(st, NOW_);
+  assert.equal(core.RESET_RULE.hour, null, 'the hour ships unmeasured, and must');
+  assert.equal(before.period.hourKnown, false);
+  assert.equal(before.period.periodStartedAt, null, 'no instant to report yet');
+  assert.ok(before.conditionalCount >= 2,
+    `both boundary-day kills should be conditional; got ${before.conditionalCount}`);
+
+  // ---- with an hour: the ambiguity is arithmetic ----
+  // RESET_RULE is frozen, so the path is exercised through a fresh module
+  // instance with the field replaced — the same thing that happens when the
+  // constant is edited after a measurement.
+  const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'lockoutCore.js'), 'utf8')
+    .replace('  hour: null,                    // not recorded', '  hour: 12,');
+  const mod = { exports: {} };
+  // eslint-disable-next-line no-new-func
+  new Function('module', 'exports', src)(mod, mod.exports);
+  const measured = mod.exports;
+  assert.equal(measured.RESET_RULE.hour, 12, 'the substitution must have taken');
+
+  const st2 = measured.applyLines(measured.createState('Avenrae'), lines);
+  const after = measured.projectGrid(st2, NOW_);
+
+  assert.equal(after.period.hourKnown, true);
+  assert.equal(after.period.periodStartedAt, '2026-08-18 12:00:00',
+    'the period now opens at an instant, and says so');
+  assert.equal(after.conditionalCount, 0,
+    'CONDITIONAL EXISTS ONLY TO CARRY THIS AMBIGUITY — an instant retires it entirely');
+
+  // And the two kills land on opposite sides, which is the thing that was
+  // unknowable before.
+  const hate = after.cells.find((c) => c.label === 'Plane of Hate' && c.difficulty === 3);
+  const vox = after.cells.find((c) => c.label === 'Lady Vox' && c.difficulty === 3);
+  assert.equal(hate.state, 'open', '06:00 is BEFORE a 12:00 reset — last period, still owed');
+  assert.equal(vox.state, 'completed', '20:00 is AFTER it — done this period');
+  assert.equal(vox.completedAt, '2026-08-18 20:10:00');
+
+  // THE CONSTANT STAYS IN ITS ONE ATTRIBUTED FIELD. Reading RESET_RULE.hour is
+  // the permitted case; copying its value into the output is not.
+  const json = JSON.stringify({ ...after, resetRule: null });
+  assert.ok(!/"hour"\s*:\s*12/.test(json), 'the hour must not leak outside resetRule');
 });

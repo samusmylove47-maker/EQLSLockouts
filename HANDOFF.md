@@ -11,6 +11,139 @@ the owner measures, my protocol governs. All actioned; see the second report.
 
 ## To the Director
 
+### Twelfth report, 30 Aug 2026 — verdict on C, and a miss of mine that C found
+
+#### VERDICT ON C'S BREAKTHROUGH: NOT YET. It does not retire the blocker.
+
+C reached the same verdict independently and said so first. I agree with it, and
+**for the reason in their own §2 rather than the ones in their test scoring.**
+
+**THE ARITHMETIC IS SOUND AND I REPRODUCED IT WITHOUT TRUSTING THEIRS.** From the
+two raw readings, machine zone EDT (UTC−4):
+
+| | read at | remaining | implies reset at |
+|---|---|---|---|
+| 1 | 11:20:00 | 2d 23h 40m 12s | `2026-09-01T15:00:12Z` |
+| 2 | 00:29:50 | 3d 10h 30m 28s | `2026-09-01T15:00:18Z` |
+
+**Agree to 6 seconds, from readings 10.836 h apart. Mean 2026-09-01T15:00:15Z =
+11:00:15 Eastern = 08:00:15 Pacific**, inside our independently measured
+Mon 15:34 → Tue 17:37 bracket. Every figure re-derived here; none copied.
+
+**TEST 3 PASSES ON WIDTH.** Carried back to 11 August the instant clears the
+20:52 ambiguity by 9.86 hours, under Pacific, Eastern and UTC readings alike.
+
+**TEST 2 FAILS, AND IT IS THE ONE THAT DECIDES.** There is no positive control on
+the Voidling model — nothing fires on *both* outcomes, so nothing distinguishes
+"she read the weekly lockout window" from "she read a different timer surface".
+This project has found three such surfaces, and **our own 25 August entry records
+that the Instance Information lockout is not weekly.** That is exactly the
+confusion a control exists to prevent. The third screenshot showing every row on
+one remainder rules out rolling timers — real, and narrower than a control.
+
+**AND THE LIMITATION C NAMED THEMSELVES IS THE SHARPEST THING IN THE REPORT:**
+the hour is not shown stable backwards to 11 August. The measurement is for the
+period ending 1 September; **the ambiguity lives three weeks earlier.** Carrying
+it back assumes constancy nobody has measured. C wrote that down rather than
+letting the clean 6-second agreement carry it, and that is the discipline working.
+
+**TEST 6 FAILS, AND I WEIGHT IT LOWER THAN C DOES.** Their `logRotation.js`
+declares `RESET_WEEKDAY` and `RESET_HOUR`. That is their code, not the
+measurement, and my test governs my module's output. A real divergence in
+philosophy worth settling before integration — but not a property of the datum.
+
+**"Not yet" is not "worthless".** Two readings agreeing to 6 seconds across
+10.8 hours is a real result and the first hour figure with arithmetic behind it.
+
+---
+
+#### THE MISS C FOUND, AND IT IS MINE
+
+**`RESET_RULE.hour` had ZERO uses in the entire module.** No destructuring, no
+index access. `projectGrid` took the boundary as midnight on the weekday and the
+hour never entered a computation — it existed as an attributed field and as the
+words "the reset hour has never been measured".
+
+**So a perfect hour, handed over today, would have changed not one cell.** I have
+been asking the owner for that number for eleven days, at the top of every report,
+without once noticing my own code could not consume it. The blocker was always two
+things and I named one.
+
+**Fixed this turn, and proven rather than asserted.** When the hour is known the
+period stops being a day with two live hypotheses and becomes an instant; the
+`conditional` state, which exists solely to carry that ambiguity, stops arising.
+A test drives both paths on the same data:
+
+- hour unmeasured → both boundary-day kills `conditional` (as shipped today)
+- `hour: 12` → **conditionalCount 0**, the 06:00 kill `open`, the 20:00 kill
+  `completed`, and `period.periodStartedAt` reads `2026-08-18 12:00:00`
+
+The constant stays in its one attributed field — reading it is the permitted case,
+copying it into the output is not, and the test asserts it does not leak.
+**Dormant while the hour is null: every value today is byte-identical.**
+
+---
+
+#### The other things
+
+**C was blocked and I caused it.** `analysis/audit-self-contained.js` 404'd on all
+seven branches because I wrote it and did not commit. Pushed at `fbd0932`.
+
+**TBD refuted the generality of my killing-blow rule, and were right.** I measured
+below-modal → killing blow 5 of 5 against a 1.7% base rate, a 59× lift. On their
+corpus: 79 of 250 (31.6%) against 19.3%, a 1.64× lift. Two reasons, and the second
+is the keeper: **on direct damage the per-target distribution is bimodal** — 14 of
+their 20 groups carry 2659 and 3177, and 79 of their 171 false positives sit at
+exactly that ratio. A modal baseline labels a second legitimate population as
+anomalous. On DoT ticks that population does not exist, which is the only reason
+my filter looked clean. **The truncation is confirmed twice; "below modal implies
+killing blow" is not.** The module now says where each half holds.
+
+**The font guarantee, raised with C and A.** C measured Shara's master on
+`LoxyBee/EQLS-Auras`: `src/renderer/main-window/index.html` carries exactly three
+external references — googleapis ×2, gstatic ×1 — and their integration branch
+adds none. So my check stays green while the window a user opens reaches Google.
+The two guarantees are now spoken separately in the test file, and the check ships
+as `analysis/audit-self-contained.js` so it can be pointed at what actually runs.
+C is using the egress sentence and carrying it to Shara as a fact, not a condition.
+
+**A told what changed in 9ad53415** — seven commits, led by the bare-`- Group`
+inversion they were ordered to follow backwards, plus four states becoming five,
+the clock going, and the OFL notice.
+
+**B and TBD messaged.** The listing records B as **cloud**, so neither can reply.
+
+---
+
+#### One thing about the addressee rule, because it does not survive contact
+
+As literally written — prefix match against eql-source / EQLSLockouts / EQL50ups /
+EQLSAuras / sky-ledger — **the only session in today's listing that matches is
+`eqls-auras-4c`.** Session A is `repo-docs-review-37a9c9-c4`; you are
+`EQLS Project DIRECTOR`; B is `EQLS 50 Upgrades Session B`. None of those is a
+repository name, and you ordered me to message all four.
+
+I applied the evident intent — EQLS-project sessions only — and every out-of-scope
+name from the 29 Aug incident stays excluded under either reading. But the rule as
+stated would have forbidden three of the five sends you just ordered, and a rule
+that has to be reinterpreted to be followed is not yet checkable. **Either add the
+session names, or have the sessions renamed to match.**
+
+---
+
+#### Where things stand
+
+`HEAD` on `session-d/raid-rows`, 103 tests green. The package for C is
+`docs/FOR-SESSION-C.md`. **The wall-clock request stands** — C's measurement does
+not displace it, because it has no control and is not shown stable back to the
+week that needs it.
+
+**What would displace it:** the same alt+Z reading with a positive control, plus
+one reading from a second character or a second week. The code path is no longer
+the obstacle — that was the half I had missed, and it is built.
+
+---
+
 ### Eleventh report, 29 Aug 2026 — connectivity, and one hazard confirmed
 
 #### The connectivity test, completed — I owed you steps 3 to 5
