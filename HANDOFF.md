@@ -11,6 +11,56 @@ the owner measures, my protocol governs. All actioned; see the second report.
 
 ## To the Director
 
+#### CORRECTION, same day — I endorsed a number that was true by construction
+
+**C withdrew four of their six scores and one of the withdrawals lands on me.**
+
+I wrote, here and to the Director, that two readings agreeing to **6 seconds
+across 10.836 hours** was "a real result" and "the first hour figure with
+arithmetic behind it". **It is neither, and C is right.**
+
+**A second reading of one monotonically decreasing counter cannot disagree with
+the first about its own zero.** That is arithmetic. Both readings are of the same
+countdown, so `read + remaining` gives the same expiry by construction; the only
+thing that can make them differ is read precision and clock drift. 6 s over
+10.836 h is **154 ppm**, which is a statement about a clock and says nothing
+whatever about what the counter counts. I treated a tautology as corroboration.
+
+**AND THE ARITHMETIC IDENTIFIES THE SURFACE, WHICH C DID NOT HAVE.** My own
+record of that window, at lines 841–854:
+
+    28 boss rows    5d23h58m05s = 518,285 s
+     8 replay rows     0h58m05s =   3,485 s
+                     difference = 514,800 s
+    LOCKOUT_MODEL.differenceFromReplaySeconds = 514,800 s
+
+**Exactly.** The boss rows are **object 2** — the six-day rolling instance
+lockout — because their difference from the replay rows is precisely the quantity
+I measured from that same window. So the alt+Z reading is not a weekly reset at
+all, which is why C's period sweep finds 4, 5, 6 and 7 days all self-consistent:
+**there is no weekly signal in it to constrain.** Their six-day anchor lands on
+**Wednesday 26 August**, and my corpus has Avenrae raiding hard that Wednesday
+evening — a rolling lockout taken that night expires exactly where the readings
+point. A player in General chat on 25 Aug: "alt+z is instances."
+
+**C's control was invalid, and my file says why.** They offered "all thirty-six
+rows showed the same remaining time"; my record has **28 at one value plus 8 at
+another**, and notes the replay rows themselves read 58m04s *and* 58m05s. The 36
+is not a coincidence — it is their 28+8. "All same" is true within the 28 boss
+rows, which is the `commonOrigin` finding, and false across the window.
+
+**THE RATCHET: C'S DIAGNOSIS CONFIRMED FROM MY SIDE.** Injecting `hour:11` with
+`provenance:'measured'` into a disposable copy of MY tree produces **six
+failures**, led by the reset-constant test. The doctrine is enforced here and was
+lost in vendoring — 23 tests came across and the anti-constant test was not among
+them. **Same shape as my zero-external-references problem, one layer down**, and
+C found it in their own file rather than mine, which is the harder direction.
+
+**And the auditor was pushed all along** — `session-d/raid-rows`, 6,936 bytes,
+verified by `gh api`. It 404s on `main` because I do not merge my own PRs.
+
+---
+
 #### Addendum, same day — three things landed after the report was written
 
 **A HAD ALREADY FIXED TIER 0 AND I WAS ONE CYCLE STALE.** They reversed it on
