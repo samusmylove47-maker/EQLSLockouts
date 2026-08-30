@@ -1008,21 +1008,46 @@ function parseInstanceName(name) {
 // over a set that includes killing blows is contaminated — worst on the fights
 // that end quickest, which are exactly the ones a raid tracker looks at.
 //
-// Raised by the Director from the modelling session, and MEASURED HERE rather
-// than taken on trust. Over the live log, keying on
-// `<target> has taken <N> damage from <spell> by <caster>` and taking the eight
-// sources with >=40 samples and a dominant value:
+// Raised by the modelling session and MEASURED HERE rather than taken on trust.
+// Over the live log, keying on
+// `<target> has taken <N> damage from <spell> by <caster>` — a DoT TICK line —
+// and taking the eight sources with >=40 samples and a dominant value:
 //
 //   below the modal value :    5 hits,  5 landed on the tick the target died  (100%)
 //   at    the modal value : 2805 hits, 49 landed on the tick the target died  (1.7%)
 //
-// Every single below-modal observation in the sample is a killing blow, against
-// a 1.7% base rate. A ~59x difference. The effect is real.
+// THEN THEY RAN THE CONVERSE ON THEIR OWN CORPUS AND IT DID NOT REPRODUCE, and
+// their refutation is worth more than our agreement was. Keyed per (spell,
+// target) over 759 direct-damage hits:
 //
-// SO: if you ever model damage, filter out any value whose target dies at the
-// same timestamp before treating it as a measurement. The kill lines below are
-// exactly what you need to do that, which is the one good reason to read them
-// together.
+//   below modal : 79 of 250 are killing blows (31.6%)   — not 100%
+//   at    modal : 73 of 378 are killing blows (19.3%)   — not 1.7%
+//   lift 1.64x, against our 59x.
+//
+// TWO REASONS, AND THE SECOND IS THE ONE TO KEEP.
+//
+//   1. WHICH LINE YOU READ SETS THE BASE RATE. A DoT tick is small and regular
+//      and lands the kill 1.7% of the time; direct AE damage lands it 19.3%.
+//      An elevenfold difference from the line shape alone.
+//
+//   2. ON DIRECT DAMAGE THE PER-TARGET DISTRIBUTION IS BIMODAL. Fourteen of
+//      their twenty target groups carry two legitimate values in the same pair —
+//      2659 and 3177, ratio 0.8370 — and 79 of their 171 false positives sit at
+//      exactly that ratio. A modal baseline labels an entire second population
+//      as anomalous. On DoT ticks that population does not exist, which is the
+//      only reason our filter looked clean.
+//
+// SO THE RULE IS NARROWER THAN WE FIRST WROTE IT:
+//
+//   The TRUNCATION is real and confirmed on two independent corpora — the client
+//   reports damage APPLIED, capped at remaining HP.
+//   "BELOW MODAL IMPLIES KILLING BLOW" IS NOT. It holds on DoT tick lines, where
+//   the value is regular, and FAILS on direct-damage lines at scale.
+//
+// If you ever model damage: match the KILL LINE and drop those values. Do not
+// infer a killing blow from the damage number. The kill regexes below are
+// exactly what implements the safe version, which is the one good reason to read
+// them together.
 const SLAIN_BY_RE = /^(.+?) has been slain by (.+?)!$/;
 const YOU_SLEW_RE = /^You have slain (.+?)!$/;
 

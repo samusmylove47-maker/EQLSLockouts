@@ -58,7 +58,34 @@ test('BUILD: the embedded engine is the real one and runs standalone', () => {
   assert.equal(st.kills[0].difficulty, 4);
 });
 
-test('BUILD: the page is self-contained — no network of any kind', () => {
+// ── THE SCOPE OF THE NEXT THREE TESTS, STATED BECAUSE IT IS ABOUT TO NARROW ──
+//
+// They assert that ONE FILE — public/app/eqls-lockouts.<hash>.html — reaches
+// nowhere. That is true and measured. **It is also about to become misleading
+// through no change of its own.**
+//
+// The engine is being integrated into EQLS Auras, whose master fetches Google
+// Fonts in three places. After integration the thing a user runs is Shara's
+// renderer with our engine inside it, and that page reaches Google on every
+// launch. These tests would keep passing, because they test a file that after
+// integration nobody opens. **A green check sitting next to a broken guarantee
+// is exactly how the Auras sentence went stale on us the first time.**
+//
+// So: two guarantees, spoken separately from here on, because only one survives
+// being embedded in somebody else's page.
+//
+//   "YOUR LOG NEVER LEAVES THIS MACHINE" — about DATA EGRESS. Survives. The
+//   engine has no transmit path at all; embed it anywhere and it still cannot
+//   send your log somewhere, because it does not know how.
+//
+//   "THIS PAGE MAKES NO NETWORK REQUESTS" — about THE ARTIFACT. Does not
+//   survive. It is a property of one file, and integration replaces that file.
+//
+// The check is therefore also shipped as a function — analysis/audit-self-
+// contained.js — so Session C can point it at the INTEGRATED renderer and get
+// the same answer on the thing that actually launches. A guarantee testable only
+// against the artifact nobody runs is decoration.
+test('BUILD: THIS BUNDLE is self-contained — scope is one file, see above', () => {
   const { html } = build();
   // A strict page: the log never leaves the machine, and the page works with no
   // connection at all. Anything reaching outward breaks both promises.
@@ -215,4 +242,33 @@ test('BUILD: no wall-clock time is ever rendered on the page surface', () => {
   // `shortDay` is the only formatter allowed to touch a civil stamp for display.
   assert.match(script, /function shortDay/, 'the date formatter must exist');
   assert.match(script, /MON\[Number\(m\[2\]\) - 1\]/, 'and produce a day and month, not a time');
+});
+
+test('AUDIT: the portable checker agrees with this suite, and catches a page that does fetch', () => {
+  // The suite above and the shipped auditor must not drift apart, or Session C
+  // gets a different answer from ours on the same bytes.
+  const { audit } = require('../analysis/audit-self-contained');
+  const { html } = build();
+  const ours = audit(html, { label: 'our bundle' });
+  assert.equal(ours.selfContained, true, ours.summary);
+  assert.equal(ours.noEgressPath, true, 'the engine must have no transmit path');
+
+  // AND IT MUST ACTUALLY CATCH SOMETHING. An auditor that has only ever returned
+  // "clean" has not been shown to detect anything — the same lesson as the
+  // countdown detector, which was silently broken and passing.
+  const fetching = `<!doctype html><html><head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel" rel="stylesheet">
+    </head><body><img src="https://example.com/x.png"></body></html>`;
+  const bad = audit(fetching, { label: 'a page that fetches' });
+  assert.equal(bad.selfContained, false, 'the auditor must fail a page that fetches Google Fonts');
+  assert.ok(bad.findings.some((f) => f.rule === 'font-host'), 'and name the font host specifically');
+  assert.ok(bad.findings.some((f) => f.cost.includes('IP address')),
+    'and say what a hit COSTS — "http:// found" is not a finding');
+
+  // The two guarantees are reported separately, because a caller may hold one
+  // and not the other — which is exactly the position Auras is in.
+  const egressOnly = audit('<script>fetch("/x")</script>', { label: 'egress only' });
+  assert.equal(egressOnly.selfContained, true, 'a relative fetch is not an outbound reference');
+  assert.equal(egressOnly.noEgressPath, false, 'but it IS a transmit path');
 });
