@@ -335,3 +335,48 @@ test('AUDIT: the verdict must TURN ON the thing being measured', () => {
   // Navigational hits are still REPORTED — suppressed from the verdict, not hidden.
   assert.ok(after.navigationalCount > 0, 'a reader must still be able to see them');
 });
+
+test('SELF-CONTAINMENT IS PROVEN BY A MATCHED PAIR, not by the bundle being clean', () => {
+  // SESSION C'S POINT, and it applies to every assertion above this one.
+  //
+  // "The bundle contains no banned string" is a POSITIVE WITH NO PAIR. Measured:
+  // it returns PASSES for the real bundle with the real ban list, PASSES for the
+  // real bundle with an EMPTY ban list, and PASSES for an EMPTY document with the
+  // real ban list. Three different worlds, one verdict — so a green result is
+  // consistent with a clean bundle AND with a check that cannot fire.
+  //
+  // That is exactly what the auditor's relative-stylesheet defect turned out to
+  // be, and what C's backspace guard was, and what my one-regex-three-jobs was.
+  // None had a symptom except a test that failed to fail.
+  //
+  // THE RULE, in the Director's words: a detector is shown to work by a MATCHED
+  // PAIR differing only in the thing being detected, never by a positive.
+  //
+  // So: the real built bundle, and the same bytes with ONE deliberate font
+  // reference spliced in. Every check must separate them.
+  const { html } = build();
+  const poisoned = html.replace('<style>',
+    '<style>\n@import url("https://fonts.googleapis.com/css2?family=Cinzel");');
+  assert.notEqual(poisoned, html, 'the injection must actually have landed');
+
+  const bannedStrings = ['http://', 'https://', '<link ', '<img ', '@import', 'fetch(', 'XMLHttpRequest'];
+  const cleanOf = (doc) => bannedStrings.every((b) => !doc.includes(b));
+  assert.equal(cleanOf(html), true, 'the shipped bundle is clean');
+  assert.equal(cleanOf(poisoned), false,
+    'AND THE CHECK MUST GO RED ON THE POISONED TWIN — otherwise green means nothing');
+
+  // The named font hosts, same pair.
+  const hostsOf = (doc) => ['fonts.googleapis.com', 'fonts.gstatic.com'].every((h) => !doc.includes(h));
+  assert.equal(hostsOf(html), true);
+  assert.equal(hostsOf(poisoned), false, 'the host ban must separate the pair too');
+
+  // And the portable auditor, on the same two documents.
+  const { audit } = require('../analysis/audit-self-contained');
+  assert.equal(audit(html, { label: 'shipped' }).selfContained, true);
+  assert.equal(audit(poisoned, { label: 'poisoned' }).selfContained, false,
+    'the auditor must separate the pair on the REAL bundle, not only on a synthetic page');
+
+  // The two ways the check could be dead, which a positive cannot tell apart.
+  assert.equal(bannedStrings.length > 0, true, 'an empty ban list passes everything');
+  assert.ok(html.length > 10000, 'an empty document passes everything too');
+});
