@@ -272,3 +272,66 @@ test('AUDIT: the portable checker agrees with this suite, and catches a page tha
   assert.equal(egressOnly.selfContained, true, 'a relative fetch is not an outbound reference');
   assert.equal(egressOnly.noEgressPath, false, 'but it IS a transmit path');
 });
+
+test('AUDIT: the verdict must TURN ON the thing being measured', () => {
+  // SESSION C FOUND THIS AND IT INVALIDATED MY OWN VERIFICATION OF THE TOOL.
+  //
+  // The link/img/script rules flagged any href or src that was not a data: URI,
+  // INCLUDING RELATIVE ONES. C fed it an 83-byte page whose whole content was
+  // `<link rel="stylesheet" href="local.css">` and got self-contained: NO. Every
+  // real application window has a local stylesheet, so it could never return YES
+  // for one — and a NO that is guaranteed in advance carries no information.
+  //
+  // Worse: I had "verified" the auditor by pointing it at eqlsource.com's
+  // index.html and getting NO. Strip every font host out of that file and it
+  // STILL said NO. I had shown the detector fires, not that it fires on the
+  // thing I claimed. THIRD TIME this project has shipped a detector that was
+  // never shown to detect — after the countdown regex and the killing-blow test.
+  //
+  // So the test is no longer "does it say NO". It is "does the answer CHANGE
+  // when the measured thing changes". That is the only version that can fail.
+  const { audit } = require('../analysis/audit-self-contained');
+
+  const page = [
+    '<!doctype html><html><head>',
+    '<link rel="canonical" href="https://eqlsource.com/index">',   // never fetched
+    '<link rel="stylesheet" href="/assets/site.css">',             // same origin
+    '<link rel="preconnect" href="https://fonts.googleapis.com">', // THE THING
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=X">',
+    '</head><body>',
+    '<a href="https://github.com/example">source</a>',             // navigational
+    '<p>Nothing transmitted.</p>',
+    '</body></html>',
+  ].join('\n');
+
+  const before = audit(page, { label: 'fetching' });
+  const after = audit(page.replace(/https:\/\/fonts\.googleapis\.com/g, '/assets/fonts'),
+    { label: 'self-hosted' });
+
+  assert.equal(before.selfContained, false, 'a page fetching Google Fonts is not self-contained');
+  assert.equal(after.selfContained, true,
+    'AND SELF-HOSTING THEM MUST FLIP IT — otherwise the tool cannot tell anyone whether the fix worked');
+  assert.ok(before.findings.some((f) => f.rule === 'font-host'), 'and it names the host');
+
+  // The four ways it must NOT over-fire, each of which fetches nothing.
+  for (const [what, html] of [
+    ['a relative stylesheet', '<link rel="stylesheet" href="local.css">'],
+    ['a root-relative one', '<link rel="stylesheet" href="/assets/site.css">'],
+    ['rel=canonical to another origin', '<link rel="canonical" href="https://example.com/x">'],
+    ['a link the reader may click', '<a href="https://github.com/x">source</a>'],
+  ]) {
+    assert.equal(audit(html, { label: what }).selfContained, true,
+      `${what} fetches nothing and must not count against self-containment`);
+  }
+
+  // And the two it must catch, including the one people miss.
+  for (const [what, html] of [
+    ['a protocol-relative font host', '<link rel="stylesheet" href="//fonts.gstatic.com/x">'],
+    ['an off-origin stylesheet', '<link rel="stylesheet" href="https://evil.example/x.css">'],
+  ]) {
+    assert.equal(audit(html, { label: what }).selfContained, false, `${what} must be caught`);
+  }
+
+  // Navigational hits are still REPORTED — suppressed from the verdict, not hidden.
+  assert.ok(after.navigationalCount > 0, 'a reader must still be able to see them');
+});
