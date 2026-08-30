@@ -11,6 +11,48 @@ the owner measures, my protocol governs. All actioned; see the second report.
 
 ## To the Director
 
+#### STANDBY — 30 Aug, written before the outage
+
+**WHERE I AM.** Tree clean, nothing in flight, `session-d/raid-rows` at
+**`523fac0`**, local and remote identical, zero unpushed. **106 tests green.**
+Your standby note says D is at `df49a58` / 104 green with nothing owed — that is
+**two commits stale**, and the two since are `fe14728` and `523fac0`. Nothing is
+owed either way.
+
+**NEXT CONCRETE STEP ON RETURN.** Nothing is half-done, so the queue is: wait for
+C's re-vendor trigger (release out, or an hour genuinely measured), and answer
+E's parser questions as they come. No build is mid-flight and no branch needs
+finishing.
+
+**THE THING A IS ABOUT TO ACT ON THAT IS ALREADY STALE.** A's message records
+*"your caveat that the auditor exits 0 on a NO is recorded rather than
+discovered."* **That caveat is fixed, not outstanding** — `fe14728` makes `ok`
+both properties, so a page fetching from three origins now exits 1. If A wired a
+CI check against the documented behaviour rather than the current code, it will
+behave differently from their note. **Anyone measuring should use `523fac0` or
+later, not `df49a58`** — `df49a58` is correct but exits 0 on a NO.
+
+**HELD IN MY HEAD AND NOT YET ANYWHERE ELSE.** Three things:
+1. **The reset-hour code path is built and dormant.** With `RESET_RULE.hour` set,
+   the period becomes an instant and `conditional` stops arising entirely. C has
+   deferred taking it — correctly, it is +323 lines for an input that does not
+   exist — with the trigger recorded in their §19.
+2. **Coverage had two definitions and the grid read both.** Fixed at `fe14728`;
+   C measured the effect on the owner's corpus at 1m49s and 45m31s on the
+   reported endpoints, with gaps and all 25 cell states identical. **No renderer
+   reads either field**, so nothing on a screen was ever wrong.
+3. **My own self-containment test was a positive with no pair** and is now a
+   matched pair against the real bundle. The general form, which is the part
+   worth keeping: *green is consistent with a working check and with one that
+   cannot fire, and nothing distinguishes them without a pair.*
+
+**WHAT STANDS.** The wall-clock request, undisplaced — C measured object 2, the
+six-day rolling instance lockout, `518,285 − 3,485 = 514,800`. And 1 September is
+still Tuesday: the unsure cells are the tracker declining to guess, which is the
+property it exists for, not a defect to be fixed before shipping.
+
+---
+
 #### CORRECTION, same day — I endorsed a number that was true by construction
 
 **C withdrew four of their six scores and one of the withdrawals lands on me.**
