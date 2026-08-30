@@ -1294,8 +1294,25 @@ const SPAN_GAP_MS = 30 * 60 * 1000;
 function applyLine(state, line) {
   // EVERY stamped line extends coverage, not just the ones we model. Coverage
   // is about what we were in a position to see, and we saw every line.
+  //
+  // ALL THREE COVERAGE FIELDS ARE SET HERE, FROM ONE RULE, AND THEY WERE NOT.
+  // `spans` was extended by every stamped line while `firstSeen`/`lastSeen` were
+  // set further down, only for events that survived the early returns. So the
+  // module held TWO MEANINGS OF COVERAGE and `projectGrid` read both — `spans`
+  // for the gap and observed-fraction gate, `firstSeen` for the reported
+  // `coverageFrom`. A log of pure combat extended one and not the other.
+  //
+  // Found by a test written for a different purpose: adding damage rows made the
+  // divergence loud (600 stamped lines, spans extended, firstSeen still null)
+  // where before it was merely latent. The fix is not to special-case damage; it
+  // is that "what we were in a position to see" has one definition.
   const stamped = typeof line === 'string' && line.length ? splitStamp(line) : null;
-  if (stamped) noteCoverage(state, civilOf(stamped.at));
+  if (stamped) {
+    const stampCivil = civilOf(stamped.at);
+    noteCoverage(state, stampCivil);
+    if (state.firstSeen === null || stampCivil < state.firstSeen) state.firstSeen = stampCivil;
+    if (state.lastSeen === null || stampCivil > state.lastSeen) state.lastSeen = stampCivil;
+  }
 
   const ev = parseLine(line);
   if (!ev) {
@@ -1305,15 +1322,27 @@ function applyLine(state, line) {
 
   const civil = civilOf(ev.at);
 
-  // DAMAGE AND SONG PULSES LEAVE NO TRACE IN THE STATE, and the early return
-  // has to be HERE — above the dedupe index, not merely above `events`.
+  // ── DO NOT "OPTIMISE" THIS EARLY RETURN AWAY. IT IS NOT A MEMORY DECISION. ──
   //
-  // Caught by a test the moment I added them: the live log holds 375,896 damage
-  // lines and 16,788 song pulses. Every one was taking a slot in `state.seen`,
-  // which is bounded at 200,000 — so a single character's damage would have
-  // evicted the entire lockout dedupe index and `dropped.beyondDedupeHorizon`
-  // would have started firing on real kills. The engine was also emitting a
-  // change event per damage line, which the adapter test caught.
+  // It looks like one, which is exactly the danger: a reader sees "skip the
+  // bookkeeping for lines we do not model" and moves it, or deletes it, or
+  // decides the guard costs more than it saves.
+  //
+  // **IT IS A SILENT CORRECTNESS FAILURE WEARING A MEMORY DECISION'S CLOTHES.**
+  //
+  // The live log holds 375,896 damage lines and 16,788 song pulses. `state.seen`
+  // is the DEDUPE INDEX and is bounded at 200,000 entries. Let damage through
+  // and one character's combat evicts the entire lockout dedupe set — after
+  // which replaying a log DOUBLE-COUNTS real kills, because the keys that would
+  // have suppressed them have been pushed out by damage nobody models.
+  //
+  // The tell would be `dropped.beyondDedupeHorizon` firing on ordinary input,
+  // which is the diagnostic this module treats as its worst possible state:
+  // silent double-counting with a clean report. So the guard sits ABOVE the
+  // index, not merely above `events`, and it is load-bearing there.
+  //
+  // Caught the moment the rows were added — by the adapter test noticing a
+  // change event per damage line, not by anyone reasoning about it.
   //
   // `parseLine` returns the row for Session E; `applyLine` does not want it.
   // That split is what makes the addition free for this module.
@@ -1382,8 +1411,9 @@ function applyLine(state, line) {
     state.dropped.beyondDedupeHorizon++;
   }
 
-  if (state.firstSeen === null || civil < state.firstSeen) state.firstSeen = civil;
-  if (state.lastSeen === null || civil > state.lastSeen) state.lastSeen = civil;
+  // firstSeen/lastSeen are set at the TOP of this function now, from the stamp,
+  // for every stamped line — see the note there. Setting them again here would
+  // be harmless but would reintroduce the second definition.
 
   state.events.push({ key, kind: ev.kind, civil, at: ev.at });
   if (state.events.length > MAX_EVENTS) state.events.shift();

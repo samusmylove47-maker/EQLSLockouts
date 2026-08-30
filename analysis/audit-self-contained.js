@@ -356,5 +356,17 @@ if (require.main === module) {
     if (r.findings.length > 40) process.stdout.write(`    ... and ${r.findings.length - 40} more\n`);
     if (!r.ok) bad++;
   }
+  // EXIT NON-ZERO ON EITHER FAILURE, AND SESSION C IS WHY.
+  //
+  // This used to exit 0 whenever `noEgressPath` held, on the reasoning that
+  // egress is what actually matters. Defensible in prose and indefensible in
+  // CI: a pipeline reading only the exit code would report GREEN for a page
+  // fetching from three origins. "The check is green" next to a broken
+  // guarantee is the exact failure this whole tool was built after.
+  //
+  // `ok` is now both properties, so a NO on either one fails the run. A caller
+  // that genuinely wants to allow outbound fetches while forbidding egress can
+  // read the two fields from audit() — but it has to say so deliberately rather
+  // than inherit it from an exit code nobody looked at.
   process.exit(bad ? 1 : 0);
 }

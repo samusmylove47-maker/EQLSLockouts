@@ -635,3 +635,47 @@ test('CLAUSE 7: the positive-control set is bounded, and overflow degrades the S
   assert.equal(after[0].positiveControl, false);
   assert.notEqual(after[0].result, 'granted', 'and must never invent a grant');
 });
+
+test('DAMAGE MUST NOT ENTER THE DEDUPE INDEX — a correctness guard, not a memory one', () => {
+  // THE COMMENT ABOVE THE EARLY RETURN CAN BE DELETED. This is what notices.
+  //
+  // The guard looks like an optimisation: skip bookkeeping for lines we do not
+  // model. It is not. `state.seen` is the DEDUPE index, bounded at 200,000, and
+  // the live log holds 375,896 damage lines. Let them through and one
+  // character's combat evicts the entire lockout dedupe set — after which
+  // replaying a log DOUBLE-COUNTS real kills, because the keys that would have
+  // suppressed them were pushed out by damage nobody models.
+  //
+  // Silent double-counting with a clean diagnostic is the worst state this
+  // module can reach, and this is the only thing standing between it and that.
+  const st = core.createState('Avenrae');
+  const damage = [];
+  for (let i = 0; i < 200; i++) {
+    const s = String(i % 60).padStart(2, '0');
+    damage.push(`[Wed Aug 26 20:00:${s} 2026] You slash a rock golem for ${1000 + i} points of damage.`);
+    damage.push(`[Wed Aug 26 20:01:${s} 2026] Your voice booms.`);
+    damage.push(`[Wed Aug 26 20:02:${s} 2026] A dracoliche has taken ${200 + i} damage from Drifting Death by Jeeve.`);
+  }
+  core.applyLines(st, damage);
+  assert.equal(st.seenCount, 0,
+    `600 damage/pulse lines must add NOTHING to the dedupe index; got ${st.seenCount}`);
+  assert.equal(st.events.length, 0, 'and nothing to the provenance log');
+  assert.equal(st.kills.length, 0);
+  assert.equal(st.dropped.beyondDedupeHorizon, 0);
+
+  // But they DO extend coverage — we were in a position to see those lines, and
+  // coverage is about what we could have seen, not what we modelled.
+  assert.notEqual(st.firstSeen, null, 'stamped lines still extend coverage');
+
+  // And a real kill fed afterwards still dedupes, which is the property the
+  // guard exists to protect.
+  const kill = '[Wed Aug 26 21:00:00 2026] You have slain Lord Nagafen!';
+  core.applyLine(st, kill);
+  core.applyLine(st, kill);
+  assert.equal(st.kills.length, 1, 'the duplicate must still be suppressed');
+  assert.equal(st.dropped.duplicate, 1, 'and counted as a duplicate, not silently dropped');
+
+  // parseLine still RETURNS the rows — Session E consumes them; applyLine does not.
+  assert.equal(core.parseLine(damage[0]).kind, 'damage');
+  assert.equal(core.parseLine(damage[1]).kind, 'song-pulse');
+});
