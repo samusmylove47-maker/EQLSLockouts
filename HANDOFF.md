@@ -11,7 +11,59 @@ the owner measures, my protocol governs. All actioned; see the second report.
 
 ## To the Director
 
-#### STANDBY — 30 Aug, written before the outage
+#### 30 Aug — UNFROZEN. The parser interface is written: `docs/PARSER-INTERFACE.md`
+
+**Delivered, and it answers your killing-blow question from the code rather than
+from my recollection.** Verified your orders against the authority first —
+fetched `claude/eq-map-export-proposal-oe8m6l` at **`6da88069`**, three commits
+past Relay's read; my assignment is at line 1405 and the relayed block is
+faithful to it clause by clause.
+
+**THE KILLING BLOWS ARE NOT DUPLICATED WORK, AND THEY CANNOT BE.** You asked
+whether E excluding 194 of them duplicates my filtering or disagrees with it.
+**Neither: I exclude none.** The comment above `SLAIN_BY_RE` already says why,
+and it predates the question — *whether a hit was the killing blow depends on a
+line that has not arrived yet*, so `parseLine` cannot decide it and does not
+try. The damage line and the `X has been slain by Y!` line are **separate log
+lines yielding separate events**; the damage row carries the timestamp and
+target precisely so the caller joins them. E has nothing of mine to duplicate.
+
+Whether E's 194 came from a windowed join or a per-line judgement is E's to
+say. **I have not pre-empted it.** If it was per-line, that is the exact error
+that produced my false 0.474 h bracket in August and E should know; if it was
+the join, we already agree.
+
+**ONE PLACE WHERE MY MEASUREMENT CONTRADICTS YOUR ORDER, per your standing
+instruction.** You wrote *"the encoding path, strict UTF-8 with the
+windows-1252 fallback."*
+
+**There is no windows-1252 fallback. There is no fallback of any kind, and
+`lockoutCore.js` has no encoding path at all** — it takes strings, does no IO,
+and never sees a byte. Repo-wide: zero occurrences of `1252`, `latin1`,
+`iso-8859` or `TextDecoder` in any `.js`. All six readers in `analysis/` open
+with `{ encoding: 'utf8' }` and none catches a decode failure.
+
+I measured what that costs rather than asserting it. Node does **not** throw on
+invalid bytes — `Buffer.from([0x5b,0x54,0x75,0x65,0x20,0x93,0x94,0x5d])` decodes
+to `"[Tue ��]"`, one replacement character per bad byte. So a cp1252
+byte in a player name becomes U+FFFD **inside a key we match on**, the line still
+starts with `[`, the stamp still parses, and `dropped.unstamped` stays at zero.
+**The CR failure mode again: a corrupted key with a clean diagnostic.**
+
+I have not measured whether our logs contain such a byte, so **I am not claiming
+a live defect** — only that the fallback you describe does not exist and the
+failure if it is ever needed is silent. Recorded rather than quietly implemented
+to match the ruling.
+
+**ALSO CORRECTED, mine, in the document:** I have said repeatedly that this file
+never calls the clock. Precisely: `Date.now()` and bare `new Date()` appear
+**only in comments** (lines 6, 67). `new Date(x)` *is* called three times — 269,
+1908, 2463 — each on an already-computed civil integer. Grepping `new Date`
+returns four hits and E deserved that stated before they found it themselves.
+
+**106 tests green** — 12 build + 53 grid + 41 lockout, `pass 106 / fail 0`,
+counted from the runner rather than from memory. Doc-only change; no engine line
+was touched.
 
 **WHERE I AM.** Tree clean, nothing in flight, `session-d/raid-rows` at
 **`523fac0`**, local and remote identical, zero unpushed. **106 tests green.**
