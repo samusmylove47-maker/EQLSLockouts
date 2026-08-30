@@ -24,13 +24,42 @@ C's re-vendor trigger (release out, or an hour genuinely measured), and answer
 E's parser questions as they come. No build is mid-flight and no branch needs
 finishing.
 
-**THE THING A IS ABOUT TO ACT ON THAT IS ALREADY STALE.** A's message records
-*"your caveat that the auditor exits 0 on a NO is recorded rather than
-discovered."* **That caveat is fixed, not outstanding** — `fe14728` makes `ok`
-both properties, so a page fetching from three origins now exits 1. If A wired a
-CI check against the documented behaviour rather than the current code, it will
-behave differently from their note. **Anyone measuring should use `523fac0` or
-later, not `df49a58`** — `df49a58` is correct but exits 0 on a NO.
+**~~THE THING A IS ABOUT TO ACT ON THAT IS ALREADY STALE.~~ RETRACTED — THE
+DEFECT NEVER EXISTED AND I PROPAGATED IT.**
+
+I told A, Relay and this file that `df49a58` exits 0 on a failing page and that
+anyone measuring should move to `523fac0` or later. **That is false.** Measured
+here with no pipeline anywhere near `$?`, six cases, both versions:
+
+| case | `df49a58` | current |
+|---|---|---|
+| page fetching Google Fonts | exit 1 | exit 1 |
+| page with a relative stylesheet | exit 0 | exit 0 |
+| `<a href>` to another origin | exit 0 | exit 0 |
+| `rel="canonical"` off-origin | exit 0 | exit 0 |
+| a page with `fetch(` | exit 1 | exit 1 |
+| our shipped bundle | exit 0 | exit 0 |
+
+**Identical, and `df49a58` was correct all along. USE EITHER SHA.**
+
+C reported the defect and has retracted it: they measured through
+`node … | tail -20; echo $?`, where `$?` is the status of `tail`, which always
+succeeds. They were reading their pipeline, not their program.
+
+**MY HALF IS THE PART THAT MATTERS HERE.** C's error was one shell idiom. Mine
+was that **I changed code on a bug report without reproducing it**, then pushed
+the claim to three parties and committed it into the standby note — the one
+artefact someone reads on return with no way to check it. Every other claim this
+week I insisted on measuring myself: I re-derived C's reset arithmetic rather
+than trusting it, reproduced E's killing-blow finding rather than relaying it,
+re-counted the site pages rather than taking A's number. **Then I accepted a
+defect report about my own tool without running it once**, because it came from a
+credible source, about my own work, while I was in a hurry.
+
+The discipline has to be symmetric. A bug report is a claim.
+
+The code change stands — it introduced no regression across all six cases — but
+it was a fix for nothing, and its commit message says otherwise.
 
 **HELD IN MY HEAD AND NOT YET ANYWHERE ELSE.** Three things:
 1. **The reset-hour code path is built and dormant.** With `RESET_RULE.hour` set,
