@@ -2448,6 +2448,222 @@ function project(state, now) {
   };
 }
 
+// ===========================================================================
+// ACTIONABILITY — the interface the BIS ranker calls
+// ===========================================================================
+//
+// THE QUESTION IT ANSWERS, and it is narrower than the question that was asked.
+//
+// The ranker wants: "can this character still run the content that drops this
+// item, this week?" It must NOT pass an item id. This module has no loot table,
+// will not acquire one, and would be guessing if it pretended otherwise. The
+// seam is:
+//
+//     the ranker owns   item -> which raid / difficulty drops it
+//     this module owns  that raid / difficulty -> can this character act on it
+//
+// ── THE GATE NOBODY ASKED ABOUT, AND IT IS THE ONE THAT DECIDES ────────────
+//
+// **THE TOKEN CAP, NOT THE GRID, IS WHAT MAKES A RECOMMENDATION UNACTIONABLE.**
+//
+// Measured, per character per week beginning Tuesday:
+//
+//     Avenrae, week of 11 Aug:  18 roster boss kills, 3 grants, 3 tokens
+//     Shara,   week of 11 Aug:  16 roster boss kills, 3 grants, 3 tokens
+//     Both,    week of  4 Aug:   7 roster boss kills, 3 grants, 3 tokens
+//
+// Eighteen raids, three tokens. **A boss can be OPEN on the grid while the cap
+// is SPENT** — and a ranker that asks the grid alone will tell a player with
+// zero tokens left to go and farm a zone, which is the recommendation that
+// loses trust in one click.
+//
+// So this function reads the cap FIRST and the grid second, and it is the cap
+// that can return `no`.
+//
+// ── WHAT `no` IS AND IS NOT ───────────────────────────────────────────────
+//
+// **The loot lockout (LOCKOUT_MODEL) is NOT OBSERVABLE FROM A LOG. Ever.** Its
+// only source is the alt+Z Instance Information window, which no amount of
+// log-reading produces — see `inferenceHazard`. So this function never claims a
+// boss is loot-locked, and a `yes` means "you may run it and spend a token",
+// never "the item will drop".
+//
+// **`completed` on the grid is NOT a blocker.** A locked-out kill still pays a
+// guaranteed drop (28 Jul 2026 patch note), so a finished weekly does not stop a
+// player going back. Mapping `completed` to "unactionable" would delete real
+// upgrades from the ranking.
+//
+// ── THREE-WAY, AND THE NOT-KNOWING VALUE IS LOUD ──────────────────────────
+//
+// Ruled by the Director, 31 Aug: never a boolean. A boolean forces the two
+// not-knowing grid states into a knowing one, and either collapse is a claim we
+// cannot source. `unknown` carries `unknownKind` so the caller can tell a gap
+// that MORE LOG WOULD FIX from one that no log ever will.
+const TOKEN_CAP = Object.freeze({
+  tokens: 3,
+  per: 'character, per weekly period',
+  provenance: 'observed',
+  sampleCharacterWeeks: 3,
+  source: 'Avenrae and Shara, weeks of 4 and 11 Aug 2026',
+  // STATED BECAUSE IT IS SMALL. Three character-weeks, all from one corpus,
+  // all showing exactly three. That is consistent with a cap of three and with
+  // any cap >= 3 that was never reached. The refusals are what argue for a
+  // real ceiling, and they carry a positive control.
+  caveat:
+    'n=3 character-weeks. Every observed week reached exactly three grants and ' +
+    'no week exceeded it. A refused hail with a positive control corroborates ' +
+    'a ceiling; it does not prove the ceiling is three rather than higher.',
+});
+
+// `raid` is a key from RAIDS. `difficulty` is 0..4, or null to ask about the
+// raid at any tier. Returns three-way; see the header.
+function actionability(state, now, target) {
+  requireCivil(now);
+  const raidKey = target && target.raid;
+  const difficulty = target && target.difficulty != null ? target.difficulty : null;
+
+  if (target && (target.item !== undefined || target.itemId !== undefined)) {
+    throw new TypeError(
+      'actionability(): this module has no loot table and takes no item id. ' +
+      'Resolve item -> {raid, difficulty} on the ranker side and pass that. ' +
+      'See the ACTIONABILITY header for the seam.'
+    );
+  }
+
+  const grid = projectGrid(state, now);
+  const known = RAIDS.some((r) => r.key === raidKey);
+
+  // ── GATE 1: THE TOKEN CAP ───────────────────────────────────────────────
+  //
+  // THE BOUNDARY IS A DAY, NOT AN INSTANT, AND THE COUNT INHERITS THAT.
+  //
+  // `period.periodStartedAt` is null while the reset hour is unmeasured, which
+  // is every shipped configuration — so it cannot be the period start here.
+  // The only boundary available is `period.boundaryDay`, a whole day.
+  //
+  // **A grant ON the boundary day therefore belongs to either period and we
+  // cannot say which** — the identical ambiguity the grid carries as
+  // `conditional`. Counting such a grant into this period would over-report the
+  // cap and produce a `no` we cannot source; excluding it would under-report and
+  // produce a `yes` we cannot source. So it is counted separately and forces
+  // `unknown`, which is the only answer the evidence supports.
+  const bDay = /^(\d{4})-(\d{2})-(\d{2})$/.exec(grid.period.boundaryDay || '');
+  const boundaryStart = bDay
+    ? civilOf({ year: +bDay[1], month: +bDay[2], day: +bDay[3], hour: 0, minute: 0, second: 0 })
+    : null;
+  const boundaryEnd = boundaryStart === null ? null : boundaryStart + 86400000;
+
+  const rows = classifyRequests(state);
+  const afterBoundaryDay = (c) => boundaryEnd !== null && c >= boundaryEnd;
+  const onBoundaryDayCivil = (c) =>
+    boundaryStart !== null && c >= boundaryStart && c < boundaryEnd;
+
+  // Unambiguously inside the live period.
+  const grantsThisPeriod = rows.filter((r) => r.result === 'granted' && afterBoundaryDay(r.civil));
+  // On the reset day itself — could be either period.
+  const grantsOnBoundary = grid.period.hourKnown
+    ? []
+    : rows.filter((r) => r.result === 'granted' && onBoundaryDayCivil(r.civil));
+  const refusalsThisPeriod = rows.filter((r) => r.result === 'refused' && afterBoundaryDay(r.civil));
+
+  const capSpent = grantsThisPeriod.length >= TOKEN_CAP.tokens;
+  // Ambiguous only when the boundary-day grants could carry it over the cap.
+  const capAmbiguous = !capSpent &&
+    grantsOnBoundary.length > 0 &&
+    grantsThisPeriod.length + grantsOnBoundary.length >= TOKEN_CAP.tokens;
+  const refusedWithControl = refusalsThisPeriod.some((r) => r.positiveControl === true);
+
+  // ── GATE 2: THE GRID CELL ───────────────────────────────────────────────
+  const cells = grid.cells.filter((c) =>
+    c.raid === raidKey && (difficulty === null || c.difficulty === difficulty));
+
+  // ── COMBINE ─────────────────────────────────────────────────────────────
+  let answer = 'unknown';
+  let unknownKind = null;
+  let because;
+  const gates = {};
+
+  gates.tokenCap = {
+    grantsObserved: grantsThisPeriod.length,
+    grantsOnBoundaryDay: grantsOnBoundary.length,
+    cap: TOKEN_CAP.tokens,
+    refusedWithPositiveControl: refusedWithControl,
+    spent: capSpent || refusedWithControl,
+    ambiguous: capAmbiguous,
+    provenance: boundaryStart === null ? 'not recorded' : 'observed',
+  };
+
+  gates.grid = cells.length
+    ? { states: cells.map((c) => ({ difficulty: c.difficulty, state: c.state, why: c.because })) }
+    : { states: [], note: known ? 'no cell at that difficulty' : 'raid not in the observed roster' };
+
+  if (!known) {
+    answer = 'unknown';
+    unknownKind = 'raid-not-in-roster';
+    because =
+      `"${raidKey}" is not in this module's observed roster. The roster is ` +
+      'evidence of structure, not a list of what exists — an unlisted raid is ' +
+      'unmeasured, not absent.';
+  } else if (refusedWithControl) {
+    answer = 'no';
+    unknownKind = null;
+    because =
+      'a weekly hail was REFUSED this period with a positive control — the ' +
+      'character has used its allowance. This is a statement about the CAP, ' +
+      'never about this boss.';
+  } else if (capSpent) {
+    answer = 'no';
+    because =
+      `${grantsThisPeriod.length} weekly grants observed this period against a ` +
+      `cap of ${TOKEN_CAP.tokens}. The cap is spent, so no raid is actionable ` +
+      'for a token this week regardless of the grid.';
+  } else if (capAmbiguous) {
+    answer = 'unknown';
+    unknownKind = 'reset-hour';
+    because =
+      `${grantsThisPeriod.length} grant(s) certainly this period and ` +
+      `${grantsOnBoundary.length} on the reset day itself, which could belong to ` +
+      `either period. Counted one way the cap of ${TOKEN_CAP.tokens} is spent, ` +
+      'counted the other it is not. The reset HOUR has never been measured.';
+  } else if (boundaryStart === null || !grid.period.coverageSpansPeriod) {
+    answer = 'unknown';
+    unknownKind = 'coverage';
+    because =
+      'coverage does not span the current period, so an absence of grants ' +
+      'cannot be told apart from not having looked. MORE LOG WOULD FIX THIS.';
+  } else if (cells.some((c) => c.state === 'open' || c.state === 'completed')) {
+    // `completed` is deliberately actionable — repeats still pay a drop.
+    answer = 'yes';
+    because =
+      `${TOKEN_CAP.tokens - grantsThisPeriod.length} of ${TOKEN_CAP.tokens} ` +
+      'tokens remain and the raid is reachable. A completed cell is still ' +
+      'actionable: a locked-out kill pays a guaranteed drop (28 Jul 2026).';
+  } else {
+    answer = 'unknown';
+    unknownKind = cells.some((c) => c.state === 'not_looked') ? 'coverage' : 'reset-hour';
+    because = cells.length
+      ? `grid says ${cells.map((c) => c.state).join(', ')} — ` +
+        (unknownKind === 'coverage'
+          ? 'MORE LOG WOULD FIX THIS.'
+          : 'this turns on the reset hour, which has never been measured.')
+      : 'no cell for that target.';
+  }
+
+  return {
+    answer,                 // 'yes' | 'no' | 'unknown' — NEVER a boolean
+    unknownKind,            // 'coverage' | 'reset-hour' | 'raid-not-in-roster' | null
+    because,
+    target: { raid: raidKey, difficulty },
+    gates,
+    // THE LIMIT ON EVERY ANSWER ABOVE, restated where a caller cannot miss it.
+    doesNotAnswer:
+      'whether the LOOT lockout has expired for this character. That is not in ' +
+      'any log — its only source is the alt+Z window. A `yes` means the ' +
+      'character may run it and spend a token, never that the item will drop.',
+    tokenCap: TOKEN_CAP,
+  };
+}
+
 // `eqlog_Avenrae_rivervale.txt` -> `Avenrae`
 // `eqlog_Shara_rivervale_2026-08-14b.txt` -> `Shara`
 //
@@ -2492,6 +2708,8 @@ const THRESHOLDS = Object.freeze({
 
 module.exports = {
   THRESHOLDS,
+  actionability,
+  TOKEN_CAP,
   // parsing
   parseLine,
   splitStamp,
