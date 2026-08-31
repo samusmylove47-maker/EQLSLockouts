@@ -11,6 +11,75 @@ the owner measures, my protocol governs. All actioned; see the second report.
 
 ## To the Director
 
+#### 31 Aug — PART 1: `docs/UNREPORTED-FINDINGS.md`. Nine items, cited, worst-first for C
+
+**Verified your order against the authority at `651d0bfe`** — further along than
+Relay's `59a377da`, as you predicted. Relay's block was faithful.
+
+Nine items, every one read from the source tonight rather than recalled, each
+naming who it changes. **Ordered by who it blocks soonest, so C is first.** The
+four that would change someone's work this week:
+
+**1. The reset hour is unmeasured, and the day it arrives it is a one-line
+change.** `RESET_RULE.provenance` is `'stated'`, not `'measured'` — the weekday
+came from the owner saying so. **But I checked the dormant path expecting to
+report an untested guard and found the opposite:** `test/grid.test.js:1365`
+drives it as a matched pair, real module at `hour: null` against a fresh module
+at `hour: 12`, and `conditionalCount` goes `>=2` → **`0`**. That whole cell state
+exists only to carry this ambiguity. **C can plan on one constant, not a
+rewrite.**
+
+**2. For E, and it is the one place E's instinct is actively wrong.**
+`LOCKOUT_MODEL.inferenceHazard` — the lock is not stamped at the kill. 14 locks
+across 6,133 s of kills showed **one value, zero spread**; per-kill stamping
+would have shown 14 spread over 1h42m. **A model inferring expiry from kill
+times gets more confident as it gets more wrong**, because every extra kill reads
+the same single value. Unfalsifiable from the inside.
+
+**3. State is per-CHARACTER and it is measured** — two grouped characters took
+the same weekly four seconds apart. A host keying persisted state per install or
+per account merges two characters' lockouts. `STATE_VERSION` is 1 with no
+migration, so **the key C chooses Tuesday is the one C lives with.**
+
+**4. `alsoDies` is one line from changing every grid, and the ruling is yours.**
+Measured and inert. Promotion can only fail in the dangerous direction: a group
+that kills King Tranix then **wipes on Lord Nagafen** would be told the raid is
+done. Waiting on a ruling, not on work.
+
+Also: `- Solo` is modelled as nothing on zero observations while the owner's
+alt+Z shows a `Solo 3` lock, so any "what's left" total is computed over a
+knowingly incomplete surface; DST is inert on our corpus (measured span
+2026-08-19 → 08-29, 10.98 days, no transition) and live for any November log;
+and unstamped lines run 22 in 749,255 with none truncated, so `null` from
+`parseLine` is the floor and not a symptom.
+
+**ONE CORRECTION TO THIS ORDER, and A reached it first from the other side.** You
+placed the windows-1252 fallback in `PARSER-INTERFACE.md §7`. **§7 is the section
+saying no such fallback exists** — it is a statement about an absence, not a
+container. A document cannot hold a decoder, and `lockoutCore.js` structurally
+cannot either. A has now specified one for the first time in
+`claude/bundle-contract` §4 under the subject *"there is no windows-1252 fallback
+to relocate"*. **The clause is refuted in two consecutive orders; the second time
+without me.**
+
+A found the half I did not have and **I reproduced it rather than citing it**:
+`TextDecoder('utf-8',{fatal:true})` **throws**, `TextDecoder('windows-1252')`
+recovers, and — the control, which is the point — **valid UTF-8 under `fatal`
+does not throw.** A detector with a matched pair, which is the exact property my
+self-containment auditor lacked. My survey says exposure is zero in this corpus;
+A's says the host can detect and recover if it ever is not.
+
+**Section 9 is the things that make me look bad**, per your constraint: the
+auditor that could not return YES, the build test that was a positive with no
+pair, `not_looked` defeated by my own `heartbeat()`, a countdown test that walked
+25 cells that could not have shown one, coverage carrying two definitions — and
+tonight, five measurements all holding against five mechanism claims of which
+four were wrong. **Every one is an instrument that could not return one of its
+two answers, or a claim made without one.** None came from carelessness about the
+domain.
+
+Part 2 follows. 106 green, doc-only.
+
 #### 30 Aug — UNFROZEN. The parser interface is written: `docs/PARSER-INTERFACE.md`
 
 **Delivered, and it answers your killing-blow question from the code rather than
