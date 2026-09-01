@@ -687,6 +687,52 @@ const MUTATIONS = [
       const g = c.projectGrid(st, { year: 2026, month: 8, day: 18, hour: 20, minute: 0, second: 0 });
       return [g.conditionalCount, g.uncertainCount];
     } },
+  // -- R177: THE INVISIBLE MECHANISMS ------------------------------------
+  //
+  // Chosen by the heuristic rather than by guessing. Both are internal: their
+  // correctness never appears in ordinary output, and both need a constructed
+  // input to see fail — which is what R177 says predicts a missing guard.
+
+  { name: 'prune-keeps-the-OLDEST-half',
+    claim: 'pruning the dedupe index keeps the NEWEST half — the oldest is what may be dropped',
+    find: '  const keep = entries.slice(Math.floor(entries.length / 2));',
+    repl: '  const keep = entries.slice(0, Math.floor(entries.length / 2));',
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      for (let i = 0; i < 6; i++) st.seen[`k${i}`] = 1000 + i;
+      st.seenCount = 6;
+      // Exercise the pruner through the only path that calls it.
+      const before = Object.values(st.seen).sort((a, b) => a - b);
+      c.applyLine(st, line(19, 10, 0, 'You have entered Nektulos Forest.'));
+      return [before.length, Object.keys(st.seen).length];
+    } },
+
+  { name: 'span-bridge-merge-removed',
+    claim: 'a new observation BRIDGING two spans merges them into one',
+    find: '      spans[i - 1].to = Math.max(spans[i - 1].to, spans[i].to);',
+    repl: '      spans[i - 1].to = spans[i - 1].to;',
+    probe: (c) => {
+      // Two blocks 50 minutes apart — beyond SPAN_GAP_MS, so two spans — then
+      // an observation in the middle that bridges them.
+      const st = stateOf(c, [
+        line(19, 10, 0, 'You have entered Nektulos Forest.'),
+        line(19, 10, 50, 'You have entered Nektulos Forest.'),
+        line(19, 10, 25, 'You have entered Nektulos Forest.'),
+      ]);
+      return [st.spans.length, st.spans.map((x) => (x.to - x.from) / 60000)];
+    } },
+
+  { name: 'span-extends-only-forwards',
+    claim: 'an observation BEFORE a span extends it backwards, not just forwards',
+    find: '      if (civil < sp.from) sp.from = civil;',
+    repl: '      if (false) sp.from = civil;',
+    probe: (c) => {
+      const st = stateOf(c, [
+        line(19, 10, 30, 'You have entered Nektulos Forest.'),
+        line(19, 10, 10, 'You have entered Nektulos Forest.'),
+      ]);
+      return st.spans.map((x) => [(x.to - x.from) / 60000]);
+    } },
 ];
 
 const MUTABLE = [FILE_ENGINE, FILE_TEMPLATE, FILE_BUILD];
