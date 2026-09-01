@@ -49,8 +49,23 @@ function stampKey(line) {
   if (!m) return null;
   return Date.UTC(+m[7], MONTHS[m[2]] - 1, +m[3], +m[4], +m[5], +m[6]);
 }
+// WIDENED 31 Aug to match `TS_RE` in the engine: ` {1,2}(\d{1,2})` for the day.
+//
+// Session E found its own timestamp regex used a fixed `(\d{2})` for
+// day-of-month, which would silently drop every line on days 1-9 if the client
+// ever space-padded them the way `ctime()` does. `src/lockoutCore.js:212` was
+// already tolerant; THIS function was the one place in my repo that was not.
+//
+// C then measured it and REFUTED the hazard for our corpus: 1,270,007 lines
+// carry a single-digit day and every one is ZERO-padded — `strftime %d`, not
+// `ctime()`. C also stated its own limit unprompted, that days 01-03 do not
+// occur in its 16 files, so 4-9 is measured and 1-3 inferred.
+//
+// Widened anyway, on C's own recommendation: the cost is one character and the
+// failure it prevents is silent. A tolerant pattern accepts everything the
+// strict one did.
 function boundKey(s) {
-  const m = /^([A-Za-z]{3}) ([A-Za-z]{3}) (\d{2}) (\d{2}):(\d{2}):(\d{2})$/.exec(s);
+  const m = /^([A-Za-z]{3}) ([A-Za-z]{3}) {1,2}(\d{1,2}) (\d{2}):(\d{2}):(\d{2})$/.exec(s);
   return Date.UTC(2026, MONTHS[m[2]] - 1, +m[3], +m[4], +m[5], +m[6]);
 }
 function isPrivate(line) {

@@ -591,3 +591,417 @@ test('CONTRACT 7: the character is an input and state refuses to be shared', () 
   assert.equal(core.characterFromLogFilename('not-a-log.txt'), null);
   assert.equal(core.createState('Avenrae').character, 'Avenrae');
 });
+
+test('CLAUSE 7: the positive-control set is bounded, and overflow degrades the SAFE way', () => {
+  // Session C raised this and it is real: a host that backfills 5.25 million
+  // lines on its main process is entitled to know what grows without limit.
+  //
+  // Measured occupancy for scale: 600 Voidling replies across all 16 log files,
+  // ~340 for the busiest single character over 434 MB and three weeks. The bound
+  // is roughly 15x that.
+  assert.equal(typeof core.THRESHOLDS.MAX_VOIDLING_REPLIES, 'number',
+    'the bound must be published in THRESHOLDS, not implied by a shared constant');
+  assert.ok(core.THRESHOLDS.MAX_VOIDLING_REPLIES >= 1000, 'and comfortably above measured occupancy');
+
+  const st = core.createState('Avenrae');
+  // Overrun the bound with distinct seconds.
+  const lines = [];
+  for (let i = 0; i < core.THRESHOLDS.MAX_VOIDLING_REPLIES + 500; i++) {
+    const d = 1 + (i % 27), h = (i * 7) % 24, m = (i * 13) % 60, s = (i * 31) % 60;
+    const p = (n) => String(n).padStart(2, '0');
+    lines.push(`[Mon Jan ${p(d)} ${p(h)}:${p(m)}:${p(s)} 2026] Voidling says, 'hail'`);
+  }
+  core.applyLines(st, lines);
+  assert.ok(st.voidlingReplies.length <= core.THRESHOLDS.MAX_VOIDLING_REPLIES,
+    `the set must stay bounded; got ${st.voidlingReplies.length}`);
+
+  // THE DIRECTION OF THE FAILURE, which is the whole point of a bound.
+  // A refusal is only reported when a reply corroborates it. Drop the replies
+  // and a refusal must become `unknown` — it must NEVER become a false
+  // `refused`, and it must never silently become `granted`.
+  const withControl = core.createState('Avenrae');
+  core.applyLines(withControl, [
+    "[Mon Aug 10 18:00:00 2026] You say, 'danger'",
+    "[Mon Aug 10 18:00:02 2026] Voidling says, 'Your hubris risks our very reality itself.'",
+  ]);
+  const before = core.classifyRequests(withControl);
+  assert.equal(before[0].result, 'refused', 'with the control present, a refusal is reportable');
+  assert.equal(before[0].positiveControl, true);
+
+  // Now the same request with the control evicted.
+  withControl.voidlingReplies = [];
+  const after = core.classifyRequests(withControl);
+  assert.equal(after[0].result, 'unknown', 'without it, the module stops claiming a refusal');
+  assert.equal(after[0].positiveControl, false);
+  assert.notEqual(after[0].result, 'granted', 'and must never invent a grant');
+});
+
+test('DAMAGE MUST NOT ENTER THE DEDUPE INDEX — a correctness guard, not a memory one', () => {
+  // THE COMMENT ABOVE THE EARLY RETURN CAN BE DELETED. This is what notices.
+  //
+  // The guard looks like an optimisation: skip bookkeeping for lines we do not
+  // model. It is not. `state.seen` is the DEDUPE index, bounded at 200,000, and
+  // the live log holds 375,896 damage lines. Let them through and one
+  // character's combat evicts the entire lockout dedupe set — after which
+  // replaying a log DOUBLE-COUNTS real kills, because the keys that would have
+  // suppressed them were pushed out by damage nobody models.
+  //
+  // Silent double-counting with a clean diagnostic is the worst state this
+  // module can reach, and this is the only thing standing between it and that.
+  const st = core.createState('Avenrae');
+  const damage = [];
+  for (let i = 0; i < 200; i++) {
+    const s = String(i % 60).padStart(2, '0');
+    damage.push(`[Wed Aug 26 20:00:${s} 2026] You slash a rock golem for ${1000 + i} points of damage.`);
+    damage.push(`[Wed Aug 26 20:01:${s} 2026] Your voice booms.`);
+    damage.push(`[Wed Aug 26 20:02:${s} 2026] A dracoliche has taken ${200 + i} damage from Drifting Death by Jeeve.`);
+  }
+  core.applyLines(st, damage);
+  assert.equal(st.seenCount, 0,
+    `600 damage/pulse lines must add NOTHING to the dedupe index; got ${st.seenCount}`);
+  assert.equal(st.events.length, 0, 'and nothing to the provenance log');
+  assert.equal(st.kills.length, 0);
+  assert.equal(st.dropped.beyondDedupeHorizon, 0);
+
+  // But they DO extend coverage — we were in a position to see those lines, and
+  // coverage is about what we could have seen, not what we modelled.
+  assert.notEqual(st.firstSeen, null, 'stamped lines still extend coverage');
+
+  // And a real kill fed afterwards still dedupes, which is the property the
+  // guard exists to protect.
+  const kill = '[Wed Aug 26 21:00:00 2026] You have slain Lord Nagafen!';
+  core.applyLine(st, kill);
+  core.applyLine(st, kill);
+  assert.equal(st.kills.length, 1, 'the duplicate must still be suppressed');
+  assert.equal(st.dropped.duplicate, 1, 'and counted as a duplicate, not silently dropped');
+
+  // parseLine still RETURNS the rows — Session E consumes them; applyLine does not.
+  assert.equal(core.parseLine(damage[0]).kind, 'damage');
+  assert.equal(core.parseLine(damage[1]).kind, 'song-pulse');
+});
+
+// ---------------------------------------------------------------------------
+// BLIND SPOTS FOUND BY analysis/mutation-check.js, 31 Aug
+// ---------------------------------------------------------------------------
+//
+// Both of these claims were made in source comments and NOTHING TESTED THEM.
+// The mutation harness broke each on purpose and every one of 119 tests stayed
+// green. Written now so the claims are gates rather than assertions.
+
+test('SELF-DAMAGE carries outgoing:false — and the ORDERING claim was overstated', () => {
+  // THE COMMENT ABOVE THE REGEXES SAYS THE MATCH ORDER IS LOAD-BEARING BECAUSE
+  // `You hit yourself ...` "also matches the melee shape". MEASURED, IT DOES
+  // NOT: over 276 real self-damage lines in the corpus, ZERO also match
+  // DAMAGE_MELEE_RE. The shapes are disjoint — self requires a trailing
+  // `by <spell>.` and melee requires the line to end at `damage.`
+  //
+  // The real claim, which is what E depends on, is the FLAG: a self-hit must
+  // never be counted as outgoing output. That is what this guards.
+  const self = core.parseLine(
+    '[Mon Aug 10 17:14:49 2026] You hit yourself for 50 points of magic damage by Lifetap Strike.');
+  assert.equal(self.kind, 'self-damage');
+  assert.equal(self.outgoing, false, 'counting a self-hit as output inflates DPS');
+  assert.equal(self.actor, 'You');
+  assert.equal(self.target, 'You');
+
+  // And it must not reach the lockout state — the early return above the
+  // dedupe index covers `self-damage` as well as `damage`.
+  const st = core.createState('Avenrae');
+  core.applyLine(st, '[Mon Aug 10 17:14:49 2026] You hit yourself for 50 points of magic damage by Lifetap Strike.');
+  assert.equal(st.seenCount, 0, 'self-damage must not enter the dedupe index');
+});
+
+test('A SELF-HIT WITH NO `by <spell>` IS NOT COVERED, and that gap is asserted so it cannot move silently', () => {
+  // KNOWN GAP, RECORDED RATHER THAN FIXED. `DAMAGE_SELF_RE` requires a trailing
+  // `by <spell>.`, so a bare self-hit falls through to melee and is emitted as
+  // ORDINARY OUTGOING DAMAGE against a target literally named `yourself`.
+  //
+  // Not fixed here because I have not observed the shape in the corpus and
+  // would be guarding a line I have never seen — but a consumer summing
+  // `outgoing` damage would count it, so the behaviour is pinned.
+  const ev = core.parseLine(
+    '[Mon Aug 10 17:14:49 2026] You hit yourself for 50 points of damage.');
+  assert.equal(ev.kind, 'damage');
+  assert.equal(ev.outgoing, true);
+  assert.equal(ev.target, 'yourself',
+    'if this ever becomes self-damage, that is an improvement — but it must be ' +
+    'a deliberate change, not a silent one');
+});
+
+test('THE WEEKDAY IS COMPUTED, NEVER TRUSTED FROM THE LINE', () => {
+  // The source says the client's three-letter weekday is carried verbatim and
+  // never recomputed, and that `civilWeekday` derives the real one so a
+  // mismatch is surfaced rather than silently resolved. NOTHING TESTED IT:
+  // replacing the computation with `indexOf(at.weekday)` left all 119 green,
+  // because every fixture line has a CORRECT weekday and the two agree.
+  //
+  // 10 Aug 2026 is a MONDAY. This line lies and says Fri.
+  const lying = '[Fri Aug 10 17:14:49 2026] You have been assigned the task ' +
+                "'Potential of the Void - Lord Nagafen - Weekly'.";
+  const ev = core.parseLine(lying);
+
+  assert.equal(ev.at.weekday, 'Fri', 'the client string is carried verbatim');
+  assert.equal(core.civilWeekday(ev.at), 1,
+    'the weekday is DERIVED from the date: 10 Aug 2026 is a Monday (1), ' +
+    'whatever the line claims. Trusting the string would return 5.');
+});
+
+// --- Second pass of analysis/mutation-check.js, 31 Aug: two more blind spots ---
+
+test('THE POSITIVE CONTROL KEYS ON THE CLOSING LINE, not on any Voidling line', () => {
+  // THE MOST IMPORTANT OF THE BLIND SPOTS FOUND. `closing` is what turns a
+  // refused hail into evidence: `classifyRequests` reports `refused` only when
+  // a Voidling reply sits in the window, and `actionability()` reads that.
+  //
+  // Replacing `VOIDLING_CLOSING_RE.test(message)` with a literal `true` left
+  // all 122 tests green. Any Voidling chatter would have counted as the
+  // control, and refusals would be over-detected — which pushes cells toward
+  // `refused` on evidence that is not evidence.
+  const closing = core.parseLine(
+    "[Wed Aug 19 10:00:00 2026] Voidling says, 'Your hubris risks our very reality itself.'");
+  assert.equal(closing.kind, 'voidling-reply');
+  assert.equal(closing.closing, true, 'the closing line IS the control');
+
+  const chatter = core.parseLine(
+    "[Wed Aug 19 10:00:00 2026] Voidling says, 'Some other sentence entirely.'");
+  assert.equal(chatter.kind, 'voidling-reply', 'still a Voidling line');
+  assert.equal(chatter.closing, false,
+    'ANY Voidling line is not the control — only the closing one is');
+});
+
+test('A HAIL ANSWERED BY NON-CLOSING VOIDLING CHATTER IS NOT `refused`', () => {
+  // The downstream half of the pair above: the specificity has to survive into
+  // the projection, not just the parse.
+  const st = core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] You say, 'danger'",
+    "[Wed Aug 19 10:00:03 2026] Voidling says, 'Some other sentence entirely.'",
+  ]);
+  const rows = core.classifyRequests(st);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].result, 'unknown',
+    'without the closing line there is no positive control, so the hail is ' +
+    'unknown — not refused');
+  assert.equal(rows[0].positiveControl, false);
+});
+
+test('A KNOWN NON-ZONE NOTICE IS NOT REPORTED AS `unrecognised`', () => {
+  // Emptying NOT_A_ZONE left every test green, because the lower-case
+  // BACKSTOP also catches these strings and still returns kind 'not-a-zone'.
+  // Real defence in depth — but the two layers are not equivalent, and only
+  // the `unrecognised` flag tells them apart.
+  //
+  // Losing that distinction loses the difference between "a notice we have
+  // seen and classified" and "a string we have never seen before", which is
+  // the provenance the whole module exists to keep.
+  const known = core.parseLine(
+    '[Wed Aug 19 10:00:00 2026] You have entered an area where levitation effects do not function.');
+  assert.equal(known.kind, 'not-a-zone');
+  assert.ok(!known.unrecognised,
+    'a NOT_A_ZONE entry is classified, not merely rejected by the backstop');
+
+  const novel = core.parseLine(
+    '[Wed Aug 19 10:00:00 2026] You have entered a string no patch has written yet.');
+  assert.equal(novel.kind, 'not-a-zone', 'the backstop still rejects it');
+  assert.equal(novel.unrecognised, true,
+    'and it is flagged unrecognised, which is what makes it findable later');
+});
+
+test('THE TASK DEDUPE KEY CARRIES THE TASK NAME — same second, two weeklies, two grants', () => {
+  // FOUND BLIND. Dropping `${ev.task}` from the task key left all 131 tests
+  // green, and two different weeklies granted in the same second collapsed
+  // into one.
+  //
+  // THE KILL KEY WAS ALREADY FIXED FOR EXACTLY THIS and says so in a comment —
+  // "two different bosses dying in the same second collapse into one, a silent
+  // lost completion". The task key has the identical shape and had no test.
+  //
+  // It is consequential in the opposite direction to the sticky-attribution
+  // defect: actionability() COUNTS grants against the cap of three, so a
+  // collapsed grant leaves the count short and pushes toward a false `yes` —
+  // a raid reported actionable when the allowance is spent.
+  const two = core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.",
+    "[Wed Aug 19 10:00:00 2026] You have been assigned the task 'Potential of the Void - Lady Vox - Weekly'.",
+  ]);
+  assert.equal(Object.keys(two.tasks).length, 2,
+    'two DIFFERENT tasks in one second are two grants, not one');
+
+  // The matched pair: a genuine duplicate — the same task, same second — must
+  // still be suppressed, or the key is not deduping at all.
+  const dup = core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.",
+    "[Wed Aug 19 10:00:00 2026] You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.",
+  ]);
+  assert.equal(Object.keys(dup.tasks).length, 1);
+  assert.equal(dup.tasks['Potential of the Void - Lord Nagafen - Weekly'].assignments.length, 1,
+    'the same task twice in one second is one assignment — replay must not double-count');
+  assert.equal(dup.dropped.duplicate, 1);
+});
+
+// --- R167: EVERY dedupeKey SIBLING, NAMED COVERED OR EXCLUDED ---------------
+//
+// `kill` carried twelve lines of reasoning about same-second collisions and a
+// test. Every other case in the switch had neither. A mutation per sibling
+// found all three remaining discriminator-carrying cases blind, 3 for 3 — so
+// the reasoning was done once and applied once, and the comment explaining why
+// `kill` is careful was evidence the others had NOT been considered.
+
+test('DEDUPE SIBLING `given`: two different items in one second are two grants', () => {
+  const two = core.applyLines(core.createState('Avenrae'), [
+    '[Wed Aug 19 10:00:00 2026] You have been given: a Shiny Brass Idol.',
+    '[Wed Aug 19 10:00:00 2026] You have been given: a Rusty Dagger.',
+  ]);
+  assert.equal(two.grants.length, 2);
+  // The source says `grants` exists so a caller can reconcile against the
+  // 3-per-week cap without re-parsing. A collapsed grant undercounts it.
+  const dup = core.applyLines(core.createState('Avenrae'), [
+    '[Wed Aug 19 10:00:00 2026] You have been given: a Shiny Brass Idol.',
+    '[Wed Aug 19 10:00:00 2026] You have been given: a Shiny Brass Idol.',
+  ]);
+  assert.equal(dup.grants.length, 1, 'the same item twice in one second is one grant');
+});
+
+test('DEDUPE SIBLING `entered`: same zone, different tier, in one second are two entries', () => {
+  // THIS ONE IS ATTRIBUTION AGAIN. Dropping the difficulty from the key
+  // collapses the second zone-in, and `currentInstance` is left at the FIRST
+  // tier — so a later kill is credited to the wrong cell of the right raid.
+  const st = core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] You have entered Nagafen's Lair - Group 3 (Fused).",
+    "[Wed Aug 19 10:00:00 2026] You have entered Nagafen's Lair - Group 4 (Refined).",
+    '[Wed Aug 19 10:30:00 2026] Lord Nagafen has been slain by Avenrae!',
+  ]);
+  assert.equal(Object.keys(st.instances).length, 2);
+  assert.equal(st.currentInstance.difficulty, 4, 'the LAST zone-in wins');
+  assert.equal(st.kills[0].difficulty, 4,
+    'a collapsed entry would credit the kill to tier 3 — the wrong cell of the right raid');
+});
+
+test('DEDUPE SIBLING `instance-invite`: two senders in one second are two invites', () => {
+  const st = core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] Alpha has asked you to join the instance: Nagafen's Lair - Group 3 (Fused). Would you like to join?",
+    "[Wed Aug 19 10:00:00 2026] Beta has asked you to join the instance: Nagafen's Lair - Group 3 (Fused). Would you like to join?",
+  ]);
+  assert.equal(st.dropped.duplicate, 0, 'different senders are different invites');
+});
+
+test('DEDUPE SIBLINGS `weekly-request` and `voidling-reply` COLLAPSE BY DESIGN', () => {
+  // THE TWO SIBLINGS WITH NO DISCRIMINATOR, asserted so the omission reads as a
+  // decision rather than as the same oversight the other three were.
+  //
+  // A hail is collapsed deliberately — COLLAPSE_MS folds repeats within six
+  // seconds into one request, so two in the same second are one attempt. And
+  // the Voidling set is a set of SECONDS used as a presence control; a second
+  // reply in the same second adds nothing a control can use.
+  const hails = core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] You say, 'danger'",
+    "[Wed Aug 19 10:00:00 2026] You say, 'danger'",
+  ]);
+  assert.equal(hails.requests.length, 1, 'same-second hails are one request, by design');
+
+  const voidling = core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] Voidling says, 'Your hubris risks our very reality itself.'",
+    "[Wed Aug 19 10:00:00 2026] Voidling says, 'Your hubris risks our very reality itself.'",
+  ]);
+  assert.equal(voidling.voidlingReplies.length, 1,
+    'the control is a set of seconds — a second reply in the same second adds nothing');
+});
+
+// --- R177: the INVISIBLE MECHANISMS. Correctness never shows in ordinary
+// output, so no fixture exercised them and both were blind. ------------------
+
+test('PRUNING THE DEDUPE INDEX KEEPS THE NEWEST HALF', () => {
+  // FOUND BLIND. Slicing the other way — keeping the OLDEST half — left all
+  // 136 tests green.
+  //
+  // The index exists so replaying a log does not double-count. The keys worth
+  // keeping are the RECENT ones: a replay re-feeds the tail of a file, so the
+  // newest keys are exactly the ones about to be seen again. Keep the oldest
+  // and recent kills lose their protection while ancient ones are guarded
+  // against a replay that will never happen — the headline guarantee failing
+  // silently, with dropped.beyondDedupeHorizon never firing to say so.
+  const st = core.createState('Avenrae');
+  for (let i = 0; i < 6; i++) st.seen[`k${i}`] = 1000 + i;
+  // Pruning only runs above MAX_SEEN; reach it without building 200k entries.
+  st.seenCount = 1e12;
+  core.applyLine(st, '[Wed Aug 19 11:30:00 2026] Lord Nagafen has been slain by Avenrae!');
+
+  const kept = Object.values(st.seen).filter((v) => v < 2000).sort((a, b) => a - b);
+  assert.deepEqual(kept, [1003, 1004, 1005],
+    'the NEWEST half survives; keeping [1000,1001,1002] would drop protection ' +
+    'from exactly the keys a replay is about to repeat');
+});
+
+test('AN OBSERVATION BEFORE A SPAN EXTENDS IT BACKWARDS', () => {
+  // FOUND BLIND. Disabling the backwards extension left all 136 tests green,
+  // and a span that had covered 20 minutes collapsed to zero width.
+  //
+  // Lines are not guaranteed to arrive in order: a host that backfills a file
+  // and then attaches a live tailer feeds an earlier stamp after a later one.
+  // Without the backwards extension the span records only the first instant
+  // seen, coverage under-reports, and cells fall to `not_looked`.
+  //
+  // That is the SAFE direction — the module claims less than it could — but it
+  // is still wrong, and it is invisible: nothing in the output says coverage
+  // was lost rather than never observed.
+  const st = core.applyLines(core.createState('Avenrae'), [
+    '[Wed Aug 19 10:30:00 2026] You have entered Nektulos Forest.',
+    '[Wed Aug 19 10:10:00 2026] You have entered Nektulos Forest.',
+  ]);
+  assert.equal(st.spans.length, 1, 'both observations are within SPAN_GAP_MS');
+  assert.equal((st.spans[0].to - st.spans[0].from) / 60000, 20,
+    'the span must cover 10:10 to 10:30, not collapse to the first stamp seen');
+
+  // The matched pair: forwards extension must still work, or the assertion
+  // above is satisfied by a span that simply never moves.
+  const fwd = core.applyLines(core.createState('Avenrae'), [
+    '[Wed Aug 19 10:10:00 2026] You have entered Nektulos Forest.',
+    '[Wed Aug 19 10:30:00 2026] You have entered Nektulos Forest.',
+  ]);
+  assert.equal((fwd.spans[0].to - fwd.spans[0].from) / 60000, 20);
+});
+
+test('THE DEDUPE-HORIZON COUNTER CAN ACTUALLY FIRE', () => {
+  // IT COULD NOT, UNTIL 1 Sep. `oldestSeen(state)` was called AFTER this
+  // line's own key had been written into the index, so the line always
+  // contributed its own value to the minimum and `civil < oldestSeen(state)`
+  // was UNSATISFIABLE.
+  //
+  // Measured before the fix: 199,999 keys all at 9e12, a line genuinely older
+  // than every one, and the counter still read 0.
+  //
+  // What makes it worth a test rather than a note: the source calls silent
+  // double-counting "the worst failure this module can have" and names THIS
+  // COUNTER as what makes it visible instead. The guard against the worst
+  // failure was an instrument that could not return one of its two answers.
+  const idx = (n, base) => {
+    const st = core.createState('Avenrae');
+    for (let i = 0; i < n; i++) st.seen['k' + i] = base + i;
+    st.seenCount = n;
+    return st;
+  };
+  const OLD = '[Wed Aug 19 11:30:00 2026] Lord Nagafen has been slain by Avenrae!';
+  const MAX_SEEN = 200000;
+
+  // FIRES: the index is full and this line predates everything in it.
+  const older = idx(MAX_SEEN, 9e12);
+  core.applyLine(older, OLD);
+  assert.equal(older.dropped.beyondDedupeHorizon, 1,
+    'a line from before the whole index must be COUNTED — idempotence can no ' +
+    'longer be promised and the host has to be told');
+
+  // DOES NOT FIRE: full index, but the line is newer than everything in it.
+  const newer = idx(MAX_SEEN, 1e12);
+  core.applyLine(newer, OLD);
+  assert.equal(newer.dropped.beyondDedupeHorizon, 0);
+
+  // DOES NOT FIRE: the index is not full, so there is no horizon yet.
+  const small = idx(10, 9e12);
+  core.applyLine(small, OLD);
+  assert.equal(small.dropped.beyondDedupeHorizon, 0);
+
+  // AND THE LINE IS STILL RECORDED IN EVERY CASE. The counter is a warning,
+  // not a filter — discarding real data would be worse than the warning.
+  assert.equal(older.kills.length, 1);
+  assert.equal(newer.kills.length, 1);
+  assert.equal(small.kills.length, 1);
+});

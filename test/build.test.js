@@ -9,6 +9,7 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
+const crypto = require('node:crypto');
 
 const ROOT = path.join(__dirname, '..');
 const OUT_DIR = path.join(ROOT, 'public', 'app');
@@ -58,7 +59,34 @@ test('BUILD: the embedded engine is the real one and runs standalone', () => {
   assert.equal(st.kills[0].difficulty, 4);
 });
 
-test('BUILD: the page is self-contained — no network of any kind', () => {
+// ── THE SCOPE OF THE NEXT THREE TESTS, STATED BECAUSE IT IS ABOUT TO NARROW ──
+//
+// They assert that ONE FILE — public/app/eqls-lockouts.<hash>.html — reaches
+// nowhere. That is true and measured. **It is also about to become misleading
+// through no change of its own.**
+//
+// The engine is being integrated into EQLS Auras, whose master fetches Google
+// Fonts in three places. After integration the thing a user runs is Shara's
+// renderer with our engine inside it, and that page reaches Google on every
+// launch. These tests would keep passing, because they test a file that after
+// integration nobody opens. **A green check sitting next to a broken guarantee
+// is exactly how the Auras sentence went stale on us the first time.**
+//
+// So: two guarantees, spoken separately from here on, because only one survives
+// being embedded in somebody else's page.
+//
+//   "YOUR LOG NEVER LEAVES THIS MACHINE" — about DATA EGRESS. Survives. The
+//   engine has no transmit path at all; embed it anywhere and it still cannot
+//   send your log somewhere, because it does not know how.
+//
+//   "THIS PAGE MAKES NO NETWORK REQUESTS" — about THE ARTIFACT. Does not
+//   survive. It is a property of one file, and integration replaces that file.
+//
+// The check is therefore also shipped as a function — analysis/audit-self-
+// contained.js — so Session C can point it at the INTEGRATED renderer and get
+// the same answer on the thing that actually launches. A guarantee testable only
+// against the artifact nobody runs is decoration.
+test('BUILD: THIS BUNDLE is self-contained — scope is one file, see above', () => {
   const { html } = build();
   // A strict page: the log never leaves the machine, and the page works with no
   // connection at all. Anything reaching outward breaks both promises.
@@ -115,12 +143,30 @@ test('BUILD: every font is inlined as a data: URI, or there are none', () => {
 });
 
 test('BUILD: the filename is content-hashed', () => {
-  const { name } = build();
+  const { name, html } = build();
   assert.match(name, /^eqls-lockouts\.[0-9a-f]{8}\.html$/);
   // Rebuilding unchanged input must produce the same name; a changing hash
   // would bust caches on every build and stop meaning anything.
   const again = build();
   assert.equal(again.name, name);
+
+  // ── AND THE HALF THAT WAS MISSING UNTIL 31 Aug ────────────────────────
+  //
+  // The two assertions above are satisfied by a CONSTANT. Replacing the hash
+  // computation with the literal 'deadbeef' passed both — it is eight hex
+  // characters and it is perfectly stable — and all 125 tests stayed green.
+  // Found by analysis/mutation-check.js.
+  //
+  // The test asserted that the same input gives the same name and never that a
+  // DIFFERENT input gives a different one, which is the only thing "content-
+  // hashed" means. Recomputing the digest here ties the name to the bytes.
+  //
+  // It matters beyond cache-busting: the hash is how a pending publish is
+  // detected at all. Frozen, every build would carry one filename and the
+  // stale-deploy check would go quiet while looking healthy.
+  const digest = crypto.createHash('sha256').update(html).digest('hex').slice(0, 8);
+  assert.equal(name, `eqls-lockouts.${digest}.html`,
+    'the filename must be DERIVED from the page bytes, not merely stable');
 });
 
 test('BUILD: both grounds exist, and no colour is defined ONLY in a media block', () => {
@@ -185,4 +231,171 @@ test('BUILD: the licence notice ships with the fonts it describes', () => {
   }
   assert.match(lic, /Reserved Font Name/i, 'the notice must explain the rename');
   assert.match(lic, /name.{0,20}table/i, 'and must state the gap: the rename is CSS-only');
+});
+
+test('BUILD: no wall-clock time is ever rendered on the page surface', () => {
+  // THE OWNER'S CONSTRAINT, and it is narrower than "no countdown".
+  //
+  // The page had grown "if before 22:12" in the unsure cells and
+  // "at or before 2026-08-25 20:29:00" in the list under the count. Both were
+  // true, and both were answering a question nobody asked: the tool exists so a
+  // player can see what they have and have not killed. A printed time invites
+  // arithmetic, and at a glance it reads as a countdown — which this page has
+  // never had and must never grow.
+  //
+  // The instant is NOT discarded. The engine still computes it, and the cell's
+  // `title` still carries it for whoever hovers. This guards the SURFACE.
+  const { html } = build();
+  const body = html.slice(html.indexOf('<main>'), html.indexOf('</main>'));
+  const clocks = body.match(/\b\d{1,2}:\d{2}(:\d{2})?\b/g) || [];
+  assert.deepEqual(clocks, [], `static markup renders a clock: ${clocks.join(', ')}`);
+
+  // And the renderer must not build one either. These are the two shapes it
+  // grew before: slicing a civil stamp for its time half, and printing an
+  // engine string that ends in one.
+  const script = html.slice(html.indexOf('</style>'));
+  for (const shape of ['decidedBy.doneIf', 'decidedBy.openIf', '.pivot.slice(11']) {
+    assert.ok(!script.includes(shape),
+      `the view must not surface ${shape} — it carries a wall-clock time`);
+  }
+  // `shortDay` is the only formatter allowed to touch a civil stamp for display.
+  assert.match(script, /function shortDay/, 'the date formatter must exist');
+  assert.match(script, /MON\[Number\(m\[2\]\) - 1\]/, 'and produce a day and month, not a time');
+});
+
+test('AUDIT: the portable checker agrees with this suite, and catches a page that does fetch', () => {
+  // The suite above and the shipped auditor must not drift apart, or Session C
+  // gets a different answer from ours on the same bytes.
+  const { audit } = require('../analysis/audit-self-contained');
+  const { html } = build();
+  const ours = audit(html, { label: 'our bundle' });
+  assert.equal(ours.selfContained, true, ours.summary);
+  assert.equal(ours.noEgressPath, true, 'the engine must have no transmit path');
+
+  // AND IT MUST ACTUALLY CATCH SOMETHING. An auditor that has only ever returned
+  // "clean" has not been shown to detect anything — the same lesson as the
+  // countdown detector, which was silently broken and passing.
+  const fetching = `<!doctype html><html><head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel" rel="stylesheet">
+    </head><body><img src="https://example.com/x.png"></body></html>`;
+  const bad = audit(fetching, { label: 'a page that fetches' });
+  assert.equal(bad.selfContained, false, 'the auditor must fail a page that fetches Google Fonts');
+  assert.ok(bad.findings.some((f) => f.rule === 'font-host'), 'and name the font host specifically');
+  assert.ok(bad.findings.some((f) => f.cost.includes('IP address')),
+    'and say what a hit COSTS — "http:// found" is not a finding');
+
+  // The two guarantees are reported separately, because a caller may hold one
+  // and not the other — which is exactly the position Auras is in.
+  const egressOnly = audit('<script>fetch("/x")</script>', { label: 'egress only' });
+  assert.equal(egressOnly.selfContained, true, 'a relative fetch is not an outbound reference');
+  assert.equal(egressOnly.noEgressPath, false, 'but it IS a transmit path');
+});
+
+test('AUDIT: the verdict must TURN ON the thing being measured', () => {
+  // SESSION C FOUND THIS AND IT INVALIDATED MY OWN VERIFICATION OF THE TOOL.
+  //
+  // The link/img/script rules flagged any href or src that was not a data: URI,
+  // INCLUDING RELATIVE ONES. C fed it an 83-byte page whose whole content was
+  // `<link rel="stylesheet" href="local.css">` and got self-contained: NO. Every
+  // real application window has a local stylesheet, so it could never return YES
+  // for one — and a NO that is guaranteed in advance carries no information.
+  //
+  // Worse: I had "verified" the auditor by pointing it at eqlsource.com's
+  // index.html and getting NO. Strip every font host out of that file and it
+  // STILL said NO. I had shown the detector fires, not that it fires on the
+  // thing I claimed. THIRD TIME this project has shipped a detector that was
+  // never shown to detect — after the countdown regex and the killing-blow test.
+  //
+  // So the test is no longer "does it say NO". It is "does the answer CHANGE
+  // when the measured thing changes". That is the only version that can fail.
+  const { audit } = require('../analysis/audit-self-contained');
+
+  const page = [
+    '<!doctype html><html><head>',
+    '<link rel="canonical" href="https://eqlsource.com/index">',   // never fetched
+    '<link rel="stylesheet" href="/assets/site.css">',             // same origin
+    '<link rel="preconnect" href="https://fonts.googleapis.com">', // THE THING
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=X">',
+    '</head><body>',
+    '<a href="https://github.com/example">source</a>',             // navigational
+    '<p>Nothing transmitted.</p>',
+    '</body></html>',
+  ].join('\n');
+
+  const before = audit(page, { label: 'fetching' });
+  const after = audit(page.replace(/https:\/\/fonts\.googleapis\.com/g, '/assets/fonts'),
+    { label: 'self-hosted' });
+
+  assert.equal(before.selfContained, false, 'a page fetching Google Fonts is not self-contained');
+  assert.equal(after.selfContained, true,
+    'AND SELF-HOSTING THEM MUST FLIP IT — otherwise the tool cannot tell anyone whether the fix worked');
+  assert.ok(before.findings.some((f) => f.rule === 'font-host'), 'and it names the host');
+
+  // The four ways it must NOT over-fire, each of which fetches nothing.
+  for (const [what, html] of [
+    ['a relative stylesheet', '<link rel="stylesheet" href="local.css">'],
+    ['a root-relative one', '<link rel="stylesheet" href="/assets/site.css">'],
+    ['rel=canonical to another origin', '<link rel="canonical" href="https://example.com/x">'],
+    ['a link the reader may click', '<a href="https://github.com/x">source</a>'],
+  ]) {
+    assert.equal(audit(html, { label: what }).selfContained, true,
+      `${what} fetches nothing and must not count against self-containment`);
+  }
+
+  // And the two it must catch, including the one people miss.
+  for (const [what, html] of [
+    ['a protocol-relative font host', '<link rel="stylesheet" href="//fonts.gstatic.com/x">'],
+    ['an off-origin stylesheet', '<link rel="stylesheet" href="https://evil.example/x.css">'],
+  ]) {
+    assert.equal(audit(html, { label: what }).selfContained, false, `${what} must be caught`);
+  }
+
+  // Navigational hits are still REPORTED — suppressed from the verdict, not hidden.
+  assert.ok(after.navigationalCount > 0, 'a reader must still be able to see them');
+});
+
+test('SELF-CONTAINMENT IS PROVEN BY A MATCHED PAIR, not by the bundle being clean', () => {
+  // SESSION C'S POINT, and it applies to every assertion above this one.
+  //
+  // "The bundle contains no banned string" is a POSITIVE WITH NO PAIR. Measured:
+  // it returns PASSES for the real bundle with the real ban list, PASSES for the
+  // real bundle with an EMPTY ban list, and PASSES for an EMPTY document with the
+  // real ban list. Three different worlds, one verdict — so a green result is
+  // consistent with a clean bundle AND with a check that cannot fire.
+  //
+  // That is exactly what the auditor's relative-stylesheet defect turned out to
+  // be, and what C's backspace guard was, and what my one-regex-three-jobs was.
+  // None had a symptom except a test that failed to fail.
+  //
+  // THE RULE, in the Director's words: a detector is shown to work by a MATCHED
+  // PAIR differing only in the thing being detected, never by a positive.
+  //
+  // So: the real built bundle, and the same bytes with ONE deliberate font
+  // reference spliced in. Every check must separate them.
+  const { html } = build();
+  const poisoned = html.replace('<style>',
+    '<style>\n@import url("https://fonts.googleapis.com/css2?family=Cinzel");');
+  assert.notEqual(poisoned, html, 'the injection must actually have landed');
+
+  const bannedStrings = ['http://', 'https://', '<link ', '<img ', '@import', 'fetch(', 'XMLHttpRequest'];
+  const cleanOf = (doc) => bannedStrings.every((b) => !doc.includes(b));
+  assert.equal(cleanOf(html), true, 'the shipped bundle is clean');
+  assert.equal(cleanOf(poisoned), false,
+    'AND THE CHECK MUST GO RED ON THE POISONED TWIN — otherwise green means nothing');
+
+  // The named font hosts, same pair.
+  const hostsOf = (doc) => ['fonts.googleapis.com', 'fonts.gstatic.com'].every((h) => !doc.includes(h));
+  assert.equal(hostsOf(html), true);
+  assert.equal(hostsOf(poisoned), false, 'the host ban must separate the pair too');
+
+  // And the portable auditor, on the same two documents.
+  const { audit } = require('../analysis/audit-self-contained');
+  assert.equal(audit(html, { label: 'shipped' }).selfContained, true);
+  assert.equal(audit(poisoned, { label: 'poisoned' }).selfContained, false,
+    'the auditor must separate the pair on the REAL bundle, not only on a synthetic page');
+
+  // The two ways the check could be dead, which a positive cannot tell apart.
+  assert.equal(bannedStrings.length > 0, true, 'an empty ban list passes everything');
+  assert.ok(html.length > 10000, 'an empty document passes everything too');
 });

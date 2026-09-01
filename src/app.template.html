@@ -67,9 +67,22 @@
        carry legible text — --bone on #C4482E measures 4.07:1 and fails AA — so
        it is a field, which is also the site's own doctrine: accents are "used
        as fields rather than as trim". */
-    --field-open:#381D10;  --cell-open-ink:#D76C55;
+    /* OPEN IS A SOLID EMBER FILL, and I had talked myself out of it.
+       I measured --bone on --ember at 4.07:1, called the brief's "filled cell"
+       impossible, and shipped a tinted field instead. I had tested exactly two
+       inks. **#FBF7F0 — one step brighter than --bone — is 4.56:1 on the
+       site's own #C4482E.** The fill never had to move. Neither ground changes
+       it, because --ember is the same value in both, so the one cell that
+       matters most is the most stable thing on the page.
+       DO NOT swap this ink for --bone: that is the 4.07 failure, exactly. */
+    --fill-open:#C4482E;   --on-fill:#FBF7F0;
     --field-done:#15100A;
-    --hatch-ink:#4A3E2A;   --cell-hatch-ink:#D9A63F; --cell-unk-ink:#B5AA95;
+    /* The hatch is cooled to instrument blue. Ember now means "open" alone, so
+       an amber hatch beside it read as a weaker kind of open rather than as a
+       different kind of answer. Blue is not a warmer or cooler open; it is a
+       different statement, which is what "unsure" is. */
+    --hatch-ink:#2A3D47;   --cell-hatch-ink:#7FB2C7; --hatch-edge:#3E5A69;
+    --unk-hatch:#3A332A;   --cell-unk-ink:#B5AA95;
 
     /* TWO FAMILIES ARE RENAMED AND IT IS A LICENCE REQUIREMENT, not a habit.
        IBM Plex Mono reserves the font name "Plex" and Saira Condensed reserves
@@ -106,10 +119,11 @@
       --brass:#A17627; --ok:#538868; --instr:#62828D;
       --warn-t:#874940; --ember-t:#884938; --lava-t:#8D412E;
       --brass-t:#705625; --instr-t:#4D5A62; --ok-t:#426048;
-      --field-open:#E1C1AB; --cell-open-ink:#7D4334;   /* 4.56:1 */
-      --field-done:#E0D3B9;
-      --hatch-ink:#B1A081; --cell-hatch-ink:#614B20;   /* 4.52:1 */
-      --cell-unk-ink:#594C3A;                          /* 4.55:1 */
+      --fill-open:#C4482E; --on-fill:#FBF7F0;          /* 4.56:1, both grounds */
+      --field-done:#EDE7DA;
+      --hatch-ink:#B9C7CE; --cell-hatch-ink:#3E4C54;   /* 5.29:1 */
+      --hatch-edge:#62828D;
+      --unk-hatch:#CFC3A8; --cell-unk-ink:#594C3A;     /* 4.55:1 */
       --shadow-1:0 1px 2px rgba(60,44,20,.14);
       --shadow-2:0 12px 32px -14px rgba(60,44,20,.30);
     }
@@ -123,9 +137,10 @@
     --brass:#A17627; --ok:#538868; --instr:#62828D;
     --warn-t:#874940; --ember-t:#884938; --lava-t:#8D412E;
     --brass-t:#705625; --instr-t:#4D5A62; --ok-t:#426048;
-    --field-open:#E1C1AB; --cell-open-ink:#7D4334;
-    --field-done:#E0D3B9;
-    --hatch-ink:#B1A081; --cell-hatch-ink:#614B20; --cell-unk-ink:#594C3A;
+    --fill-open:#C4482E; --on-fill:#FBF7F0;
+    --field-done:#EDE7DA;
+    --hatch-ink:#B9C7CE; --cell-hatch-ink:#3E4C54; --hatch-edge:#62828D;
+    --unk-hatch:#CFC3A8; --cell-unk-ink:#594C3A;
     --shadow-1:0 1px 2px rgba(60,44,20,.14);
     --shadow-2:0 12px 32px -14px rgba(60,44,20,.30);
   }
@@ -138,9 +153,10 @@
     --brass:#C9922E; --brass-t:#D9A63F;
     --lava:#FF2800;  --lava-t:#FF6A4D;
     --ok:#5FA37E; --ok-t:#5FA37E; --instr:#7FB2C7; --instr-t:#7FB2C7; --warn:#C9453A; --warn-t:#D46C64;
-    --field-open:#381D10; --cell-open-ink:#D76C55;
+    --fill-open:#C4482E; --on-fill:#FBF7F0;
     --field-done:#15100A;
-    --hatch-ink:#4A3E2A; --cell-hatch-ink:#D9A63F; --cell-unk-ink:#B5AA95;
+    --hatch-ink:#2A3D47; --cell-hatch-ink:#7FB2C7; --hatch-edge:#3E5A69;
+    --unk-hatch:#3A332A; --cell-unk-ink:#B5AA95;
     --shadow-1:0 1px 2px rgba(0,0,0,.28);
     --shadow-2:0 12px 32px -14px rgba(0,0,0,.62);
   }
@@ -161,8 +177,13 @@
      uppercase-tracked mono is most of what makes its pages read as instrumented.
      Saira's real job is the large figure — `.ix dd` at --t-2xl — which on this
      page is the count. */
-  h1 { font-family: var(--display); font-weight: 600; font-size: var(--t-xl);
-       letter-spacing: .04em; color: var(--bone); margin: 0 0 var(--s-1); }
+  .eyebrow { color: var(--dim); font-size: var(--t-2xs); margin: 0 0 var(--s-3); }
+  h1 { font-family: var(--display); font-weight: 600;
+       font-size: clamp(30px, 5.2vw, 52px); line-height: 1.02;
+       letter-spacing: .01em; color: var(--bone); margin: 0 0 var(--s-4); }
+  .lede { color: var(--mut); font-size: var(--t-md); line-height: 1.55;
+          max-width: 58ch; margin: 0 0 var(--s-6); }
+  .lede b { color: var(--txt); font-weight: 600; }
 
   .eyebrow, h2, thead th, dl.meta dt, .legend dt {
     font-family: var(--mono); font-weight: 400; text-transform: uppercase;
@@ -176,10 +197,16 @@
   .sub { color: var(--mut); font-size: var(--t-sm); max-width: 64ch; }
 
   /* ── the lead. The count is the hero ────────────────────────────────────── */
+  /* A THICK LEFT RULE IN THE ACCENT. The band is the answer to the only
+     question the page exists to answer, and it should not look like the panels
+     that explain themselves underneath it. */
   .lead { background-color: var(--surface-1); border: 1px solid var(--rule);
+          border-left: 4px solid var(--fill-open);
           border-radius: var(--r); box-shadow: var(--shadow-2);
-          padding: var(--s-5); margin: var(--s-6) 0 var(--s-5); }
-  .headline { display: flex; align-items: baseline; gap: var(--s-4); flex-wrap: wrap; }
+          padding: var(--s-5) var(--s-5) var(--s-5) var(--s-5);
+          margin: 0 0 var(--s-5); }
+  .headline { display: flex; align-items: baseline; gap: var(--s-4);
+              flex-wrap: wrap; justify-content: space-between; }
 
   /* --lava is the loudest colour the game owns and the site spends it ONCE per
      page, on "a live figure, a warning, the thing the eye should land on
@@ -192,8 +219,11 @@
   .count .unit { font-family: var(--mono); font-size: var(--t-sm); font-weight: 400;
                  text-transform: uppercase; letter-spacing: var(--tr-wide);
                  color: var(--mut); margin-left: var(--s-2); }
-  .tally { color: var(--mut); font-size: var(--t-sm); }
-  .tally b { color: var(--txt); font-weight: 600; }
+  .tally { color: var(--dim); font-size: var(--t-sm); }
+  .tally b { font-weight: 400; }
+  .tally .t-done { color: var(--ok-t); }
+  .tally .t-unsure { color: var(--cell-hatch-ink); }
+  .tally .t-unk { color: var(--mut); }
 
   .openlist { margin: var(--s-4) 0 0; padding: 0; list-style: none;
               display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
@@ -207,7 +237,13 @@
   .condlist .arm b { color: var(--brass-t); font-weight: 600; }
 
   /* ── the grid ───────────────────────────────────────────────────────────── */
-  .gridwrap { overflow-x: auto; margin: var(--s-6) 0 var(--s-3); }
+  .gridpanel { background-color: var(--surface-1); border: 1px solid var(--rule);
+               border-radius: var(--r); box-shadow: var(--shadow-1);
+               padding: var(--s-5); margin: 0 0 var(--s-4); }
+  .weekof { color: var(--dim); font-size: var(--t-2xs); margin: 0 0 var(--s-4);
+            font-family: var(--mono); text-transform: uppercase;
+            letter-spacing: var(--tr-wider); }
+  .gridwrap { overflow-x: auto; }
   table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 640px; }
   th, td { padding: var(--s-2) 3px; text-align: center; vertical-align: bottom; }
   thead th { color: var(--mut); font-size: var(--t-2xs); padding-bottom: var(--s-3);
@@ -236,39 +272,43 @@
 
   /* OPEN is the only state that gets a field, because it is the only state the
      page is asking you to do something about. */
-  .c-open { background-color: var(--field-open); border-color: var(--ember);
-            color: var(--cell-open-ink); }
-  .c-open .lab { color: var(--cell-open-ink); font-weight: 600; }
+  .c-open { background-color: var(--fill-open); border-color: var(--fill-open);
+            color: var(--on-fill); }
+  .c-open .lab { color: var(--on-fill); font-weight: 600; letter-spacing: var(--tr-wider); }
 
   /* DONE recedes: a well rather than a highlight, with its date beneath. */
-  .c-completed { background-color: var(--field-done); border-color: var(--rule); }
-  .c-completed .lab { color: var(--ok-t); }
+  /* DONE RECEDES ALL THE WAY. It is the one state needing no action, so it
+     carries no fill and no border — only the word and the day it happened. */
+  .c-completed { background-color: transparent; border-color: transparent; }
+  .c-completed .lab { color: var(--dim); }
+  .c-completed .when { color: var(--faint); }
 
   /* HATCH for the two states that are not solid facts. Repeating stripes read
      as "not filled in" without spending a colour — which matters, because every
      colour in this palette already means something. */
-  .c-conditional { border-color: var(--brass); color: var(--cell-hatch-ink);
+  .c-conditional { border-color: var(--hatch-edge); color: var(--cell-hatch-ink);
     background-image: repeating-linear-gradient(-45deg,
       transparent 0 5px, var(--hatch-ink) 5px 6px); }
-  .c-conditional .lab { color: var(--cell-hatch-ink); font-weight: 600; }
+  .c-conditional .lab { color: var(--cell-hatch-ink); }
   .c-unknown { border-color: var(--rule3); color: var(--cell-unk-ink);
     background-image: repeating-linear-gradient(-45deg,
-      transparent 0 3px, var(--hatch-ink) 3px 4px); }
+      transparent 0 3px, var(--unk-hatch) 3px 4px); }
   .c-unknown .lab { color: var(--cell-unk-ink); }
   .c-not_looked { color: var(--faint); border-color: transparent; }
   .c-not_looked .lab { color: var(--faint); }
   .cell:hover { border-color: var(--rule3); }
-  .c-open:hover { border-color: var(--ember-t); }
+  .c-open:hover { border-color: var(--on-fill); }
 
   /* ── the legend is the product ──────────────────────────────────────────── */
-  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-            gap: var(--s-4) var(--s-5); margin: var(--s-4) 0 var(--s-6);
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: var(--s-3) var(--s-5); margin: var(--s-4) 0 0;
             padding-top: var(--s-4); border-top: 1px solid var(--rule); }
-  .legend > div { display: grid; grid-template-columns: 38px 1fr; gap: var(--s-3);
-                  align-items: start; }
-  .legend .sw { width: 38px; height: 26px; border-radius: var(--r);
-                border: 1px solid var(--rule); }
-  .legend dt { font-size: var(--t-2xs); color: var(--txt); margin-bottom: 2px; }
+  .legend > div { display: grid; grid-template-columns: 30px auto 1fr; gap: var(--s-2);
+                  align-items: baseline; }
+  .legend .sw { width: 30px; height: 15px; border-radius: 3px;
+                border: 1px solid var(--rule); align-self: center; }
+  .legend dt { font-size: var(--t-xs); color: var(--txt); font-family: var(--prose);
+               font-weight: 600; text-transform: none; letter-spacing: 0; }
   .legend dd { margin: 0; font-size: var(--t-xs); color: var(--mut); line-height: 1.5; }
 
   /* ── panels ─────────────────────────────────────────────────────────────── */
@@ -312,8 +352,11 @@
 </style>
 
 <main>
-  <h1>EQLS Lockouts</h1>
-  <div class="sub">What you still owe this week. Your log never leaves this machine.</div>
+  <p class="eyebrow">EQLS Lockouts</p>
+  <h1>Raid Lockout Grid</h1>
+  <p class="lede">Five raid targets, five difficulty tiers, one completion each per week.
+  The grid answers one question: <b>what is still open before Tuesday.</b> Read from your
+  own log, on this machine &mdash; not from a mock-up, and not from a hand-typed list.</p>
 
   <div class="lead">
     <div class="headline">
@@ -328,20 +371,15 @@
     </div>
   </div>
 
-  <div class="gridwrap">
-    <table id="grid" hidden>
-      <thead><tr><th class="boss">Raid</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- THE LEGEND IS THE PRODUCT.
-       A swatch and a one-word gloss would be decoration. The sentence under
-       "unsure" — killed on the boundary day, side of the reset unknown — is the
-       single most useful thing on the page, because it is the only place a
-       player learns that the answer exists and we have not measured the hour
-       yet. It is written out in full, deliberately, and not shortened. -->
-  <dl class="legend" id="key" hidden>
+  <div class="gridpanel" id="gridpanel" hidden>
+    <p class="weekof" id="weekof"></p>
+    <div class="gridwrap">
+      <table id="grid">
+        <thead><tr><th class="boss">Target</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <dl class="legend" id="key">
     <div>
       <span class="sw c-open"></span>
       <div><dt>Open</dt><dd>No kill seen at this tier since the reset, and the log covers
@@ -355,8 +393,8 @@
     <div>
       <span class="sw c-conditional"></span>
       <div><dt>Unsure</dt><dd>Killed on the boundary day itself, so which side of the reset
-        it fell is unknown — the reset <em>hour</em> has never been measured. The cell names
-        the exact instant that would settle it.</dd></div>
+        it fell is unknown — the reset <em>hour</em> has never been measured. Hover for the
+        exact instant that would settle it.</dd></div>
     </div>
     <div>
       <span class="sw c-unknown"></span>
@@ -374,6 +412,8 @@
         including which boss completed it and what the raid contains.</dd></div>
     </div>
   </dl>
+  </div>
+
 
   <div class="panel">
     <h2>Your log</h2>
@@ -610,6 +650,24 @@ function nowCivil() {
            hour: d.getHours(), minute: d.getMinutes(), second: d.getSeconds() };
 }
 
+/* "2026-08-19 20:30:00" -> "19 Aug". A DATE AND NOT A TIME, deliberately — see
+   the note in the cell renderer. Built from the string rather than from a Date,
+   because the log's stamps carry no timezone and constructing a Date from one
+   would silently apply the reader's.
+
+   DECLARED HERE, ABOVE render(), and that is not cosmetic. It first lived
+   halfway down render() as a `const` + `function` pair, and the week header
+   added a call ABOVE it — a temporal dead zone that threw
+   `Cannot access 'MON' before initialization` on every single render. The page
+   loaded, the engine ran, and the grid never appeared. A pure formatter has no
+   business being scoped inside the function that happens to use it most. */
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function shortDay(civil) {
+  if (!civil) return "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(civil);
+  return m ? String(Number(m[3])) + " " + MON[Number(m[2]) - 1] : "";
+}
+
 function render() {
   if (!S.state) return;
   const g = LockoutCore.projectGrid(S.state, nowCivil());
@@ -647,11 +705,12 @@ function render() {
     countEl.appendChild(n); countEl.appendChild(u);
     countEl.className = "count " + (g.openCount ? "open" : "none");
     const bits = [];
-    if (g.conditionalCount) bits.push(g.conditionalCount + " turning on the reset hour");
-    if (g.uncertainCount) bits.push(g.uncertainCount + " uncertain");
-    if (g.notLookedCount) bits.push(g.notLookedCount + " not looked at");
-    bits.push(g.completedCount + " of 25 done");
-    subEl.textContent = bits.join(" · ") + " — since " + g.period.boundaryWeekday + " " + g.period.boundaryDay + ".";
+    const tag = (n, cls, word) => '<b class="' + cls + '">' + n + " " + word + "</b>";
+    if (g.completedCount) bits.push(tag(g.completedCount, "t-done", "completed"));
+    if (g.conditionalCount) bits.push(tag(g.conditionalCount, "t-unsure", "unsure"));
+    if (g.uncertainCount) bits.push(tag(g.uncertainCount, "t-unk", "unresolved"));
+    if (g.notLookedCount) bits.push(tag(g.notLookedCount, "t-unk", "not looked at"));
+    subEl.innerHTML = bits.join(" · ");
     for (const c of g.open) {
       const li = document.createElement("li");
       li.innerHTML = c.label + ' <span class="tier">D' + c.difficulty + " " + c.difficultyLabel + "</span>";
@@ -667,17 +726,36 @@ function render() {
       for (const c of g.conditional) {
         const li = document.createElement("li");
         li.textContent = c.label + " D" + c.difficulty + " " + c.difficultyLabel;
+        /* THE SAME TWO BRANCHES, WITHOUT A WALL CLOCK.
+           The wording ordered for this was "done if the reset was before 20:31,
+           open if after" — and the clock there was the example, not the
+           requirement. The owner's constraint is the stronger one: this tool
+           answers killed or not killed, and a printed time invites arithmetic
+           nobody asked to do.
+           So the branches keep their meaning and lose their digits. The instant
+           is not gone — the engine still computes it, and the cell's tooltip
+           still says it — it is just off the surface of a page whose whole
+           point is a yes and a no. */
+        const day = shortDay(c.decidedBy.pivot);
         const a = document.createElement("span");
         a.className = "arm";
-        a.innerHTML = "<b>done</b> if " + esc(c.decidedBy.doneIf);
+        a.innerHTML = "<b>done</b> if the reset had already passed when you killed it on " + esc(day);
         const b = document.createElement("span");
         b.className = "arm";
-        b.innerHTML = "<b>open</b> if " + esc(c.decidedBy.openIf);
+        b.innerHTML = "<b>open</b> if the reset came after";
         li.appendChild(a); li.appendChild(b);
         condEl.appendChild(li);
       }
     }
   }
+
+  const weekEl = document.getElementById("weekof");
+  if (weekEl) {
+    weekEl.textContent = "Week of " + g.period.boundaryWeekday + " " + shortDay(g.period.boundaryDay) +
+      " " + (g.period.boundaryDay || "").slice(0, 4);
+  }
+  const panel = document.getElementById("gridpanel");
+  if (panel) panel.hidden = false;
 
   const table = document.getElementById("grid");
   const head = table.tHead.rows[0];
@@ -722,13 +800,20 @@ function render() {
       span.appendChild(lab);
       const when = document.createElement("span");
       when.className = "when";
+      /* NO CLOCK, ANYWHERE ON THIS PAGE.
+         An earlier build printed "if before 22:12" in the unsure cells. That is
+         a real and useful fact — it is the instant that settles the cell — but
+         it is not what this tool is for. The owner's reason for wanting it was
+         that people remember having done SOME raids and not which ones, so the
+         only question is have I killed this, or have I not. A clock time
+         invites arithmetic nobody asked to do, and it reads as a countdown,
+         which this page has never had and must never grow.
+         The instant is not lost: it is in the cell's tooltip and in the list
+         under the count, where a reader who wants it has asked for it. */
       if (c.state === "completed") {
-        /* A FIELD, NOT A REGEX OVER OUR OWN PROSE. This read the date back out
-           of `because` until the pattern was mangled and every date silently
-           disappeared — the view kept rendering, just with nothing in it. */
-        when.textContent = c.completedAt ? c.completedAt.slice(5, 10) : "";
+        when.textContent = shortDay(c.completedAt);
       } else if (c.state === "conditional" && c.decidedBy && c.decidedBy.pivot) {
-        when.textContent = "if before " + c.decidedBy.pivot.slice(11, 16);
+        when.textContent = shortDay(c.decidedBy.pivot);
       }
       if (when.textContent) span.appendChild(when);
       /* The row is the raid, so the tooltip has to say what the raid contains —
@@ -747,8 +832,9 @@ function render() {
     }
     body.appendChild(tr);
   }
-  table.hidden = false;
-  document.getElementById("key").hidden = false;
+  /* The whole panel reveals at once — table, week header and legend together.
+     They were three separate `hidden` flags, which is three chances for the
+     grid to appear without the key that explains it. */
 
   /* Provenance, on the page rather than in a footnote. Every value a user acts
      on should be able to say where it came from. */

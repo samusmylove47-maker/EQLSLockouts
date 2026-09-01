@@ -117,9 +117,22 @@
        carry legible text — --bone on #C4482E measures 4.07:1 and fails AA — so
        it is a field, which is also the site's own doctrine: accents are "used
        as fields rather than as trim". */
-    --field-open:#381D10;  --cell-open-ink:#D76C55;
+    /* OPEN IS A SOLID EMBER FILL, and I had talked myself out of it.
+       I measured --bone on --ember at 4.07:1, called the brief's "filled cell"
+       impossible, and shipped a tinted field instead. I had tested exactly two
+       inks. **#FBF7F0 — one step brighter than --bone — is 4.56:1 on the
+       site's own #C4482E.** The fill never had to move. Neither ground changes
+       it, because --ember is the same value in both, so the one cell that
+       matters most is the most stable thing on the page.
+       DO NOT swap this ink for --bone: that is the 4.07 failure, exactly. */
+    --fill-open:#C4482E;   --on-fill:#FBF7F0;
     --field-done:#15100A;
-    --hatch-ink:#4A3E2A;   --cell-hatch-ink:#D9A63F; --cell-unk-ink:#B5AA95;
+    /* The hatch is cooled to instrument blue. Ember now means "open" alone, so
+       an amber hatch beside it read as a weaker kind of open rather than as a
+       different kind of answer. Blue is not a warmer or cooler open; it is a
+       different statement, which is what "unsure" is. */
+    --hatch-ink:#2A3D47;   --cell-hatch-ink:#7FB2C7; --hatch-edge:#3E5A69;
+    --unk-hatch:#3A332A;   --cell-unk-ink:#B5AA95;
 
     /* TWO FAMILIES ARE RENAMED AND IT IS A LICENCE REQUIREMENT, not a habit.
        IBM Plex Mono reserves the font name "Plex" and Saira Condensed reserves
@@ -156,10 +169,11 @@
       --brass:#A17627; --ok:#538868; --instr:#62828D;
       --warn-t:#874940; --ember-t:#884938; --lava-t:#8D412E;
       --brass-t:#705625; --instr-t:#4D5A62; --ok-t:#426048;
-      --field-open:#E1C1AB; --cell-open-ink:#7D4334;   /* 4.56:1 */
-      --field-done:#E0D3B9;
-      --hatch-ink:#B1A081; --cell-hatch-ink:#614B20;   /* 4.52:1 */
-      --cell-unk-ink:#594C3A;                          /* 4.55:1 */
+      --fill-open:#C4482E; --on-fill:#FBF7F0;          /* 4.56:1, both grounds */
+      --field-done:#EDE7DA;
+      --hatch-ink:#B9C7CE; --cell-hatch-ink:#3E4C54;   /* 5.29:1 */
+      --hatch-edge:#62828D;
+      --unk-hatch:#CFC3A8; --cell-unk-ink:#594C3A;     /* 4.55:1 */
       --shadow-1:0 1px 2px rgba(60,44,20,.14);
       --shadow-2:0 12px 32px -14px rgba(60,44,20,.30);
     }
@@ -173,9 +187,10 @@
     --brass:#A17627; --ok:#538868; --instr:#62828D;
     --warn-t:#874940; --ember-t:#884938; --lava-t:#8D412E;
     --brass-t:#705625; --instr-t:#4D5A62; --ok-t:#426048;
-    --field-open:#E1C1AB; --cell-open-ink:#7D4334;
-    --field-done:#E0D3B9;
-    --hatch-ink:#B1A081; --cell-hatch-ink:#614B20; --cell-unk-ink:#594C3A;
+    --fill-open:#C4482E; --on-fill:#FBF7F0;
+    --field-done:#EDE7DA;
+    --hatch-ink:#B9C7CE; --cell-hatch-ink:#3E4C54; --hatch-edge:#62828D;
+    --unk-hatch:#CFC3A8; --cell-unk-ink:#594C3A;
     --shadow-1:0 1px 2px rgba(60,44,20,.14);
     --shadow-2:0 12px 32px -14px rgba(60,44,20,.30);
   }
@@ -188,9 +203,10 @@
     --brass:#C9922E; --brass-t:#D9A63F;
     --lava:#FF2800;  --lava-t:#FF6A4D;
     --ok:#5FA37E; --ok-t:#5FA37E; --instr:#7FB2C7; --instr-t:#7FB2C7; --warn:#C9453A; --warn-t:#D46C64;
-    --field-open:#381D10; --cell-open-ink:#D76C55;
+    --fill-open:#C4482E; --on-fill:#FBF7F0;
     --field-done:#15100A;
-    --hatch-ink:#4A3E2A; --cell-hatch-ink:#D9A63F; --cell-unk-ink:#B5AA95;
+    --hatch-ink:#2A3D47; --cell-hatch-ink:#7FB2C7; --hatch-edge:#3E5A69;
+    --unk-hatch:#3A332A; --cell-unk-ink:#B5AA95;
     --shadow-1:0 1px 2px rgba(0,0,0,.28);
     --shadow-2:0 12px 32px -14px rgba(0,0,0,.62);
   }
@@ -211,8 +227,13 @@
      uppercase-tracked mono is most of what makes its pages read as instrumented.
      Saira's real job is the large figure — `.ix dd` at --t-2xl — which on this
      page is the count. */
-  h1 { font-family: var(--display); font-weight: 600; font-size: var(--t-xl);
-       letter-spacing: .04em; color: var(--bone); margin: 0 0 var(--s-1); }
+  .eyebrow { color: var(--dim); font-size: var(--t-2xs); margin: 0 0 var(--s-3); }
+  h1 { font-family: var(--display); font-weight: 600;
+       font-size: clamp(30px, 5.2vw, 52px); line-height: 1.02;
+       letter-spacing: .01em; color: var(--bone); margin: 0 0 var(--s-4); }
+  .lede { color: var(--mut); font-size: var(--t-md); line-height: 1.55;
+          max-width: 58ch; margin: 0 0 var(--s-6); }
+  .lede b { color: var(--txt); font-weight: 600; }
 
   .eyebrow, h2, thead th, dl.meta dt, .legend dt {
     font-family: var(--mono); font-weight: 400; text-transform: uppercase;
@@ -226,10 +247,16 @@
   .sub { color: var(--mut); font-size: var(--t-sm); max-width: 64ch; }
 
   /* ── the lead. The count is the hero ────────────────────────────────────── */
+  /* A THICK LEFT RULE IN THE ACCENT. The band is the answer to the only
+     question the page exists to answer, and it should not look like the panels
+     that explain themselves underneath it. */
   .lead { background-color: var(--surface-1); border: 1px solid var(--rule);
+          border-left: 4px solid var(--fill-open);
           border-radius: var(--r); box-shadow: var(--shadow-2);
-          padding: var(--s-5); margin: var(--s-6) 0 var(--s-5); }
-  .headline { display: flex; align-items: baseline; gap: var(--s-4); flex-wrap: wrap; }
+          padding: var(--s-5) var(--s-5) var(--s-5) var(--s-5);
+          margin: 0 0 var(--s-5); }
+  .headline { display: flex; align-items: baseline; gap: var(--s-4);
+              flex-wrap: wrap; justify-content: space-between; }
 
   /* --lava is the loudest colour the game owns and the site spends it ONCE per
      page, on "a live figure, a warning, the thing the eye should land on
@@ -242,8 +269,11 @@
   .count .unit { font-family: var(--mono); font-size: var(--t-sm); font-weight: 400;
                  text-transform: uppercase; letter-spacing: var(--tr-wide);
                  color: var(--mut); margin-left: var(--s-2); }
-  .tally { color: var(--mut); font-size: var(--t-sm); }
-  .tally b { color: var(--txt); font-weight: 600; }
+  .tally { color: var(--dim); font-size: var(--t-sm); }
+  .tally b { font-weight: 400; }
+  .tally .t-done { color: var(--ok-t); }
+  .tally .t-unsure { color: var(--cell-hatch-ink); }
+  .tally .t-unk { color: var(--mut); }
 
   .openlist { margin: var(--s-4) 0 0; padding: 0; list-style: none;
               display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
@@ -257,7 +287,13 @@
   .condlist .arm b { color: var(--brass-t); font-weight: 600; }
 
   /* ── the grid ───────────────────────────────────────────────────────────── */
-  .gridwrap { overflow-x: auto; margin: var(--s-6) 0 var(--s-3); }
+  .gridpanel { background-color: var(--surface-1); border: 1px solid var(--rule);
+               border-radius: var(--r); box-shadow: var(--shadow-1);
+               padding: var(--s-5); margin: 0 0 var(--s-4); }
+  .weekof { color: var(--dim); font-size: var(--t-2xs); margin: 0 0 var(--s-4);
+            font-family: var(--mono); text-transform: uppercase;
+            letter-spacing: var(--tr-wider); }
+  .gridwrap { overflow-x: auto; }
   table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 640px; }
   th, td { padding: var(--s-2) 3px; text-align: center; vertical-align: bottom; }
   thead th { color: var(--mut); font-size: var(--t-2xs); padding-bottom: var(--s-3);
@@ -286,39 +322,43 @@
 
   /* OPEN is the only state that gets a field, because it is the only state the
      page is asking you to do something about. */
-  .c-open { background-color: var(--field-open); border-color: var(--ember);
-            color: var(--cell-open-ink); }
-  .c-open .lab { color: var(--cell-open-ink); font-weight: 600; }
+  .c-open { background-color: var(--fill-open); border-color: var(--fill-open);
+            color: var(--on-fill); }
+  .c-open .lab { color: var(--on-fill); font-weight: 600; letter-spacing: var(--tr-wider); }
 
   /* DONE recedes: a well rather than a highlight, with its date beneath. */
-  .c-completed { background-color: var(--field-done); border-color: var(--rule); }
-  .c-completed .lab { color: var(--ok-t); }
+  /* DONE RECEDES ALL THE WAY. It is the one state needing no action, so it
+     carries no fill and no border — only the word and the day it happened. */
+  .c-completed { background-color: transparent; border-color: transparent; }
+  .c-completed .lab { color: var(--dim); }
+  .c-completed .when { color: var(--faint); }
 
   /* HATCH for the two states that are not solid facts. Repeating stripes read
      as "not filled in" without spending a colour — which matters, because every
      colour in this palette already means something. */
-  .c-conditional { border-color: var(--brass); color: var(--cell-hatch-ink);
+  .c-conditional { border-color: var(--hatch-edge); color: var(--cell-hatch-ink);
     background-image: repeating-linear-gradient(-45deg,
       transparent 0 5px, var(--hatch-ink) 5px 6px); }
-  .c-conditional .lab { color: var(--cell-hatch-ink); font-weight: 600; }
+  .c-conditional .lab { color: var(--cell-hatch-ink); }
   .c-unknown { border-color: var(--rule3); color: var(--cell-unk-ink);
     background-image: repeating-linear-gradient(-45deg,
-      transparent 0 3px, var(--hatch-ink) 3px 4px); }
+      transparent 0 3px, var(--unk-hatch) 3px 4px); }
   .c-unknown .lab { color: var(--cell-unk-ink); }
   .c-not_looked { color: var(--faint); border-color: transparent; }
   .c-not_looked .lab { color: var(--faint); }
   .cell:hover { border-color: var(--rule3); }
-  .c-open:hover { border-color: var(--ember-t); }
+  .c-open:hover { border-color: var(--on-fill); }
 
   /* ── the legend is the product ──────────────────────────────────────────── */
-  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-            gap: var(--s-4) var(--s-5); margin: var(--s-4) 0 var(--s-6);
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: var(--s-3) var(--s-5); margin: var(--s-4) 0 0;
             padding-top: var(--s-4); border-top: 1px solid var(--rule); }
-  .legend > div { display: grid; grid-template-columns: 38px 1fr; gap: var(--s-3);
-                  align-items: start; }
-  .legend .sw { width: 38px; height: 26px; border-radius: var(--r);
-                border: 1px solid var(--rule); }
-  .legend dt { font-size: var(--t-2xs); color: var(--txt); margin-bottom: 2px; }
+  .legend > div { display: grid; grid-template-columns: 30px auto 1fr; gap: var(--s-2);
+                  align-items: baseline; }
+  .legend .sw { width: 30px; height: 15px; border-radius: 3px;
+                border: 1px solid var(--rule); align-self: center; }
+  .legend dt { font-size: var(--t-xs); color: var(--txt); font-family: var(--prose);
+               font-weight: 600; text-transform: none; letter-spacing: 0; }
   .legend dd { margin: 0; font-size: var(--t-xs); color: var(--mut); line-height: 1.5; }
 
   /* ── panels ─────────────────────────────────────────────────────────────── */
@@ -362,8 +402,11 @@
 </style>
 
 <main>
-  <h1>EQLS Lockouts</h1>
-  <div class="sub">What you still owe this week. Your log never leaves this machine.</div>
+  <p class="eyebrow">EQLS Lockouts</p>
+  <h1>Raid Lockout Grid</h1>
+  <p class="lede">Five raid targets, five difficulty tiers, one completion each per week.
+  The grid answers one question: <b>what is still open before Tuesday.</b> Read from your
+  own log, on this machine &mdash; not from a mock-up, and not from a hand-typed list.</p>
 
   <div class="lead">
     <div class="headline">
@@ -378,20 +421,15 @@
     </div>
   </div>
 
-  <div class="gridwrap">
-    <table id="grid" hidden>
-      <thead><tr><th class="boss">Raid</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- THE LEGEND IS THE PRODUCT.
-       A swatch and a one-word gloss would be decoration. The sentence under
-       "unsure" — killed on the boundary day, side of the reset unknown — is the
-       single most useful thing on the page, because it is the only place a
-       player learns that the answer exists and we have not measured the hour
-       yet. It is written out in full, deliberately, and not shortened. -->
-  <dl class="legend" id="key" hidden>
+  <div class="gridpanel" id="gridpanel" hidden>
+    <p class="weekof" id="weekof"></p>
+    <div class="gridwrap">
+      <table id="grid">
+        <thead><tr><th class="boss">Target</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <dl class="legend" id="key">
     <div>
       <span class="sw c-open"></span>
       <div><dt>Open</dt><dd>No kill seen at this tier since the reset, and the log covers
@@ -405,8 +443,8 @@
     <div>
       <span class="sw c-conditional"></span>
       <div><dt>Unsure</dt><dd>Killed on the boundary day itself, so which side of the reset
-        it fell is unknown — the reset <em>hour</em> has never been measured. The cell names
-        the exact instant that would settle it.</dd></div>
+        it fell is unknown — the reset <em>hour</em> has never been measured. Hover for the
+        exact instant that would settle it.</dd></div>
     </div>
     <div>
       <span class="sw c-unknown"></span>
@@ -424,6 +462,8 @@
         including which boss completed it and what the raid contains.</dd></div>
     </div>
   </dl>
+  </div>
+
 
   <div class="panel">
     <h2>Your log</h2>
@@ -955,6 +995,85 @@ function parseInstanceName(name) {
 // NONE are the boss: they are `Cleric of Innoruuk` (68), `A Sage of Innoruuk`
 // (4) and `A Knight of Innoruuk` (1). Add `Innoruuk\`s Chosen` (39+10) and a
 // substring roster over-counts this one boss by roughly fourteen times.
+// ── DO NOT PARSE DAMAGE LINES WITHOUT READING THIS ───────────────────────────
+//
+// This module deliberately models NO damage line. There are 375,896 of them in
+// the live log alone and none of them is a lockout. But a later version will be
+// tempted, so the trap is recorded at the point of temptation rather than in a
+// document nobody has open.
+//
+// **THE CLIENT REPORTS DAMAGE APPLIED, CAPPED AT THE TARGET'S REMAINING HIT
+// POINTS — NOT THE VALUE ROLLED.** A killing blow is therefore truncated
+// downward by an unknown amount, and any maximum, mean or histogram computed
+// over a set that includes killing blows is contaminated — worst on the fights
+// that end quickest, which are exactly the ones a raid tracker looks at.
+//
+// Raised by the modelling session and MEASURED HERE rather than taken on trust.
+// Over the live log, keying on
+// `<target> has taken <N> damage from <spell> by <caster>` — a DoT TICK line —
+// and taking the eight sources with >=40 samples and a dominant value:
+//
+//   below the modal value :    5 hits,  5 landed on the tick the target died  (100%)
+//   at    the modal value : 2805 hits, 49 landed on the tick the target died  (1.7%)
+//
+// THEN THEY RAN THE CONVERSE ON THEIR OWN CORPUS AND IT DID NOT REPRODUCE, and
+// their refutation is worth more than our agreement was. Keyed per (spell,
+// target) over 759 direct-damage hits:
+//
+//   below modal : 79 of 250 are killing blows (31.6%)   — not 100%
+//   at    modal : 73 of 378 are killing blows (19.3%)   — not 1.7%
+//   lift 1.64x, against our 59x.
+//
+// TWO REASONS, AND THE SECOND IS THE ONE TO KEEP.
+//
+//   1. WHICH LINE YOU READ SETS THE BASE RATE. A DoT tick is small and regular
+//      and lands the kill 1.7% of the time; direct AE damage lands it 19.3%.
+//      An elevenfold difference from the line shape alone.
+//
+//   2. ON DIRECT DAMAGE THE PER-TARGET DISTRIBUTION IS BIMODAL. Fourteen of
+//      their twenty target groups carry two legitimate values in the same pair —
+//      2659 and 3177, ratio 0.8370 — and 79 of their 171 false positives sit at
+//      exactly that ratio. A modal baseline labels an entire second population
+//      as anomalous. On DoT ticks that population does not exist, which is the
+//      only reason our filter looked clean.
+//
+// SO THE RULE IS NARROWER THAN WE FIRST WROTE IT:
+//
+//   The TRUNCATION is real and confirmed on two independent corpora — the client
+//   reports damage APPLIED, capped at remaining HP.
+//   "BELOW MODAL IMPLIES KILLING BLOW" IS NOT. It holds on DoT tick lines, where
+//   the value is regular, and FAILS on direct-damage lines at scale.
+//
+// If you ever model damage: match the KILL LINE and drop those values. Do not
+// infer a killing blow from the damage number. The kill regexes below are
+// exactly what implements the safe version, which is the one good reason to read
+// them together.
+// ── DAMAGE, PARSED FOR SESSION E AND DELIBERATELY NOT ACCUMULATED ───────────
+//
+// The Director ruled that E does not build a second ingestion layer, and E asked
+// for these rather than forking. The `- Group` inversion is the argument: it
+// propagated three ways because three implementations read the same line
+// separately. One parse, one place to be wrong, one place to fix.
+//
+// **`applyLine` IGNORES EVERY ONE OF THESE.** There are 375,896 damage lines in
+// the live log alone; accumulating them would destroy the state size, the
+// idempotence guarantee and the backfill budget this module is measured on.
+// `parseLine` returns the row and the caller accumulates. That split is the
+// whole design and it is why adding this costs the lockout tracker nothing.
+//
+// ON `on_kill`, WHICH E ASKED FOR AS A FIELD: IT CANNOT BE DECIDED HERE.
+// Whether a hit was the killing blow depends on a line that has not arrived yet.
+// This is the Voidling closing-line lesson exactly — `applyLine` classifies
+// nothing, and a windowed pass decides with the whole picture visible. Deciding
+// it per-line is how I produced a false 0.474 h bracket in August. So the row
+// carries the timestamp and the target, and the caller joins against the kill
+// lines below at the same stamp. That join is the safe filter both E and I
+// already agreed on after E refuted the modal-value shortcut.
+const DAMAGE_SELF_RE = /^You hit yourself for (\d+) points of ([a-z]+) damage by (.+?)\.$/;
+const DAMAGE_MELEE_RE = /^(.+?) (slash|slashes|hit|hits|crush|crushes|pierce|pierces|bash|bashes|kick|kicks|claw|claws|bite|bites|punch|punches|strike|strikes|gore|gores|maul|mauls) (.+?) for (\d+) points of ([a-z]+ )?damage\.$/;
+const DAMAGE_SPELL_RE = /^(.+?) ha[sve]+ taken (\d+) damage from (.+?) by (.+?)\.$/;
+const SONG_PULSE_RE = /^Your voice booms\.$/;
+
 const SLAIN_BY_RE = /^(.+?) has been slain by (.+?)!$/;
 const YOU_SLEW_RE = /^You have slain (.+?)!$/;
 
@@ -1359,6 +1478,30 @@ const LOCKOUT_MODEL = Object.freeze({
   commonOriginTolerance: 'about 1 second',
   anchorEvent: null,   // NOT RECORDED — see below
 
+  // ── THE ONE THAT CANNOT BE CAUGHT LATER ──────────────────────────────────
+  //
+  // Promoted out of `caveats`, where it was the third bullet of an array
+  // nobody reads, because of what makes it different from every other caveat
+  // in this file: **every other error here is discoverable by collecting more
+  // data. This one is not.**
+  //
+  // A tracker that infers lockout expiry from kill timestamps is measuring a
+  // different event from the one that matters. It will look right. Its tests
+  // will pass. A month of real user data will not contradict it, because kill
+  // timestamps are real, plentiful, and precisely wrong for this. The only
+  // thing that exposes the mistake is the alt+Z window, which is not in the log
+  // and which no amount of log-reading will ever produce.
+  //
+  // So the warning has to live in the code, next to the field it protects,
+  // rather than in a document that will not be open at the moment somebody
+  // decides that kill times are "close enough".
+  inferenceHazard:
+    'IF A FUTURE VERSION INFERS LOCKOUT EXPIRY FROM KILL TIMESTAMPS, NO VOLUME ' +
+    'OF KILL DATA WILL EVER REVEAL THE ERROR. 14 locks earned across 6,133 ' +
+    'seconds of kills showed ONE value with zero spread; per-kill stamping ' +
+    'would have shown 14 values spread over 1h42m. The anchor is not in the ' +
+    'log. anchorEvent stays null until something measures it.',
+
   // THE ANCHOR IS NOT RECORDED, and an earlier revision overstated this too.
   // The moment the screenshot was taken is unknown — there is no file, no
   // timestamp, no independent clock — so the "common instant" was derived from
@@ -1468,6 +1611,34 @@ function parseLine(line) {
   }
   // parseLine stays OPEN TO ANY NAME. Whether a slain thing is a raid boss is a
   // roster question, decided later; nothing here filters by roster.
+  // SELF-DAMAGE FIRST, and the order is load-bearing: `You hit yourself ...`
+  // also matches the melee shape below, and E measured that counting it inflated
+  // a character's apparent output by 3.7% — worst on exactly the support builds
+  // a damage tool gets pointed at. E named Cannibalize; in OUR corpus the same
+  // shape carries `Lifetap Strike` (9) and `Lifebite` (2) and Cannibalize does
+  // not appear at all. So the exclusion keys on the SHAPE, never on a spell
+  // allowlist, which would have missed both of ours.
+  if ((m = DAMAGE_SELF_RE.exec(message))) {
+    return { kind: 'self-damage', at, actor: 'You', target: 'You',
+             amount: Number(m[1]), damageType: m[2], spell: m[3], outgoing: false };
+  }
+  if ((m = DAMAGE_MELEE_RE.exec(message))) {
+    const actor = m[1] === 'You' ? 'You' : m[1];
+    return { kind: 'damage', at, actor, target: m[3], amount: Number(m[4]),
+             damageType: (m[5] || '').trim() || 'melee', spell: null,
+             byYou: m[1] === 'You', outgoing: true, form: 'melee' };
+  }
+  if ((m = DAMAGE_SPELL_RE.exec(message))) {
+    return { kind: 'damage', at, actor: m[4], target: m[1], amount: Number(m[2]),
+             damageType: 'spell', spell: m[3],
+             byYou: m[4] === 'you' || m[4] === 'You', outgoing: true, form: 'spell' };
+  }
+  // E's buff-uptime primitive: Amplification's own pulse on the 6-second tick,
+  // 16,788 of them in the live log. It reads memorised state off the lines
+  // instead of off a screenshot, which is what E needs for the 2659/3177 split.
+  if (SONG_PULSE_RE.test(message)) {
+    return { kind: 'song-pulse', at, song: 'Amplification', source: 'Your voice booms.' };
+  }
   if ((m = SLAIN_BY_RE.exec(message))) {
     return { kind: 'kill', at, slain: m[1], killer: m[2], byYou: false };
   }
@@ -1577,6 +1748,12 @@ function createState(character, opts) {
 }
 
 const MAX_EVENTS = 5000;
+
+// The positive-control set gets its OWN bound rather than borrowing one.
+// Measured occupancy: 600 replies across all 16 log files, ~340 for the busiest
+// single character over 434 MB. See the note at the insert site for what
+// overflowing costs — it degrades a refusal to `unknown`, never the reverse.
+const MAX_VOIDLING_REPLIES = 5000;
 // The dedupe index is deliberately far larger than the provenance log. The
 // owner's own corpus produces ~12k observations for one character, so a bound
 // of 5000 was actively corrupting counts.
@@ -1612,8 +1789,25 @@ const SPAN_GAP_MS = 30 * 60 * 1000;
 function applyLine(state, line) {
   // EVERY stamped line extends coverage, not just the ones we model. Coverage
   // is about what we were in a position to see, and we saw every line.
+  //
+  // ALL THREE COVERAGE FIELDS ARE SET HERE, FROM ONE RULE, AND THEY WERE NOT.
+  // `spans` was extended by every stamped line while `firstSeen`/`lastSeen` were
+  // set further down, only for events that survived the early returns. So the
+  // module held TWO MEANINGS OF COVERAGE and `projectGrid` read both — `spans`
+  // for the gap and observed-fraction gate, `firstSeen` for the reported
+  // `coverageFrom`. A log of pure combat extended one and not the other.
+  //
+  // Found by a test written for a different purpose: adding damage rows made the
+  // divergence loud (600 stamped lines, spans extended, firstSeen still null)
+  // where before it was merely latent. The fix is not to special-case damage; it
+  // is that "what we were in a position to see" has one definition.
   const stamped = typeof line === 'string' && line.length ? splitStamp(line) : null;
-  if (stamped) noteCoverage(state, civilOf(stamped.at));
+  if (stamped) {
+    const stampCivil = civilOf(stamped.at);
+    noteCoverage(state, stampCivil);
+    if (state.firstSeen === null || stampCivil < state.firstSeen) state.firstSeen = stampCivil;
+    if (state.lastSeen === null || stampCivil > state.lastSeen) state.lastSeen = stampCivil;
+  }
 
   const ev = parseLine(line);
   if (!ev) {
@@ -1622,13 +1816,61 @@ function applyLine(state, line) {
   }
 
   const civil = civilOf(ev.at);
+
+  // ── DO NOT "OPTIMISE" THIS EARLY RETURN AWAY. IT IS NOT A MEMORY DECISION. ──
+  //
+  // It looks like one, which is exactly the danger: a reader sees "skip the
+  // bookkeeping for lines we do not model" and moves it, or deletes it, or
+  // decides the guard costs more than it saves.
+  //
+  // **IT IS A SILENT CORRECTNESS FAILURE WEARING A MEMORY DECISION'S CLOTHES.**
+  //
+  // The live log holds 375,896 damage lines and 16,788 song pulses. `state.seen`
+  // is the DEDUPE INDEX and is bounded at 200,000 entries. Let damage through
+  // and one character's combat evicts the entire lockout dedupe set — after
+  // which replaying a log DOUBLE-COUNTS real kills, because the keys that would
+  // have suppressed them have been pushed out by damage nobody models.
+  //
+  // The tell would be `dropped.beyondDedupeHorizon` firing on ordinary input,
+  // which is the diagnostic this module treats as its worst possible state:
+  // silent double-counting with a clean report. So the guard sits ABOVE the
+  // index, not merely above `events`, and it is load-bearing there.
+  //
+  // Caught the moment the rows were added — by the adapter test noticing a
+  // change event per damage line, not by anyone reasoning about it.
+  //
+  // `parseLine` returns the row for Session E; `applyLine` does not want it.
+  // That split is what makes the addition free for this module.
+  if (ev.kind === 'damage' || ev.kind === 'self-damage' || ev.kind === 'song-pulse') {
+    return state;
+  }
+
   // A Voidling reply is a PRESENCE CONTROL, not an event. It never enters
   // `events` and never emits a change, because several players share one NPC
   // and the count is meaningless. It is recorded below as a set of seconds.
   if (ev.kind === 'voidling-reply') {
     if (!state.voidlingReplies.includes(civil)) {
       state.voidlingReplies.push(civil);
-      if (state.voidlingReplies.length > MAX_EVENTS) state.voidlingReplies.shift();
+      // THE BOUND, AND ITS COST, BOTH STATED — Session C's clause 7.
+      //
+      // This was bounded already, at MAX_EVENTS, by sharing a constant with a
+      // structure it has nothing to do with. That is not a stated bound; it is
+      // an accident that happens to hold. A host embedding this does a backfill
+      // of about 5.25 million lines on load and is entitled to know what grows.
+      //
+      // WHAT IT COSTS WHEN IT OVERFLOWS, which is the part a bound is useless
+      // without: the OLDEST seconds are dropped first. A refusal older than the
+      // surviving window therefore loses its positive control and is reported
+      // `unknown` rather than `refused`. That is the safe direction — the module
+      // stops claiming a refusal it can no longer corroborate. It can never
+      // manufacture a false `refused`, because a refusal requires a reply
+      // present in this set.
+      //
+      // HEADROOM, MEASURED rather than hoped for: `grep -ac "Voidling says, '"`
+      // over all 16 log files returns 600 replies in total, and the busiest
+      // single character contributes about 340 across 434 MB and three weeks.
+      // The bound is roughly 15x the observed occupancy for one character.
+      if (state.voidlingReplies.length > MAX_VOIDLING_REPLIES) state.voidlingReplies.shift();
     }
     return state;
   }
@@ -1664,8 +1906,9 @@ function applyLine(state, line) {
     state.dropped.beyondDedupeHorizon++;
   }
 
-  if (state.firstSeen === null || civil < state.firstSeen) state.firstSeen = civil;
-  if (state.lastSeen === null || civil > state.lastSeen) state.lastSeen = civil;
+  // firstSeen/lastSeen are set at the TOP of this function now, from the stamp,
+  // for every stamped line — see the note there. Setting them again here would
+  // be harmless but would reintroduce the second definition.
 
   state.events.push({ key, kind: ev.kind, civil, at: ev.at });
   if (state.events.length > MAX_EVENTS) state.events.shift();
@@ -2035,11 +2278,29 @@ function classifyRequests(state) {
     collapsed.push(r);
   }
 
+  // SORT ONCE, THEN BINARY SEARCH — the other half of clause 7.
+  //
+  // This was `.some()` per request over the reply array: O(requests x replies).
+  // Both are bounded at 5,000, so the worst case was 25 million comparisons on a
+  // structure a host builds during a 5.25M-line backfill on its main process.
+  //
+  // At MEASURED volumes it was never close: ~340 replies against ~40 requests
+  // for the busiest character, so about 13,600 comparisons. The hazard was
+  // theoretical. It is now absent rather than merely unlikely, which is the
+  // difference between a bound you can hand someone and one you have to explain.
+  const sortedReplies = state.voidlingReplies.slice().sort((a, b) => a - b);
+  const replyInRange = (lo, hi) => {
+    let a = 0, b = sortedReplies.length;
+    while (a < b) {                       // first index with value >= lo
+      const mid = (a + b) >> 1;
+      if (sortedReplies[mid] < lo) a = mid + 1; else b = mid;
+    }
+    return a < sortedReplies.length && sortedReplies[a] <= hi;
+  };
+
   return collapsed.map((r) => {
     const grant = assignments.find((a) => a.civil >= r.civil && a.civil - r.civil <= GRANT_WINDOW_MS);
-    const control = state.voidlingReplies.some(
-      (v) => v >= r.civil - CONTROL_BEFORE_MS && v <= r.civil + CONTROL_AFTER_MS
-    );
+    const control = replyInRange(r.civil - CONTROL_BEFORE_MS, r.civil + CONTROL_AFTER_MS);
     return {
       at: formatCivil(r.at),
       civil: r.civil,
@@ -2141,8 +2402,49 @@ function projectGrid(state, now) {
   const nowDay = Date.UTC(now.year, now.month - 1, now.day);
   const dow = new Date(nowDay).getUTCDay();
   const back = (dow - RESET_RULE.weekday + 7) % 7;
-  const boundaryDayStart = nowDay - back * 86400000;
-  const boundaryDayEnd = boundaryDayStart + 86400000;
+  let boundaryDayStart = nowDay - back * 86400000;
+  let boundaryDayEnd = boundaryDayStart + 86400000;
+
+  // ── THE HOUR, IF WE EVER MEASURE ONE, AND IT HAD NOWHERE TO GO ─────────────
+  //
+  // SESSION C FOUND THIS AND IT IS A REAL MISS OF MINE. For eleven days I asked
+  // the owner for the reset hour as though the number were the whole blocker.
+  // It was not. `RESET_RULE.hour` had **zero uses** in this entire module — no
+  // destructuring, no index access, nothing. The boundary was a whole DAY and
+  // the hour never entered a computation; it existed as an attributed field and
+  // as the words "the reset hour has never been measured".
+  //
+  // So a perfect hour, handed over today, would have changed **not one cell**.
+  // The blocker was always two things and I only ever named one: the number, and
+  // a code path that consumes it. This is the code path.
+  //
+  // WHAT IT DOES WHEN THE HOUR IS KNOWN. The period stops being a day with two
+  // live hypotheses and becomes an INSTANT. A kill is then either inside the
+  // period or outside it, and the `conditional` state — which exists solely to
+  // carry this ambiguity — stops arising at all.
+  //
+  // WHAT IT DOES WHEN THE HOUR IS NULL, which is today: nothing. Every value
+  // below is identical to what it was, and the two-hypothesis machinery runs
+  // exactly as before. This is dormant until something measures the hour.
+  //
+  // THE CONSTANT STAYS IN ITS ONE ATTRIBUTED FIELD. `RESET_RULE.hour` is read
+  // here and nowhere else, and the test that fails when a reset constant appears
+  // outside that field is unaffected — reading the attributed field is the
+  // permitted case; copying its value somewhere else is not.
+  const resetHour = RESET_RULE.hour;
+  const hourKnown = typeof resetHour === 'number' && resetHour >= 0 && resetHour < 24;
+  let periodStart = null;          // the exact instant, or null while unmeasured
+  if (hourKnown) {
+    periodStart = boundaryDayStart + resetHour * 3600000;
+    // If the turnover has NOT yet happened today, the live period is last
+    // week's. With a day-granular boundary this was unknowable and produced the
+    // conditional cells; with an hour it is arithmetic.
+    if (nowCivil < periodStart) {
+      periodStart -= 7 * 86400000;
+      boundaryDayStart -= 7 * 86400000;
+      boundaryDayEnd = boundaryDayStart + 86400000;
+    }
+  }
 
   const coverageStart = state.firstSeen;
   const coverageEnd = state.lastSeen;
@@ -2174,7 +2476,23 @@ function projectGrid(state, now) {
   // small holes cannot add up to a missing evening without anyone seeing it.
   const GAP_REPORT_MS = 60 * 60 * 1000;
 
-  const periodFrom = boundaryDayStart;
+  // COVERAGE IS JUDGED OVER THE RANGE THAT COULD BE THE PERIOD, not over one
+  // hypothesis's guess at it.
+  //
+  // On the boundary day two windows are live — the period may have begun this
+  // morning, or may still be last Tuesday's — and the cells already evaluate
+  // both. Coverage did not: it measured only the first, so a player asking at
+  // 14:00 on a Tuesday, after a fully observed week, was told `not_looked`
+  // because the fourteen hours since midnight happened to be unobserved.
+  //
+  // That is the wrong kind of caution. We HAVE observed the range in question;
+  // what we do not know is where inside it the period starts, and that is
+  // exactly what the `conditional` state is for. So coverage looks back over
+  // both windows and lets the cells carry the ambiguity.
+  const onBoundaryDayForCoverage = nowCivil >= boundaryDayStart && nowCivil < boundaryDayEnd;
+  const periodFrom = onBoundaryDayForCoverage
+    ? boundaryDayStart - 7 * 86400000
+    : boundaryDayStart;
   const periodTo = nowCivil;
   const relevant = (state.spans || [])
     .filter((sp) => sp.to >= periodFrom && sp.from <= periodTo)
@@ -2194,11 +2512,55 @@ function projectGrid(state, now) {
   // The ones big enough to change the answer.
   const holes = allGaps.filter((g) => g.to - g.from > PERIOD_GAP_TOLERANCE_MS);
 
+  // HOW MUCH OF THE PERIOD DID WE ACTUALLY OBSERVE?
+  //
+  // THE DEFECT THIS FIXES WAS THE WORST ONE IN THE MODULE, and an adversarial
+  // pass found it two days before handover. The gate below used to be
+  // `holes.length === 0` alone — no SINGLE gap longer than 24 hours. **Seven
+  // zone-in lines spaced 23 hours apart, and nothing else, cleared it**: every
+  // gap 23h < 24h, zero holes, `coverageSpansPeriod: true`, and the grid
+  // reported **25 raids still open**. Nine unrelated combat lines are enough to
+  // flip a whole week from `not_looked` to `open`.
+  //
+  // That is precisely the comfortable lie this module exists not to tell, and
+  // the max-gap test could never have caught it: a rule about the LARGEST hole
+  // says nothing about how much of the period was seen at all. Near-zero
+  // observation passes it trivially.
+  //
+  // MEASURED, over the real corpus, per Tuesday-to-Tuesday period:
+  //
+  //   Avenrae  04 Aug  12.2%   11 Aug  35.7%   18 Aug  27.1%
+  //   Shara    04 Aug  35.8%   11 Aug  42.3%   18 Aug  48.2%
+  //   the seven-line defect case ............  0.0%
+  //
+  // So a floor of 5% separates every real period from the degenerate one with
+  // roughly a 7x margin below the lowest real figure that also clears max-gap.
+  // IT IS STILL A JUDGEMENT, like the 24 hours above, and it is labelled one —
+  // but it is a judgement with measured daylight on both sides of it rather
+  // than a number chosen because it sounded careful.
+  //
+  // A light week that genuinely falls below the floor reports `not_looked`,
+  // which is the honest answer: we did not watch enough of the week to say
+  // anything about it. The fraction is published either way so a caller can
+  // show it rather than take our word for the threshold.
+  const periodLength = Math.max(1, periodTo - periodFrom);
+  let observedMs = 0;
+  let cursorObs = periodFrom;
+  for (const sp of relevant) {
+    const a = Math.max(sp.from, periodFrom);
+    const b = Math.min(sp.to, periodTo);
+    if (b > a && b > cursorObs) observedMs += b - Math.max(a, cursorObs);
+    cursorObs = Math.max(cursorObs, b);
+  }
+  const observedFraction = observedMs / periodLength;
+  const MIN_OBSERVED_FRACTION = 0.05;
+
   const spans =
     coverageStart !== null &&
     coverageEnd !== null &&
     relevant.length > 0 &&
-    holes.length === 0;
+    holes.length === 0 &&
+    observedFraction >= MIN_OBSERVED_FRACTION;
 
   // IS `now` ITSELF ON THE BOUNDARY DAY? Then the period start is ambiguous.
   //
@@ -2242,14 +2604,19 @@ function projectGrid(state, now) {
     // Evaluate one hypothesis: what does the grid say if the period began at
     // `from`? Returns the cell state for difficulty `d`, ignoring coverage.
     const under = (from, d) => {
-      const dayEnd = from + 86400000;
+      // WHEN THE HOUR IS KNOWN there is no ambiguous day: the period opens at an
+      // instant, so `dayEnd` collapses onto it and the `onDay` bucket below is
+      // empty by construction. Nothing else in this function changes, which is
+      // the point — the hour narrows the boundary rather than rewriting the
+      // logic that reads it.
+      const dayEnd = hourKnown ? periodStart : from + 86400000;
       const period = mine.filter((k) => k.civil >= dayEnd);
       // PER TIER, and this used to be the bug. `onDay` and `unstated` were
       // both computed across the whole row, so ONE ambiguous kill blanked all
       // five cells of a raid — including cells where no kill of any kind had
       // happened and the honest answer was plainly `open`. Eight kills produced
       // twelve `unknown` cells that way.
-      const onDay = mine
+      const onDay = hourKnown ? [] : mine
         .filter((k) => k.civil >= from && k.civil < dayEnd && k.difficultyStated && k.difficulty === d)
         .sort((a, b) => a.civil - b.civil);
       const unstated = period.filter((k) => k.instanced && !k.difficultyStated);
@@ -2310,7 +2677,10 @@ function projectGrid(state, now) {
 
     for (let d = 0; d < DIFFICULTY_LABELS.length; d++) {
       const h1 = under(boundaryDayStart, d);
-      const h2 = onBoundaryDay ? under(priorBoundaryStart, d) : h1;
+      // ONE HYPOTHESIS ONCE THE HOUR IS KNOWN. The second exists only to carry
+      // "we do not know whether the turnover has happened yet", which an instant
+      // answers outright.
+      const h2 = (onBoundaryDay && !hourKnown) ? under(priorBoundaryStart, d) : h1;
 
       let cellState;
       let because;
@@ -2325,7 +2695,12 @@ function projectGrid(state, now) {
           ? 'no lines seen at all'
           : holes.length
             ? `no record of ${holes.map((h) => `${h.hours.toFixed(1)}h`).join(' + ')} inside this period`
-            : 'coverage does not span this period';
+            // The new branch, and it must say WHICH test failed. "Coverage does
+            // not span this period" was true of both and told a reader nothing.
+            : observedFraction < MIN_OBSERVED_FRACTION
+              ? `only ${(observedFraction * 100).toFixed(1)}% of this period is in the log — ` +
+                `too little to say anything about it either way`
+              : 'coverage does not span this period';
       } else if (h1.s === h2.s && h1.why === h2.why) {
         cellState = h1.s;
         because = h1.why;
@@ -2427,7 +2802,13 @@ function projectGrid(state, now) {
     period: {
       boundaryDay: formatCivil(fromCivil(boundaryDayStart)).slice(0, 10),
       boundaryWeekday: RESET_RULE.weekdayName,
-      hourKnown: false,
+      // TRUE once the reset hour is measured and this projection used it.
+      // While false, the boundary is a whole day and `conditional` cells carry
+      // the ambiguity; the moment it is true they stop arising at all.
+      hourKnown,
+      // The exact instant the live period opened, or null while the hour is
+      // unmeasured. This is the field a UI can finally say "since" with.
+      periodStartedAt: periodStart === null ? null : formatCivil(fromCivil(periodStart)),
       // Stated once, at the top of the projection, so a caller cannot render
       // the grid without it being available to render alongside.
       evidenceNote:
@@ -2464,6 +2845,12 @@ function projectGrid(state, now) {
         'Gaps over 24 h make a cell not_looked; that threshold is a judgement, ' +
         'not a measurement, and every gap is listed in coverageGaps regardless.',
       coverageGapToleranceHours: 24,
+      // WHAT FRACTION OF THIS PERIOD WAS ACTUALLY OBSERVED, published so a
+      // caller can show it instead of trusting our threshold. Real periods in
+      // our corpus run 12%–48%; a live tailer that started this morning is a
+      // few percent and should be told so rather than shown 25 open cells.
+      coverageObservedFraction: Number(observedFraction.toFixed(4)),
+      coverageObservedMinimum: MIN_OBSERVED_FRACTION,
       coverageFrom: coverageStart === null ? null : formatCivil(fromCivil(coverageStart)),
       coverageTo: coverageEnd === null ? null : formatCivil(fromCivil(coverageEnd)),
     },
@@ -2590,6 +2977,12 @@ const THRESHOLDS = Object.freeze({
   CONTROL_AFTER_MS,
   COLLAPSE_MS,              // repeated `danger` inside this is one attempt
   MAX_EVENTS,               // dedupe horizon, in observations
+  // EXPORTED SO A HOST CAN SEE ITS OWN CEILING. Session C embeds this in an
+  // Electron renderer that backfills ~5.25M lines on load; a bound it cannot
+  // read is a bound it has to take on trust. See the insert site for what
+  // overflowing costs — a refusal degrades to `unknown`, never to a false
+  // `refused`.
+  MAX_VOIDLING_REPLIES,
 });
 
 module.exports = {
@@ -2835,6 +3228,24 @@ function nowCivil() {
            hour: d.getHours(), minute: d.getMinutes(), second: d.getSeconds() };
 }
 
+/* "2026-08-19 20:30:00" -> "19 Aug". A DATE AND NOT A TIME, deliberately — see
+   the note in the cell renderer. Built from the string rather than from a Date,
+   because the log's stamps carry no timezone and constructing a Date from one
+   would silently apply the reader's.
+
+   DECLARED HERE, ABOVE render(), and that is not cosmetic. It first lived
+   halfway down render() as a `const` + `function` pair, and the week header
+   added a call ABOVE it — a temporal dead zone that threw
+   `Cannot access 'MON' before initialization` on every single render. The page
+   loaded, the engine ran, and the grid never appeared. A pure formatter has no
+   business being scoped inside the function that happens to use it most. */
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function shortDay(civil) {
+  if (!civil) return "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(civil);
+  return m ? String(Number(m[3])) + " " + MON[Number(m[2]) - 1] : "";
+}
+
 function render() {
   if (!S.state) return;
   const g = LockoutCore.projectGrid(S.state, nowCivil());
@@ -2872,11 +3283,12 @@ function render() {
     countEl.appendChild(n); countEl.appendChild(u);
     countEl.className = "count " + (g.openCount ? "open" : "none");
     const bits = [];
-    if (g.conditionalCount) bits.push(g.conditionalCount + " turning on the reset hour");
-    if (g.uncertainCount) bits.push(g.uncertainCount + " uncertain");
-    if (g.notLookedCount) bits.push(g.notLookedCount + " not looked at");
-    bits.push(g.completedCount + " of 25 done");
-    subEl.textContent = bits.join(" · ") + " — since " + g.period.boundaryWeekday + " " + g.period.boundaryDay + ".";
+    const tag = (n, cls, word) => '<b class="' + cls + '">' + n + " " + word + "</b>";
+    if (g.completedCount) bits.push(tag(g.completedCount, "t-done", "completed"));
+    if (g.conditionalCount) bits.push(tag(g.conditionalCount, "t-unsure", "unsure"));
+    if (g.uncertainCount) bits.push(tag(g.uncertainCount, "t-unk", "unresolved"));
+    if (g.notLookedCount) bits.push(tag(g.notLookedCount, "t-unk", "not looked at"));
+    subEl.innerHTML = bits.join(" · ");
     for (const c of g.open) {
       const li = document.createElement("li");
       li.innerHTML = c.label + ' <span class="tier">D' + c.difficulty + " " + c.difficultyLabel + "</span>";
@@ -2892,17 +3304,36 @@ function render() {
       for (const c of g.conditional) {
         const li = document.createElement("li");
         li.textContent = c.label + " D" + c.difficulty + " " + c.difficultyLabel;
+        /* THE SAME TWO BRANCHES, WITHOUT A WALL CLOCK.
+           The wording ordered for this was "done if the reset was before 20:31,
+           open if after" — and the clock there was the example, not the
+           requirement. The owner's constraint is the stronger one: this tool
+           answers killed or not killed, and a printed time invites arithmetic
+           nobody asked to do.
+           So the branches keep their meaning and lose their digits. The instant
+           is not gone — the engine still computes it, and the cell's tooltip
+           still says it — it is just off the surface of a page whose whole
+           point is a yes and a no. */
+        const day = shortDay(c.decidedBy.pivot);
         const a = document.createElement("span");
         a.className = "arm";
-        a.innerHTML = "<b>done</b> if " + esc(c.decidedBy.doneIf);
+        a.innerHTML = "<b>done</b> if the reset had already passed when you killed it on " + esc(day);
         const b = document.createElement("span");
         b.className = "arm";
-        b.innerHTML = "<b>open</b> if " + esc(c.decidedBy.openIf);
+        b.innerHTML = "<b>open</b> if the reset came after";
         li.appendChild(a); li.appendChild(b);
         condEl.appendChild(li);
       }
     }
   }
+
+  const weekEl = document.getElementById("weekof");
+  if (weekEl) {
+    weekEl.textContent = "Week of " + g.period.boundaryWeekday + " " + shortDay(g.period.boundaryDay) +
+      " " + (g.period.boundaryDay || "").slice(0, 4);
+  }
+  const panel = document.getElementById("gridpanel");
+  if (panel) panel.hidden = false;
 
   const table = document.getElementById("grid");
   const head = table.tHead.rows[0];
@@ -2947,13 +3378,20 @@ function render() {
       span.appendChild(lab);
       const when = document.createElement("span");
       when.className = "when";
+      /* NO CLOCK, ANYWHERE ON THIS PAGE.
+         An earlier build printed "if before 22:12" in the unsure cells. That is
+         a real and useful fact — it is the instant that settles the cell — but
+         it is not what this tool is for. The owner's reason for wanting it was
+         that people remember having done SOME raids and not which ones, so the
+         only question is have I killed this, or have I not. A clock time
+         invites arithmetic nobody asked to do, and it reads as a countdown,
+         which this page has never had and must never grow.
+         The instant is not lost: it is in the cell's tooltip and in the list
+         under the count, where a reader who wants it has asked for it. */
       if (c.state === "completed") {
-        /* A FIELD, NOT A REGEX OVER OUR OWN PROSE. This read the date back out
-           of `because` until the pattern was mangled and every date silently
-           disappeared — the view kept rendering, just with nothing in it. */
-        when.textContent = c.completedAt ? c.completedAt.slice(5, 10) : "";
+        when.textContent = shortDay(c.completedAt);
       } else if (c.state === "conditional" && c.decidedBy && c.decidedBy.pivot) {
-        when.textContent = "if before " + c.decidedBy.pivot.slice(11, 16);
+        when.textContent = shortDay(c.decidedBy.pivot);
       }
       if (when.textContent) span.appendChild(when);
       /* The row is the raid, so the tooltip has to say what the raid contains —
@@ -2972,8 +3410,9 @@ function render() {
     }
     body.appendChild(tr);
   }
-  table.hidden = false;
-  document.getElementById("key").hidden = false;
+  /* The whole panel reveals at once — table, week header and legend together.
+     They were three separate `hidden` flags, which is three chances for the
+     grid to appear without the key that explains it. */
 
   /* Provenance, on the page rather than in a footnote. Every value a user acts
      on should be able to say where it came from. */

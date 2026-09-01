@@ -159,6 +159,18 @@ own LF. **I hexdumped my instrument, not the file.**
   safe **only** with exact equality, never substring.
 - `a dracoliche` and `the Hand of Veeshan` are **real bosses with leading
   articles**. The "article means trash" heuristic is wrong.
+- **KILLING BLOWS TRUNCATE TO REMAINING HIT POINTS.** The client reports damage
+  APPLIED, capped at the target's remaining HP, not the value rolled. Measured
+  here over the live log on eight deterministic spell sources: **5 of 5
+  below-modal hits landed on the tick the target died (100%), against 49 of
+  2,805 at-modal hits (1.7%)** — a ~59x difference. Any maximum, mean or
+  histogram over a set including killing blows is contaminated downward, worst
+  on the fights that end quickest. Filter on a same-timestamp death first.
+  We model no damage line; this is recorded so a later version does not.
+- **A NULL RESULT FROM A BADLY AIMED TEST IS NOT A NULL RESULT.** My first pass
+  at the above found nothing, because I had the capture groups backwards and was
+  keying melee lines on attacker+target — and "a rock golem" names many mobs, so
+  the death-tick match diluted to noise. I nearly reported the absence.
 - **THERE IS A THIRD KILL SHAPE, `<Name> died.`** — 47 lines, 8 inside group
   instances, and it carries PLAYER deaths too (`Shara died.`, `Avenrae died.`).
   Deliberately unparsed. Any roster derived from two shapes under-counts.
@@ -171,6 +183,24 @@ own LF. **I hexdumped my instrument, not the file.**
   `eqstr_us.txt`: strings 3342 and 5151.
 - `lockout_lines` in `logstats.py` is `STUN_LOCKOUT` — 7,071 false positives.
   `LockoutSpellTimer` is SPA 390, unrelated.
+- **THE eql-source WORKTREE AT `.claude/worktrees/intelligent-saha-4b21a7` IS
+  STALE AND HAS FOOLED ME TWICE.** 43 commits behind on 27 Aug (it made me tell
+  the Director the site was dark-only, when the authoritative stylesheet had four
+  `prefers-color-scheme` blocks); **48 behind on 30 Aug**, when it gave me 716 of
+  717 pages fetching Google Fonts against the true 715. **Read `origin/main` —
+  `git show origin/main:public/assets/site.css`, `git ls-tree -r origin/main`.**
+  A stale tree returns plausible numbers rather than obviously wrong ones, which
+  is exactly what makes it more dangerous than a broken one. (A, 30 Aug.)
+- **TWO READINGS OF ONE MONOTONIC COUNTER AGREE BY CONSTRUCTION.** `read +
+  remaining` gives the same expiry both times; only read precision and clock
+  drift can separate them. I cited a 6-second agreement across 10.836 h as
+  corroboration — it is 154 ppm of clock drift and says nothing about what the
+  counter counts. **Agreement between two views of one number is not a second
+  witness.** (Session C, 30 Aug.)
+- **A CONSTANT ONLY EVER READ BY HUMANS LOOKS EXACTLY LIKE ONE THAT IS WIRED IN.**
+  `RESET_RULE.hour` had ZERO call sites for eleven days while I asked for the
+  measurement daily. Grep the call sites before reporting something blocked on a
+  number. (Session C, 30 Aug.)
 - **Filenames are rotation-END dates, not content dates.**
 - `raw.githubusercontent.com` caches ~5 min and returns **HTTP 200 with stale
   content**. Verify with `gh api`.

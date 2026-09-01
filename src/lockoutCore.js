@@ -500,6 +500,85 @@ function parseInstanceName(name) {
 // NONE are the boss: they are `Cleric of Innoruuk` (68), `A Sage of Innoruuk`
 // (4) and `A Knight of Innoruuk` (1). Add `Innoruuk\`s Chosen` (39+10) and a
 // substring roster over-counts this one boss by roughly fourteen times.
+// ── DO NOT PARSE DAMAGE LINES WITHOUT READING THIS ───────────────────────────
+//
+// This module deliberately models NO damage line. There are 375,896 of them in
+// the live log alone and none of them is a lockout. But a later version will be
+// tempted, so the trap is recorded at the point of temptation rather than in a
+// document nobody has open.
+//
+// **THE CLIENT REPORTS DAMAGE APPLIED, CAPPED AT THE TARGET'S REMAINING HIT
+// POINTS — NOT THE VALUE ROLLED.** A killing blow is therefore truncated
+// downward by an unknown amount, and any maximum, mean or histogram computed
+// over a set that includes killing blows is contaminated — worst on the fights
+// that end quickest, which are exactly the ones a raid tracker looks at.
+//
+// Raised by the modelling session and MEASURED HERE rather than taken on trust.
+// Over the live log, keying on
+// `<target> has taken <N> damage from <spell> by <caster>` — a DoT TICK line —
+// and taking the eight sources with >=40 samples and a dominant value:
+//
+//   below the modal value :    5 hits,  5 landed on the tick the target died  (100%)
+//   at    the modal value : 2805 hits, 49 landed on the tick the target died  (1.7%)
+//
+// THEN THEY RAN THE CONVERSE ON THEIR OWN CORPUS AND IT DID NOT REPRODUCE, and
+// their refutation is worth more than our agreement was. Keyed per (spell,
+// target) over 759 direct-damage hits:
+//
+//   below modal : 79 of 250 are killing blows (31.6%)   — not 100%
+//   at    modal : 73 of 378 are killing blows (19.3%)   — not 1.7%
+//   lift 1.64x, against our 59x.
+//
+// TWO REASONS, AND THE SECOND IS THE ONE TO KEEP.
+//
+//   1. WHICH LINE YOU READ SETS THE BASE RATE. A DoT tick is small and regular
+//      and lands the kill 1.7% of the time; direct AE damage lands it 19.3%.
+//      An elevenfold difference from the line shape alone.
+//
+//   2. ON DIRECT DAMAGE THE PER-TARGET DISTRIBUTION IS BIMODAL. Fourteen of
+//      their twenty target groups carry two legitimate values in the same pair —
+//      2659 and 3177, ratio 0.8370 — and 79 of their 171 false positives sit at
+//      exactly that ratio. A modal baseline labels an entire second population
+//      as anomalous. On DoT ticks that population does not exist, which is the
+//      only reason our filter looked clean.
+//
+// SO THE RULE IS NARROWER THAN WE FIRST WROTE IT:
+//
+//   The TRUNCATION is real and confirmed on two independent corpora — the client
+//   reports damage APPLIED, capped at remaining HP.
+//   "BELOW MODAL IMPLIES KILLING BLOW" IS NOT. It holds on DoT tick lines, where
+//   the value is regular, and FAILS on direct-damage lines at scale.
+//
+// If you ever model damage: match the KILL LINE and drop those values. Do not
+// infer a killing blow from the damage number. The kill regexes below are
+// exactly what implements the safe version, which is the one good reason to read
+// them together.
+// ── DAMAGE, PARSED FOR SESSION E AND DELIBERATELY NOT ACCUMULATED ───────────
+//
+// The Director ruled that E does not build a second ingestion layer, and E asked
+// for these rather than forking. The `- Group` inversion is the argument: it
+// propagated three ways because three implementations read the same line
+// separately. One parse, one place to be wrong, one place to fix.
+//
+// **`applyLine` IGNORES EVERY ONE OF THESE.** There are 375,896 damage lines in
+// the live log alone; accumulating them would destroy the state size, the
+// idempotence guarantee and the backfill budget this module is measured on.
+// `parseLine` returns the row and the caller accumulates. That split is the
+// whole design and it is why adding this costs the lockout tracker nothing.
+//
+// ON `on_kill`, WHICH E ASKED FOR AS A FIELD: IT CANNOT BE DECIDED HERE.
+// Whether a hit was the killing blow depends on a line that has not arrived yet.
+// This is the Voidling closing-line lesson exactly — `applyLine` classifies
+// nothing, and a windowed pass decides with the whole picture visible. Deciding
+// it per-line is how I produced a false 0.474 h bracket in August. So the row
+// carries the timestamp and the target, and the caller joins against the kill
+// lines below at the same stamp. That join is the safe filter both E and I
+// already agreed on after E refuted the modal-value shortcut.
+const DAMAGE_SELF_RE = /^You hit yourself for (\d+) points of ([a-z]+) damage by (.+?)\.$/;
+const DAMAGE_MELEE_RE = /^(.+?) (slash|slashes|hit|hits|crush|crushes|pierce|pierces|bash|bashes|kick|kicks|claw|claws|bite|bites|punch|punches|strike|strikes|gore|gores|maul|mauls) (.+?) for (\d+) points of ([a-z]+ )?damage\.$/;
+const DAMAGE_SPELL_RE = /^(.+?) ha[sve]+ taken (\d+) damage from (.+?) by (.+?)\.$/;
+const SONG_PULSE_RE = /^Your voice booms\.$/;
+
 const SLAIN_BY_RE = /^(.+?) has been slain by (.+?)!$/;
 const YOU_SLEW_RE = /^You have slain (.+?)!$/;
 
@@ -904,6 +983,30 @@ const LOCKOUT_MODEL = Object.freeze({
   commonOriginTolerance: 'about 1 second',
   anchorEvent: null,   // NOT RECORDED — see below
 
+  // ── THE ONE THAT CANNOT BE CAUGHT LATER ──────────────────────────────────
+  //
+  // Promoted out of `caveats`, where it was the third bullet of an array
+  // nobody reads, because of what makes it different from every other caveat
+  // in this file: **every other error here is discoverable by collecting more
+  // data. This one is not.**
+  //
+  // A tracker that infers lockout expiry from kill timestamps is measuring a
+  // different event from the one that matters. It will look right. Its tests
+  // will pass. A month of real user data will not contradict it, because kill
+  // timestamps are real, plentiful, and precisely wrong for this. The only
+  // thing that exposes the mistake is the alt+Z window, which is not in the log
+  // and which no amount of log-reading will ever produce.
+  //
+  // So the warning has to live in the code, next to the field it protects,
+  // rather than in a document that will not be open at the moment somebody
+  // decides that kill times are "close enough".
+  inferenceHazard:
+    'IF A FUTURE VERSION INFERS LOCKOUT EXPIRY FROM KILL TIMESTAMPS, NO VOLUME ' +
+    'OF KILL DATA WILL EVER REVEAL THE ERROR. 14 locks earned across 6,133 ' +
+    'seconds of kills showed ONE value with zero spread; per-kill stamping ' +
+    'would have shown 14 values spread over 1h42m. The anchor is not in the ' +
+    'log. anchorEvent stays null until something measures it.',
+
   // THE ANCHOR IS NOT RECORDED, and an earlier revision overstated this too.
   // The moment the screenshot was taken is unknown — there is no file, no
   // timestamp, no independent clock — so the "common instant" was derived from
@@ -1013,6 +1116,53 @@ function parseLine(line) {
   }
   // parseLine stays OPEN TO ANY NAME. Whether a slain thing is a raid boss is a
   // roster question, decided later; nothing here filters by roster.
+  // SELF-DAMAGE FIRST — and THE ORDERING CLAIM HERE WAS OVERSTATED, corrected
+  // 31 Aug after a mutation harness showed nothing tested it.
+  //
+  // This said the order is load-bearing because `You hit yourself ...` "also
+  // matches the melee shape below". **MEASURED, IT DOES NOT.** Over 276 real
+  // self-damage lines in the corpus, ZERO also match `DAMAGE_MELEE_RE`: self
+  // requires a trailing `by <spell>.` and melee requires the line to end at
+  // `damage.`, so the two shapes are disjoint. Disabling this branch entirely
+  // left all 119 tests green — the claim was never a guard.
+  //
+  // WHAT IS ACTUALLY LOAD-BEARING is the FLAG, not the order: `outgoing: false`.
+  // E measured that counting self-hits as output inflates apparent damage by
+  // 3.7%, worst on exactly the support builds a damage tool gets pointed at. E
+  // named Cannibalize; in OUR corpus the same shape carries `Lifetap Strike` (9)
+  // and `Lifebite` (2) and Cannibalize does not appear at all — so the exclusion
+  // keys on the SHAPE, never on a spell allowlist, which would have missed both
+  // of ours. That flag is now tested; the ordering is kept because it is free
+  // and correct, not because it is doing work.
+  //
+  // TWO SHAPES THIS DOES NOT COVER, both measured and both left alone:
+  //   · a self-hit with no `by <spell>` clause falls through to melee and is
+  //     emitted as ordinary OUTGOING damage against a target named `yourself`;
+  //   · 801 of 137,690 damage rows (0.58%) carry `actor === target`, under just
+  //     two names. **The log cannot tell one entity hitting itself apart from
+  //     two entities sharing a name**, so a name-equality filter would silently
+  //     drop real damage. Not filtered here for that reason.
+  if ((m = DAMAGE_SELF_RE.exec(message))) {
+    return { kind: 'self-damage', at, actor: 'You', target: 'You',
+             amount: Number(m[1]), damageType: m[2], spell: m[3], outgoing: false };
+  }
+  if ((m = DAMAGE_MELEE_RE.exec(message))) {
+    const actor = m[1] === 'You' ? 'You' : m[1];
+    return { kind: 'damage', at, actor, target: m[3], amount: Number(m[4]),
+             damageType: (m[5] || '').trim() || 'melee', spell: null,
+             byYou: m[1] === 'You', outgoing: true, form: 'melee' };
+  }
+  if ((m = DAMAGE_SPELL_RE.exec(message))) {
+    return { kind: 'damage', at, actor: m[4], target: m[1], amount: Number(m[2]),
+             damageType: 'spell', spell: m[3],
+             byYou: m[4] === 'you' || m[4] === 'You', outgoing: true, form: 'spell' };
+  }
+  // E's buff-uptime primitive: Amplification's own pulse on the 6-second tick,
+  // 16,788 of them in the live log. It reads memorised state off the lines
+  // instead of off a screenshot, which is what E needs for the 2659/3177 split.
+  if (SONG_PULSE_RE.test(message)) {
+    return { kind: 'song-pulse', at, song: 'Amplification', source: 'Your voice booms.' };
+  }
   if ((m = SLAIN_BY_RE.exec(message))) {
     return { kind: 'kill', at, slain: m[1], killer: m[2], byYou: false };
   }
@@ -1122,6 +1272,12 @@ function createState(character, opts) {
 }
 
 const MAX_EVENTS = 5000;
+
+// The positive-control set gets its OWN bound rather than borrowing one.
+// Measured occupancy: 600 replies across all 16 log files, ~340 for the busiest
+// single character over 434 MB. See the note at the insert site for what
+// overflowing costs — it degrades a refusal to `unknown`, never the reverse.
+const MAX_VOIDLING_REPLIES = 5000;
 // The dedupe index is deliberately far larger than the provenance log. The
 // owner's own corpus produces ~12k observations for one character, so a bound
 // of 5000 was actively corrupting counts.
@@ -1157,8 +1313,25 @@ const SPAN_GAP_MS = 30 * 60 * 1000;
 function applyLine(state, line) {
   // EVERY stamped line extends coverage, not just the ones we model. Coverage
   // is about what we were in a position to see, and we saw every line.
+  //
+  // ALL THREE COVERAGE FIELDS ARE SET HERE, FROM ONE RULE, AND THEY WERE NOT.
+  // `spans` was extended by every stamped line while `firstSeen`/`lastSeen` were
+  // set further down, only for events that survived the early returns. So the
+  // module held TWO MEANINGS OF COVERAGE and `projectGrid` read both — `spans`
+  // for the gap and observed-fraction gate, `firstSeen` for the reported
+  // `coverageFrom`. A log of pure combat extended one and not the other.
+  //
+  // Found by a test written for a different purpose: adding damage rows made the
+  // divergence loud (600 stamped lines, spans extended, firstSeen still null)
+  // where before it was merely latent. The fix is not to special-case damage; it
+  // is that "what we were in a position to see" has one definition.
   const stamped = typeof line === 'string' && line.length ? splitStamp(line) : null;
-  if (stamped) noteCoverage(state, civilOf(stamped.at));
+  if (stamped) {
+    const stampCivil = civilOf(stamped.at);
+    noteCoverage(state, stampCivil);
+    if (state.firstSeen === null || stampCivil < state.firstSeen) state.firstSeen = stampCivil;
+    if (state.lastSeen === null || stampCivil > state.lastSeen) state.lastSeen = stampCivil;
+  }
 
   const ev = parseLine(line);
   if (!ev) {
@@ -1167,13 +1340,82 @@ function applyLine(state, line) {
   }
 
   const civil = civilOf(ev.at);
+
+  // ── DO NOT "OPTIMISE" THIS EARLY RETURN AWAY. IT IS NOT A MEMORY DECISION. ──
+  //
+  // It looks like one, which is exactly the danger: a reader sees "skip the
+  // bookkeeping for lines we do not model" and moves it, or deletes it, or
+  // decides the guard costs more than it saves.
+  //
+  // **IT IS A SILENT CORRECTNESS FAILURE WEARING A MEMORY DECISION'S CLOTHES.**
+  //
+  // The live log holds 375,896 damage lines and 16,788 song pulses. `state.seen`
+  // is the DEDUPE INDEX and is bounded at 200,000 entries. Let damage through
+  // and one character's combat evicts the entire lockout dedupe set — after
+  // which replaying a log DOUBLE-COUNTS real kills, because the keys that would
+  // have suppressed them have been pushed out by damage nobody models.
+  //
+  // The tell would be `dropped.beyondDedupeHorizon` firing on ordinary input,
+  // which is the diagnostic this module treats as its worst possible state:
+  // silent double-counting with a clean report. So the guard sits ABOVE the
+  // index, not merely above `events`, and it is load-bearing there.
+  //
+  // Caught the moment the rows were added — by the adapter test noticing a
+  // change event per damage line, not by anyone reasoning about it.
+  //
+  // `parseLine` returns the row for Session E; `applyLine` does not want it.
+  // That split is what makes the addition free for this module.
+  if (ev.kind === 'damage' || ev.kind === 'self-damage' || ev.kind === 'song-pulse') {
+    return state;
+  }
+
   // A Voidling reply is a PRESENCE CONTROL, not an event. It never enters
   // `events` and never emits a change, because several players share one NPC
   // and the count is meaningless. It is recorded below as a set of seconds.
   if (ev.kind === 'voidling-reply') {
+    // ── ONLY THE CLOSING LINE IS THE CONTROL. ─────────────────────────────
+    //
+    // `parseLine` has always computed `closing`, and until 31 Aug NOTHING READ
+    // IT — every Voidling line entered the control set. A field that looks like
+    // it does something, on an object whose consumer never asks.
+    //
+    // Not latent: measured across both characters, MORE THAN HALF the Voidling
+    // lines are not the closing line — Shara 52 of 96, Avenrae 94 of 196. So
+    // the control set held roughly twice the instants it should, and any of
+    // them landing in the window would corroborate a refusal that had no
+    // corroboration.
+    //
+    // The closing line is the control precisely because it fires on BOTH a
+    // grant and a refusal; ordinary chatter establishes nothing about whether
+    // the hail was answered. Filtering moves un-corroborated hails from
+    // `refused` to `unknown`, which is the safe direction and the one this
+    // module is required to take.
+    //
+    // Found by analysis/mutation-check.js: replacing the flag with a literal
+    // `true` left all 122 tests green.
+    if (!ev.closing) return state;
     if (!state.voidlingReplies.includes(civil)) {
       state.voidlingReplies.push(civil);
-      if (state.voidlingReplies.length > MAX_EVENTS) state.voidlingReplies.shift();
+      // THE BOUND, AND ITS COST, BOTH STATED — Session C's clause 7.
+      //
+      // This was bounded already, at MAX_EVENTS, by sharing a constant with a
+      // structure it has nothing to do with. That is not a stated bound; it is
+      // an accident that happens to hold. A host embedding this does a backfill
+      // of about 5.25 million lines on load and is entitled to know what grows.
+      //
+      // WHAT IT COSTS WHEN IT OVERFLOWS, which is the part a bound is useless
+      // without: the OLDEST seconds are dropped first. A refusal older than the
+      // surviving window therefore loses its positive control and is reported
+      // `unknown` rather than `refused`. That is the safe direction — the module
+      // stops claiming a refusal it can no longer corroborate. It can never
+      // manufacture a false `refused`, because a refusal requires a reply
+      // present in this set.
+      //
+      // HEADROOM, MEASURED rather than hoped for: `grep -ac "Voidling says, '"`
+      // over all 16 log files returns 600 replies in total, and the busiest
+      // single character contributes about 340 across 434 MB and three weeks.
+      // The bound is roughly 15x the observed occupancy for one character.
+      if (state.voidlingReplies.length > MAX_VOIDLING_REPLIES) state.voidlingReplies.shift();
     }
     return state;
   }
@@ -1185,6 +1427,26 @@ function applyLine(state, line) {
     state.dropped.duplicate++;
     return state;
   }
+  // ── CAPTURED BEFORE THE INSERT, AND THAT IS THE WHOLE FIX. ────────────
+  //
+  // The horizon check below asks "is this line older than everything I still
+  // hold". Until 1 Sep it called `oldestSeen(state)` AFTER this line's own key
+  // had been written into the index — so the line always contributed its own
+  // value to the minimum, and `civil < oldestSeen(state)` was UNSATISFIABLE.
+  //
+  // Measured, not argued: 199,999 pre-seeded keys all at 9e12 (far in the
+  // future), a line genuinely older than every one of them, and
+  // `dropped.beyondDedupeHorizon` still read 0.
+  //
+  // **The counter the source calls the guard against "the worst failure this
+  // module can have" could not fire.** An instrument that cannot return one of
+  // its two answers, sitting in the guard against silent double-counting.
+  //
+  // `pruneSeen` also had to be crossed: it halves `seenCount` when the bound is
+  // passed, so the count is captured here too rather than read after.
+  const horizonCount = state.seenCount;
+  const horizonOldest = horizonCount >= MAX_SEEN ? oldestSeen(state) : Infinity;
+
   state.seen[key] = civil;
   state.seenCount++;
   if (state.seenCount > MAX_SEEN) pruneSeen(state);
@@ -1205,12 +1467,15 @@ function applyLine(state, line) {
   // `dropped.beyondDedupeHorizon > 0` tells a host "you fed me something from
   // before my memory; I can no longer promise idempotence, rebuild from the
   // log." Visible beats silent.
-  if (state.seenCount >= MAX_SEEN && civil < oldestSeen(state)) {
+  // Both operands captured ABOVE, before the insert and before any prune. See
+  // the note there: read after, this condition is unsatisfiable.
+  if (horizonCount >= MAX_SEEN && civil < horizonOldest) {
     state.dropped.beyondDedupeHorizon++;
   }
 
-  if (state.firstSeen === null || civil < state.firstSeen) state.firstSeen = civil;
-  if (state.lastSeen === null || civil > state.lastSeen) state.lastSeen = civil;
+  // firstSeen/lastSeen are set at the TOP of this function now, from the stamp,
+  // for every stamped line — see the note there. Setting them again here would
+  // be harmless but would reintroduce the second definition.
 
   state.events.push({ key, kind: ev.kind, civil, at: ev.at });
   if (state.events.length > MAX_EVENTS) state.events.shift();
@@ -1272,6 +1537,28 @@ function applyLine(state, line) {
     // Only a ZONE-IN moves the player. An invite is someone else's offer and
     // may be declined, so it must never set the current instance — doing so
     // would attribute a later kill to an instance never entered.
+    // ── THE ASSIGNMENT IS UNCONDITIONAL, AND THAT IS THE REQUIREMENT. ─────
+    //
+    // **DO NOT GUARD THIS WITH `if (ev.instanced)`.** It reads like a tidy-up —
+    // "why assign null when we could skip" — and it is the whole clearing
+    // mechanism. Zoning into the OPEN WORLD is what unsets the instance, and it
+    // does so by assigning the null branch below.
+    //
+    // Guarded, the last instance becomes STICKY and follows the player out:
+    //
+    //     enter Nagafen's Lair - Group 3
+    //     zone out to Nektulos Forest
+    //     kill Lord Nagafen in the open world
+    //     -> reports difficulty 3 of Nagafen's Lair COMPLETE
+    //
+    // A raid marked done that the player has not done, from one ordinary
+    // zone-in, with no rare input and no unusual state.
+    //
+    // Until 1 Sep the clearing was an ACCIDENT of writing the assignment
+    // unconditionally rather than a decision, and all 130 tests passed with it
+    // guarded. `analysis/mutation-check.js` found it; the triple in
+    // test/grid.test.js is what holds it now — inside, after leaving, and never
+    // entered, because no two of those three distinguish every wrong version.
     if (ev.kind === 'entered') {
       state.currentInstance = ev.instanced
         ? {
@@ -1580,11 +1867,29 @@ function classifyRequests(state) {
     collapsed.push(r);
   }
 
+  // SORT ONCE, THEN BINARY SEARCH — the other half of clause 7.
+  //
+  // This was `.some()` per request over the reply array: O(requests x replies).
+  // Both are bounded at 5,000, so the worst case was 25 million comparisons on a
+  // structure a host builds during a 5.25M-line backfill on its main process.
+  //
+  // At MEASURED volumes it was never close: ~340 replies against ~40 requests
+  // for the busiest character, so about 13,600 comparisons. The hazard was
+  // theoretical. It is now absent rather than merely unlikely, which is the
+  // difference between a bound you can hand someone and one you have to explain.
+  const sortedReplies = state.voidlingReplies.slice().sort((a, b) => a - b);
+  const replyInRange = (lo, hi) => {
+    let a = 0, b = sortedReplies.length;
+    while (a < b) {                       // first index with value >= lo
+      const mid = (a + b) >> 1;
+      if (sortedReplies[mid] < lo) a = mid + 1; else b = mid;
+    }
+    return a < sortedReplies.length && sortedReplies[a] <= hi;
+  };
+
   return collapsed.map((r) => {
     const grant = assignments.find((a) => a.civil >= r.civil && a.civil - r.civil <= GRANT_WINDOW_MS);
-    const control = state.voidlingReplies.some(
-      (v) => v >= r.civil - CONTROL_BEFORE_MS && v <= r.civil + CONTROL_AFTER_MS
-    );
+    const control = replyInRange(r.civil - CONTROL_BEFORE_MS, r.civil + CONTROL_AFTER_MS);
     return {
       at: formatCivil(r.at),
       civil: r.civil,
@@ -1686,8 +1991,49 @@ function projectGrid(state, now) {
   const nowDay = Date.UTC(now.year, now.month - 1, now.day);
   const dow = new Date(nowDay).getUTCDay();
   const back = (dow - RESET_RULE.weekday + 7) % 7;
-  const boundaryDayStart = nowDay - back * 86400000;
-  const boundaryDayEnd = boundaryDayStart + 86400000;
+  let boundaryDayStart = nowDay - back * 86400000;
+  let boundaryDayEnd = boundaryDayStart + 86400000;
+
+  // ── THE HOUR, IF WE EVER MEASURE ONE, AND IT HAD NOWHERE TO GO ─────────────
+  //
+  // SESSION C FOUND THIS AND IT IS A REAL MISS OF MINE. For eleven days I asked
+  // the owner for the reset hour as though the number were the whole blocker.
+  // It was not. `RESET_RULE.hour` had **zero uses** in this entire module — no
+  // destructuring, no index access, nothing. The boundary was a whole DAY and
+  // the hour never entered a computation; it existed as an attributed field and
+  // as the words "the reset hour has never been measured".
+  //
+  // So a perfect hour, handed over today, would have changed **not one cell**.
+  // The blocker was always two things and I only ever named one: the number, and
+  // a code path that consumes it. This is the code path.
+  //
+  // WHAT IT DOES WHEN THE HOUR IS KNOWN. The period stops being a day with two
+  // live hypotheses and becomes an INSTANT. A kill is then either inside the
+  // period or outside it, and the `conditional` state — which exists solely to
+  // carry this ambiguity — stops arising at all.
+  //
+  // WHAT IT DOES WHEN THE HOUR IS NULL, which is today: nothing. Every value
+  // below is identical to what it was, and the two-hypothesis machinery runs
+  // exactly as before. This is dormant until something measures the hour.
+  //
+  // THE CONSTANT STAYS IN ITS ONE ATTRIBUTED FIELD. `RESET_RULE.hour` is read
+  // here and nowhere else, and the test that fails when a reset constant appears
+  // outside that field is unaffected — reading the attributed field is the
+  // permitted case; copying its value somewhere else is not.
+  const resetHour = RESET_RULE.hour;
+  const hourKnown = typeof resetHour === 'number' && resetHour >= 0 && resetHour < 24;
+  let periodStart = null;          // the exact instant, or null while unmeasured
+  if (hourKnown) {
+    periodStart = boundaryDayStart + resetHour * 3600000;
+    // If the turnover has NOT yet happened today, the live period is last
+    // week's. With a day-granular boundary this was unknowable and produced the
+    // conditional cells; with an hour it is arithmetic.
+    if (nowCivil < periodStart) {
+      periodStart -= 7 * 86400000;
+      boundaryDayStart -= 7 * 86400000;
+      boundaryDayEnd = boundaryDayStart + 86400000;
+    }
+  }
 
   const coverageStart = state.firstSeen;
   const coverageEnd = state.lastSeen;
@@ -1719,7 +2065,23 @@ function projectGrid(state, now) {
   // small holes cannot add up to a missing evening without anyone seeing it.
   const GAP_REPORT_MS = 60 * 60 * 1000;
 
-  const periodFrom = boundaryDayStart;
+  // COVERAGE IS JUDGED OVER THE RANGE THAT COULD BE THE PERIOD, not over one
+  // hypothesis's guess at it.
+  //
+  // On the boundary day two windows are live — the period may have begun this
+  // morning, or may still be last Tuesday's — and the cells already evaluate
+  // both. Coverage did not: it measured only the first, so a player asking at
+  // 14:00 on a Tuesday, after a fully observed week, was told `not_looked`
+  // because the fourteen hours since midnight happened to be unobserved.
+  //
+  // That is the wrong kind of caution. We HAVE observed the range in question;
+  // what we do not know is where inside it the period starts, and that is
+  // exactly what the `conditional` state is for. So coverage looks back over
+  // both windows and lets the cells carry the ambiguity.
+  const onBoundaryDayForCoverage = nowCivil >= boundaryDayStart && nowCivil < boundaryDayEnd;
+  const periodFrom = onBoundaryDayForCoverage
+    ? boundaryDayStart - 7 * 86400000
+    : boundaryDayStart;
   const periodTo = nowCivil;
   const relevant = (state.spans || [])
     .filter((sp) => sp.to >= periodFrom && sp.from <= periodTo)
@@ -1739,11 +2101,55 @@ function projectGrid(state, now) {
   // The ones big enough to change the answer.
   const holes = allGaps.filter((g) => g.to - g.from > PERIOD_GAP_TOLERANCE_MS);
 
+  // HOW MUCH OF THE PERIOD DID WE ACTUALLY OBSERVE?
+  //
+  // THE DEFECT THIS FIXES WAS THE WORST ONE IN THE MODULE, and an adversarial
+  // pass found it two days before handover. The gate below used to be
+  // `holes.length === 0` alone — no SINGLE gap longer than 24 hours. **Seven
+  // zone-in lines spaced 23 hours apart, and nothing else, cleared it**: every
+  // gap 23h < 24h, zero holes, `coverageSpansPeriod: true`, and the grid
+  // reported **25 raids still open**. Nine unrelated combat lines are enough to
+  // flip a whole week from `not_looked` to `open`.
+  //
+  // That is precisely the comfortable lie this module exists not to tell, and
+  // the max-gap test could never have caught it: a rule about the LARGEST hole
+  // says nothing about how much of the period was seen at all. Near-zero
+  // observation passes it trivially.
+  //
+  // MEASURED, over the real corpus, per Tuesday-to-Tuesday period:
+  //
+  //   Avenrae  04 Aug  12.2%   11 Aug  35.7%   18 Aug  27.1%
+  //   Shara    04 Aug  35.8%   11 Aug  42.3%   18 Aug  48.2%
+  //   the seven-line defect case ............  0.0%
+  //
+  // So a floor of 5% separates every real period from the degenerate one with
+  // roughly a 7x margin below the lowest real figure that also clears max-gap.
+  // IT IS STILL A JUDGEMENT, like the 24 hours above, and it is labelled one —
+  // but it is a judgement with measured daylight on both sides of it rather
+  // than a number chosen because it sounded careful.
+  //
+  // A light week that genuinely falls below the floor reports `not_looked`,
+  // which is the honest answer: we did not watch enough of the week to say
+  // anything about it. The fraction is published either way so a caller can
+  // show it rather than take our word for the threshold.
+  const periodLength = Math.max(1, periodTo - periodFrom);
+  let observedMs = 0;
+  let cursorObs = periodFrom;
+  for (const sp of relevant) {
+    const a = Math.max(sp.from, periodFrom);
+    const b = Math.min(sp.to, periodTo);
+    if (b > a && b > cursorObs) observedMs += b - Math.max(a, cursorObs);
+    cursorObs = Math.max(cursorObs, b);
+  }
+  const observedFraction = observedMs / periodLength;
+  const MIN_OBSERVED_FRACTION = 0.05;
+
   const spans =
     coverageStart !== null &&
     coverageEnd !== null &&
     relevant.length > 0 &&
-    holes.length === 0;
+    holes.length === 0 &&
+    observedFraction >= MIN_OBSERVED_FRACTION;
 
   // IS `now` ITSELF ON THE BOUNDARY DAY? Then the period start is ambiguous.
   //
@@ -1787,14 +2193,19 @@ function projectGrid(state, now) {
     // Evaluate one hypothesis: what does the grid say if the period began at
     // `from`? Returns the cell state for difficulty `d`, ignoring coverage.
     const under = (from, d) => {
-      const dayEnd = from + 86400000;
+      // WHEN THE HOUR IS KNOWN there is no ambiguous day: the period opens at an
+      // instant, so `dayEnd` collapses onto it and the `onDay` bucket below is
+      // empty by construction. Nothing else in this function changes, which is
+      // the point — the hour narrows the boundary rather than rewriting the
+      // logic that reads it.
+      const dayEnd = hourKnown ? periodStart : from + 86400000;
       const period = mine.filter((k) => k.civil >= dayEnd);
       // PER TIER, and this used to be the bug. `onDay` and `unstated` were
       // both computed across the whole row, so ONE ambiguous kill blanked all
       // five cells of a raid — including cells where no kill of any kind had
       // happened and the honest answer was plainly `open`. Eight kills produced
       // twelve `unknown` cells that way.
-      const onDay = mine
+      const onDay = hourKnown ? [] : mine
         .filter((k) => k.civil >= from && k.civil < dayEnd && k.difficultyStated && k.difficulty === d)
         .sort((a, b) => a.civil - b.civil);
       const unstated = period.filter((k) => k.instanced && !k.difficultyStated);
@@ -1855,7 +2266,10 @@ function projectGrid(state, now) {
 
     for (let d = 0; d < DIFFICULTY_LABELS.length; d++) {
       const h1 = under(boundaryDayStart, d);
-      const h2 = onBoundaryDay ? under(priorBoundaryStart, d) : h1;
+      // ONE HYPOTHESIS ONCE THE HOUR IS KNOWN. The second exists only to carry
+      // "we do not know whether the turnover has happened yet", which an instant
+      // answers outright.
+      const h2 = (onBoundaryDay && !hourKnown) ? under(priorBoundaryStart, d) : h1;
 
       let cellState;
       let because;
@@ -1870,7 +2284,12 @@ function projectGrid(state, now) {
           ? 'no lines seen at all'
           : holes.length
             ? `no record of ${holes.map((h) => `${h.hours.toFixed(1)}h`).join(' + ')} inside this period`
-            : 'coverage does not span this period';
+            // The new branch, and it must say WHICH test failed. "Coverage does
+            // not span this period" was true of both and told a reader nothing.
+            : observedFraction < MIN_OBSERVED_FRACTION
+              ? `only ${(observedFraction * 100).toFixed(1)}% of this period is in the log — ` +
+                `too little to say anything about it either way`
+              : 'coverage does not span this period';
       } else if (h1.s === h2.s && h1.why === h2.why) {
         cellState = h1.s;
         because = h1.why;
@@ -1972,7 +2391,13 @@ function projectGrid(state, now) {
     period: {
       boundaryDay: formatCivil(fromCivil(boundaryDayStart)).slice(0, 10),
       boundaryWeekday: RESET_RULE.weekdayName,
-      hourKnown: false,
+      // TRUE once the reset hour is measured and this projection used it.
+      // While false, the boundary is a whole day and `conditional` cells carry
+      // the ambiguity; the moment it is true they stop arising at all.
+      hourKnown,
+      // The exact instant the live period opened, or null while the hour is
+      // unmeasured. This is the field a UI can finally say "since" with.
+      periodStartedAt: periodStart === null ? null : formatCivil(fromCivil(periodStart)),
       // Stated once, at the top of the projection, so a caller cannot render
       // the grid without it being available to render alongside.
       evidenceNote:
@@ -2009,6 +2434,12 @@ function projectGrid(state, now) {
         'Gaps over 24 h make a cell not_looked; that threshold is a judgement, ' +
         'not a measurement, and every gap is listed in coverageGaps regardless.',
       coverageGapToleranceHours: 24,
+      // WHAT FRACTION OF THIS PERIOD WAS ACTUALLY OBSERVED, published so a
+      // caller can show it instead of trusting our threshold. Real periods in
+      // our corpus run 12%–48%; a live tailer that started this morning is a
+      // few percent and should be told so rather than shown 25 open cells.
+      coverageObservedFraction: Number(observedFraction.toFixed(4)),
+      coverageObservedMinimum: MIN_OBSERVED_FRACTION,
       coverageFrom: coverageStart === null ? null : formatCivil(fromCivil(coverageStart)),
       coverageTo: coverageEnd === null ? null : formatCivil(fromCivil(coverageEnd)),
     },
@@ -2101,6 +2532,329 @@ function project(state, now) {
   };
 }
 
+// ===========================================================================
+// ACTIONABILITY — the interface the BIS ranker calls
+// ===========================================================================
+//
+// THE QUESTION IT ANSWERS, and it is narrower than the question that was asked.
+//
+// The ranker wants: "can this character still run the content that drops this
+// item, this week?" It must NOT pass an item id. This module has no loot table,
+// will not acquire one, and would be guessing if it pretended otherwise. The
+// seam is:
+//
+//     the ranker owns   item -> which raid / difficulty drops it
+//     this module owns  that raid / difficulty -> can this character act on it
+//
+// ── THE GATE NOBODY ASKED ABOUT, AND IT IS THE ONE THAT DECIDES ────────────
+//
+// **THE TOKEN CAP, NOT THE GRID, IS WHAT MAKES A RECOMMENDATION UNACTIONABLE.**
+//
+// Measured, per character per week beginning Tuesday:
+//
+//     Avenrae, week of 11 Aug:  18 roster boss kills, 3 grants, 3 tokens
+//     Shara,   week of 11 Aug:  16 roster boss kills, 3 grants, 3 tokens
+//     Both,    week of  4 Aug:   7 roster boss kills, 3 grants, 3 tokens
+//
+// Eighteen raids, three tokens. **A boss can be OPEN on the grid while the cap
+// is SPENT** — and a ranker that asks the grid alone will tell a player with
+// zero tokens left to go and farm a zone, which is the recommendation that
+// loses trust in one click.
+//
+// So this function reads the cap FIRST and the grid second, and it is the cap
+// that can return `no`.
+//
+// ── WHAT `no` IS AND IS NOT ───────────────────────────────────────────────
+//
+// **The loot lockout (LOCKOUT_MODEL) is NOT OBSERVABLE FROM A LOG. Ever.** Its
+// only source is the alt+Z Instance Information window, which no amount of
+// log-reading produces — see `inferenceHazard`. So this function never claims a
+// boss is loot-locked, and a `yes` means "you may run it and spend a token",
+// never "the item will drop".
+//
+// **`completed` on the grid is NOT a blocker.** A locked-out kill still pays a
+// guaranteed drop (28 Jul 2026 patch note), so a finished weekly does not stop a
+// player going back. Mapping `completed` to "unactionable" would delete real
+// upgrades from the ranking.
+//
+// ── THREE-WAY, AND THE NOT-KNOWING VALUE IS LOUD ──────────────────────────
+//
+// Ruled by the Director, 31 Aug: never a boolean. A boolean forces the two
+// not-knowing grid states into a knowing one, and either collapse is a claim we
+// cannot source. `unknown` carries `unknownKind` so the caller can tell a gap
+// that MORE LOG WOULD FIX from one that no log ever will.
+const TOKEN_CAP = Object.freeze({
+  tokens: 3,
+  per: 'character, per weekly period',
+  provenance: 'observed',
+  sampleCharacterWeeks: 3,
+  source: 'Avenrae and Shara, weeks of 4 and 11 Aug 2026',
+  // RE-DERIVED 31 Aug FROM THE LOGS, and it is now much stronger than the
+  // "never exceeded" claim it replaces. Avenrae, two consecutive periods:
+  //
+  //   period beginning Tue 2026-08-04    3 grants, then 4 refusals same day
+  //   period beginning Tue 2026-08-11    3 grants, then 18 refusals over 5 days
+  //
+  // **EVERY ONE OF THE 22 REFUSALS CARRIES A POSITIVE CONTROL AND EVERY ONE
+  // FOLLOWS THE THIRD GRANT OF ITS PERIOD.** That is the difference between an
+  // absence and a denial: a cap of four or five would have produced a fourth
+  // grant somewhere in 22 attempts across two periods. None appeared.
+  //
+  // What it still does not prove: that the ceiling is a property of the token
+  // rather than of something correlated with it in this corpus. Two periods,
+  // one character, one server.
+  caveat:
+    'Two consecutive periods, one character, each reaching exactly three ' +
+    'grants; 22 subsequent hails refused, every one with a positive control ' +
+    'and every one after the third grant. A cap above three would have shown ' +
+    'a fourth grant in 22 attempts. Reproduce with analysis/token-cap-check.js.',
+  reproduce: 'analysis/token-cap-check.js',
+});
+
+// ===========================================================================
+// HORIZONS — how long a bound buys, computed from the HOST's own rate
+// ===========================================================================
+//
+// **THIS FUNCTION EXISTS BECAUSE THE OBVIOUS VERSION WAS FALSIFIED.**
+//
+// I proposed publishing the bounds as horizons using OUR measured rate —
+// "MAX_EVENTS = 5000 buys 29.5 days" — and wrote its falsifier: *if a second
+// character's rate differs materially, the proposal is wrong as stated.*
+//
+// Measured on the second character:
+//
+//                        Shara      Avenrae
+//     peak kills / 7d     1,185       2,770      2.34x
+//     5000 buys          29.5 d      12.6 d
+//
+// **A published horizon would have been wrong by a factor of 2.3 for the very
+// next character measured**, and Avenrae is not an outlier — it is the other
+// character in the same corpus. A single number would have been a rate quoted
+// from one sample, which this project's own doctrine forbids.
+//
+// So the horizon is not published. It is COMPUTED, from the state in front of
+// the caller, and it refuses to answer on a sample too short to carry a rate.
+const MIN_HORIZON_SAMPLE_DAYS = 2;
+
+function horizon(state) {
+  const spans = state.spans || [];
+  if (!spans.length) {
+    return { ...NOT_RECORDED, reason: 'no coverage observed; there is no rate to compute.' };
+  }
+  const from = spans[0].from;
+  const to = spans[spans.length - 1].to;
+  const days = (to - from) / 86400000;
+
+  if (days < MIN_HORIZON_SAMPLE_DAYS) {
+    return {
+      ...NOT_RECORDED,
+      reason:
+        `coverage spans ${days.toFixed(2)} day(s); a rate needs at least ` +
+        `${MIN_HORIZON_SAMPLE_DAYS}. ONE SAMPLE IS A SAMPLE, NOT A RATE.`,
+      observedDays: Number(days.toFixed(2)),
+    };
+  }
+
+  const keys = state.seenCount || 0;
+  const kills = (state.kills || []).length;
+  const keysPerDay = keys / days;
+  const killsPerDay = kills / days;
+
+  const daysLeft = (bound, perDay) =>
+    perDay <= 0 ? null : Number((bound / perDay).toFixed(1));
+
+  return {
+    provenance: 'observed',
+    // WHAT THIS RATE WAS MEASURED ON, so it can never be quoted bare.
+    observedDays: Number(days.toFixed(2)),
+    observedKeys: keys,
+    observedKills: kills,
+    keysPerDay: Number(keysPerDay.toFixed(2)),
+    killsPerDay: Number(killsPerDay.toFixed(2)),
+    // The answer a host actually wants: not "5000 what", but "how long".
+    dedupeIndexDaysRemaining: daysLeft(MAX_SEEN - keys, keysPerDay),
+    killsBufferDaysRemaining: daysLeft(MAX_EVENTS - kills, killsPerDay),
+    bounds: { MAX_SEEN, MAX_EVENTS },
+    note:
+      'Computed from THIS state, not from a published constant. Two characters ' +
+      'in our own corpus differ 2.34x in kill rate, so a horizon shipped as a ' +
+      'number would be wrong for most hosts. Recompute as coverage grows.',
+  };
+}
+
+// `raid` is a key from RAIDS. `difficulty` is 0..4, or null to ask about the
+// raid at any tier. Returns three-way; see the header.
+function actionability(state, now, target) {
+  requireCivil(now);
+  const raidKey = target && target.raid;
+  const difficulty = target && target.difficulty != null ? target.difficulty : null;
+
+  if (target && (target.item !== undefined || target.itemId !== undefined)) {
+    throw new TypeError(
+      'actionability(): this module has no loot table and takes no item id. ' +
+      'Resolve item -> {raid, difficulty} on the ranker side and pass that. ' +
+      'See the ACTIONABILITY header for the seam.'
+    );
+  }
+
+  const grid = projectGrid(state, now);
+  const known = RAIDS.some((r) => r.key === raidKey);
+
+  // ── GATE 1: THE TOKEN CAP ───────────────────────────────────────────────
+  //
+  // THE BOUNDARY IS A DAY, NOT AN INSTANT, AND THE COUNT INHERITS THAT.
+  //
+  // `period.periodStartedAt` is null while the reset hour is unmeasured, which
+  // is every shipped configuration — so it cannot be the period start here.
+  // The only boundary available is `period.boundaryDay`, a whole day.
+  //
+  // **A grant ON the boundary day therefore belongs to either period and we
+  // cannot say which** — the identical ambiguity the grid carries as
+  // `conditional`. Counting such a grant into this period would over-report the
+  // cap and produce a `no` we cannot source; excluding it would under-report and
+  // produce a `yes` we cannot source. So it is counted separately and forces
+  // `unknown`, which is the only answer the evidence supports.
+  const bDay = /^(\d{4})-(\d{2})-(\d{2})$/.exec(grid.period.boundaryDay || '');
+  const boundaryStart = bDay
+    ? civilOf({ year: +bDay[1], month: +bDay[2], day: +bDay[3], hour: 0, minute: 0, second: 0 })
+    : null;
+  const boundaryEnd = boundaryStart === null ? null : boundaryStart + 86400000;
+
+  const rows = classifyRequests(state);
+  const afterBoundaryDay = (c) => boundaryEnd !== null && c >= boundaryEnd;
+  const onBoundaryDayCivil = (c) =>
+    boundaryStart !== null && c >= boundaryStart && c < boundaryEnd;
+
+  // Unambiguously inside the live period.
+  const grantsThisPeriod = rows.filter((r) => r.result === 'granted' && afterBoundaryDay(r.civil));
+  // On the reset day itself — could be either period.
+  const grantsOnBoundary = grid.period.hourKnown
+    ? []
+    : rows.filter((r) => r.result === 'granted' && onBoundaryDayCivil(r.civil));
+  const refusalsThisPeriod = rows.filter((r) => r.result === 'refused' && afterBoundaryDay(r.civil));
+
+  const capSpent = grantsThisPeriod.length >= TOKEN_CAP.tokens;
+  // Ambiguous only when the boundary-day grants could carry it over the cap.
+  const capAmbiguous = !capSpent &&
+    grantsOnBoundary.length > 0 &&
+    grantsThisPeriod.length + grantsOnBoundary.length >= TOKEN_CAP.tokens;
+  const refusedWithControl = refusalsThisPeriod.some((r) => r.positiveControl === true);
+
+  // ── GATE 2: THE GRID CELL ───────────────────────────────────────────────
+  const cells = grid.cells.filter((c) =>
+    c.raid === raidKey && (difficulty === null || c.difficulty === difficulty));
+
+  // ── COMBINE ─────────────────────────────────────────────────────────────
+  let answer = 'unknown';
+  let unknownKind = null;
+  let because;
+  const gates = {};
+
+  gates.tokenCap = {
+    grantsObserved: grantsThisPeriod.length,
+    grantsOnBoundaryDay: grantsOnBoundary.length,
+    cap: TOKEN_CAP.tokens,
+    refusedWithPositiveControl: refusedWithControl,
+    spent: capSpent || refusedWithControl,
+    ambiguous: capAmbiguous,
+    provenance: boundaryStart === null ? 'not recorded' : 'observed',
+  };
+
+  gates.grid = cells.length
+    ? { states: cells.map((c) => ({ difficulty: c.difficulty, state: c.state, why: c.because })) }
+    : { states: [], note: known ? 'no cell at that difficulty' : 'raid not in the observed roster' };
+
+  if (!known) {
+    answer = 'unknown';
+    unknownKind = 'raid-not-in-roster';
+    because =
+      `"${raidKey}" is not in this module's observed roster. The roster is ` +
+      'evidence of structure, not a list of what exists — an unlisted raid is ' +
+      'unmeasured, not absent.';
+  } else if (capSpent) {
+    answer = 'no';
+    because =
+      `${grantsThisPeriod.length} weekly grants observed this period against a ` +
+      `cap of ${TOKEN_CAP.tokens}. The cap is spent, so no raid is actionable ` +
+      'for a token this week regardless of the grid.';
+  } else if (capAmbiguous) {
+    answer = 'unknown';
+    unknownKind = 'reset-hour';
+    because =
+      `${grantsThisPeriod.length} grant(s) certainly this period and ` +
+      `${grantsOnBoundary.length} on the reset day itself, which could belong to ` +
+      `either period. Counted one way the cap of ${TOKEN_CAP.tokens} is spent, ` +
+      'counted the other it is not. The reset HOUR has never been measured.';
+  } else if (refusedWithControl) {
+    // ── A CONTROLLED REFUSAL IS NOT PROOF THE CAP IS SPENT. ────────────────
+    //
+    // This branch returned `no` when first shipped (74609f14) and that was a
+    // FALSE NEGATIVE in the direction the product cannot afford: it would have
+    // deleted a reachable upgrade from the ranking.
+    //
+    // Measured, Avenrae, period beginning Tue 2026-08-11 — refusals INTERLEAVE
+    // with grants, and one grant lands NINE SECONDS after a controlled refusal:
+    //
+    //     20:40:44  GRANTED  Lady Vox
+    //     20:56:17  REFUSED  [control]
+    //     21:15:53  REFUSED  [control]
+    //     21:44:10  REFUSED  [control]
+    //     21:44:19  GRANTED  Lord Nagafen     <- 9 s later
+    //     22:08:18  REFUSED  [control]
+    //     22:38:27  GRANTED  Master Yael
+    //
+    // So a refusal is evidence of A ceiling being hit at that instant, and NOT
+    // evidence that the weekly allowance is gone. Whatever else gates a hail —
+    // the grants here fall roughly an hour apart — is unmeasured, and this
+    // module is not going to name it. `analysis/token-cap-check.js` reproduces
+    // the sequence.
+    answer = 'unknown';
+    unknownKind = 'refusal-not-cap';
+    because =
+      `${grantsThisPeriod.length} of ${TOKEN_CAP.tokens} tokens observed spent, ` +
+      'and a hail was refused with a positive control. Measured data shows ' +
+      'refusals interleaving with grants — one grant arrived 9 s after a ' +
+      'controlled refusal — so a refusal does NOT establish the allowance is ' +
+      'gone. Something gates the hail; what, is not measured.';
+  } else if (boundaryStart === null || !grid.period.coverageSpansPeriod) {
+    answer = 'unknown';
+    unknownKind = 'coverage';
+    because =
+      'coverage does not span the current period, so an absence of grants ' +
+      'cannot be told apart from not having looked. MORE LOG WOULD FIX THIS.';
+  } else if (cells.some((c) => c.state === 'open' || c.state === 'completed')) {
+    // `completed` is deliberately actionable — repeats still pay a drop.
+    answer = 'yes';
+    because =
+      `${TOKEN_CAP.tokens - grantsThisPeriod.length} of ${TOKEN_CAP.tokens} ` +
+      'tokens remain and the raid is reachable. A completed cell is still ' +
+      'actionable: a locked-out kill pays a guaranteed drop (28 Jul 2026).';
+  } else {
+    answer = 'unknown';
+    unknownKind = cells.some((c) => c.state === 'not_looked') ? 'coverage' : 'reset-hour';
+    because = cells.length
+      ? `grid says ${cells.map((c) => c.state).join(', ')} — ` +
+        (unknownKind === 'coverage'
+          ? 'MORE LOG WOULD FIX THIS.'
+          : 'this turns on the reset hour, which has never been measured.')
+      : 'no cell for that target.';
+  }
+
+  return {
+    answer,                 // 'yes' | 'no' | 'unknown' — NEVER a boolean
+    unknownKind,            // 'coverage' | 'reset-hour' | 'raid-not-in-roster' | null
+    because,
+    target: { raid: raidKey, difficulty },
+    gates,
+    // THE LIMIT ON EVERY ANSWER ABOVE, restated where a caller cannot miss it.
+    doesNotAnswer:
+      'whether the LOOT lockout has expired for this character. That is not in ' +
+      'any log — its only source is the alt+Z window. A `yes` means the ' +
+      'character may run it and spend a token, never that the item will drop.',
+    tokenCap: TOKEN_CAP,
+  };
+}
+
 // `eqlog_Avenrae_rivervale.txt` -> `Avenrae`
 // `eqlog_Shara_rivervale_2026-08-14b.txt` -> `Shara`
 //
@@ -2135,10 +2889,19 @@ const THRESHOLDS = Object.freeze({
   CONTROL_AFTER_MS,
   COLLAPSE_MS,              // repeated `danger` inside this is one attempt
   MAX_EVENTS,               // dedupe horizon, in observations
+  // EXPORTED SO A HOST CAN SEE ITS OWN CEILING. Session C embeds this in an
+  // Electron renderer that backfills ~5.25M lines on load; a bound it cannot
+  // read is a bound it has to take on trust. See the insert site for what
+  // overflowing costs — a refusal degrades to `unknown`, never to a false
+  // `refused`.
+  MAX_VOIDLING_REPLIES,
 });
 
 module.exports = {
   THRESHOLDS,
+  actionability,
+  horizon,
+  TOKEN_CAP,
   // parsing
   parseLine,
   splitStamp,

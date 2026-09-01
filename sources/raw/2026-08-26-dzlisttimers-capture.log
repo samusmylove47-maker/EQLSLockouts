@@ -1,0 +1,47 @@
+# /dzlisttimers — the capture, with its control line
+#
+# SCRUBBED VERBATIM EXCERPT. Every line below is reproduced exactly as the
+# client wrote it, or is DROPPED ENTIRELY. Nothing is rewritten, because a
+# rewritten line still parses into a fake event.
+#
+# NOTE ON THE KILL LINES BELOW. The obvious evidence for section 3 was
+# "<Boss> has been slain by <Player>!", and every such line on that evening
+# names another player. Other players are never named outside the credits, and
+# the scrub rule forbids editing a line to fit. The FIRST-PERSON kill form
+# carries exactly the same fact and names nobody, so it is used instead.
+#
+# WHY THIS FILE EXISTS. A command that prints nothing, and a command whose
+# output your capture is not listening to, look identical in a log. The control
+# line separates them: `/say` goes to a channel we KNOW is captured, so if the
+# control line is present and the command's output is not, the silence is a real
+# negative rather than a filtered channel.
+#
+# THE TECHNIQUE IS THE TRANSFERABLE PART, not this result. Any future
+# "does X log?" question should be captured the same way.
+#
+# --- 1. THE CLIENT'S OWN DOCUMENTATION, 21 Aug 2026 -------------------------
+# Printed because the command was typed with no argument. This single line
+# settles what /dzlisttimers is FOR, in the game's own words.
+[Fri Aug 21 11:20:54 2026] Usage: /dzListTimers    - This command will list any outstanding replay timers you have for all expeditions.  This is the amount of time you must wait before being allowed to enter another instance of that zone.
+#
+# --- 2. THE CAPTURE, 26 Aug 2026 --------------------------------------------
+# The command DID produce output — it is not a silent command — and the control
+# line follows 7 seconds later, so the channel was demonstrably live.
+[Wed Aug 26 23:30:17 2026] You have no outstanding timers.
+[Wed Aug 26 23:30:24 2026] You say, 'timers check done'
+#
+# --- 3. WHY THE NEGATIVE IS DECISIVE ----------------------------------------
+# Five hours before the command, this character killed two Plane of Fear raid
+# bosses. The lockout period is measured at not less than 5.78 days, so both
+# locks were certainly still held at 23:30 that same evening.
+# If /dzlisttimers reported LOOT LOCKOUTS it could not have reported none.
+[Wed Aug 26 18:34:37 2026] You have slain a dracoliche!
+[Wed Aug 26 18:36:35 2026] You have slain Dread!
+#
+# CONCLUSION: /dzlisttimers reports REPLAY timers, not loot lockouts. It is
+# therefore NOT a source for a discoverable raid roster, which is what we had
+# hoped to use it for. That question is closed.
+#
+# COROLLARY, and it is the useful half: the command DOES write to the log. So a
+# host that wants a replay-timer readout has a supported way to get one. It just
+# is not the lockout.
