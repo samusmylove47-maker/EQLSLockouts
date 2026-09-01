@@ -1611,13 +1611,32 @@ function parseLine(line) {
   }
   // parseLine stays OPEN TO ANY NAME. Whether a slain thing is a raid boss is a
   // roster question, decided later; nothing here filters by roster.
-  // SELF-DAMAGE FIRST, and the order is load-bearing: `You hit yourself ...`
-  // also matches the melee shape below, and E measured that counting it inflated
-  // a character's apparent output by 3.7% — worst on exactly the support builds
-  // a damage tool gets pointed at. E named Cannibalize; in OUR corpus the same
-  // shape carries `Lifetap Strike` (9) and `Lifebite` (2) and Cannibalize does
-  // not appear at all. So the exclusion keys on the SHAPE, never on a spell
-  // allowlist, which would have missed both of ours.
+  // SELF-DAMAGE FIRST — and THE ORDERING CLAIM HERE WAS OVERSTATED, corrected
+  // 31 Aug after a mutation harness showed nothing tested it.
+  //
+  // This said the order is load-bearing because `You hit yourself ...` "also
+  // matches the melee shape below". **MEASURED, IT DOES NOT.** Over 276 real
+  // self-damage lines in the corpus, ZERO also match `DAMAGE_MELEE_RE`: self
+  // requires a trailing `by <spell>.` and melee requires the line to end at
+  // `damage.`, so the two shapes are disjoint. Disabling this branch entirely
+  // left all 119 tests green — the claim was never a guard.
+  //
+  // WHAT IS ACTUALLY LOAD-BEARING is the FLAG, not the order: `outgoing: false`.
+  // E measured that counting self-hits as output inflates apparent damage by
+  // 3.7%, worst on exactly the support builds a damage tool gets pointed at. E
+  // named Cannibalize; in OUR corpus the same shape carries `Lifetap Strike` (9)
+  // and `Lifebite` (2) and Cannibalize does not appear at all — so the exclusion
+  // keys on the SHAPE, never on a spell allowlist, which would have missed both
+  // of ours. That flag is now tested; the ordering is kept because it is free
+  // and correct, not because it is doing work.
+  //
+  // TWO SHAPES THIS DOES NOT COVER, both measured and both left alone:
+  //   · a self-hit with no `by <spell>` clause falls through to melee and is
+  //     emitted as ordinary OUTGOING damage against a target named `yourself`;
+  //   · 801 of 137,690 damage rows (0.58%) carry `actor === target`, under just
+  //     two names. **The log cannot tell one entity hitting itself apart from
+  //     two entities sharing a name**, so a name-equality filter would silently
+  //     drop real damage. Not filtered here for that reason.
   if ((m = DAMAGE_SELF_RE.exec(message))) {
     return { kind: 'self-damage', at, actor: 'You', target: 'You',
              amount: Number(m[1]), damageType: m[2], spell: m[3], outgoing: false };
@@ -1849,6 +1868,27 @@ function applyLine(state, line) {
   // `events` and never emits a change, because several players share one NPC
   // and the count is meaningless. It is recorded below as a set of seconds.
   if (ev.kind === 'voidling-reply') {
+    // ── ONLY THE CLOSING LINE IS THE CONTROL. ─────────────────────────────
+    //
+    // `parseLine` has always computed `closing`, and until 31 Aug NOTHING READ
+    // IT — every Voidling line entered the control set. A field that looks like
+    // it does something, on an object whose consumer never asks.
+    //
+    // Not latent: measured across both characters, MORE THAN HALF the Voidling
+    // lines are not the closing line — Shara 52 of 96, Avenrae 94 of 196. So
+    // the control set held roughly twice the instants it should, and any of
+    // them landing in the window would corroborate a refusal that had no
+    // corroboration.
+    //
+    // The closing line is the control precisely because it fires on BOTH a
+    // grant and a refusal; ordinary chatter establishes nothing about whether
+    // the hail was answered. Filtering moves un-corroborated hails from
+    // `refused` to `unknown`, which is the safe direction and the one this
+    // module is required to take.
+    //
+    // Found by analysis/mutation-check.js: replacing the flag with a literal
+    // `true` left all 122 tests green.
+    if (!ev.closing) return state;
     if (!state.voidlingReplies.includes(civil)) {
       state.voidlingReplies.push(civil);
       // THE BOUND, AND ITS COST, BOTH STATED — Session C's clause 7.
@@ -1882,6 +1922,26 @@ function applyLine(state, line) {
     state.dropped.duplicate++;
     return state;
   }
+  // ── CAPTURED BEFORE THE INSERT, AND THAT IS THE WHOLE FIX. ────────────
+  //
+  // The horizon check below asks "is this line older than everything I still
+  // hold". Until 1 Sep it called `oldestSeen(state)` AFTER this line's own key
+  // had been written into the index — so the line always contributed its own
+  // value to the minimum, and `civil < oldestSeen(state)` was UNSATISFIABLE.
+  //
+  // Measured, not argued: 199,999 pre-seeded keys all at 9e12 (far in the
+  // future), a line genuinely older than every one of them, and
+  // `dropped.beyondDedupeHorizon` still read 0.
+  //
+  // **The counter the source calls the guard against "the worst failure this
+  // module can have" could not fire.** An instrument that cannot return one of
+  // its two answers, sitting in the guard against silent double-counting.
+  //
+  // `pruneSeen` also had to be crossed: it halves `seenCount` when the bound is
+  // passed, so the count is captured here too rather than read after.
+  const horizonCount = state.seenCount;
+  const horizonOldest = horizonCount >= MAX_SEEN ? oldestSeen(state) : Infinity;
+
   state.seen[key] = civil;
   state.seenCount++;
   if (state.seenCount > MAX_SEEN) pruneSeen(state);
@@ -1902,7 +1962,9 @@ function applyLine(state, line) {
   // `dropped.beyondDedupeHorizon > 0` tells a host "you fed me something from
   // before my memory; I can no longer promise idempotence, rebuild from the
   // log." Visible beats silent.
-  if (state.seenCount >= MAX_SEEN && civil < oldestSeen(state)) {
+  // Both operands captured ABOVE, before the insert and before any prune. See
+  // the note there: read after, this condition is unsatisfiable.
+  if (horizonCount >= MAX_SEEN && civil < horizonOldest) {
     state.dropped.beyondDedupeHorizon++;
   }
 
@@ -1970,6 +2032,28 @@ function applyLine(state, line) {
     // Only a ZONE-IN moves the player. An invite is someone else's offer and
     // may be declined, so it must never set the current instance — doing so
     // would attribute a later kill to an instance never entered.
+    // ── THE ASSIGNMENT IS UNCONDITIONAL, AND THAT IS THE REQUIREMENT. ─────
+    //
+    // **DO NOT GUARD THIS WITH `if (ev.instanced)`.** It reads like a tidy-up —
+    // "why assign null when we could skip" — and it is the whole clearing
+    // mechanism. Zoning into the OPEN WORLD is what unsets the instance, and it
+    // does so by assigning the null branch below.
+    //
+    // Guarded, the last instance becomes STICKY and follows the player out:
+    //
+    //     enter Nagafen's Lair - Group 3
+    //     zone out to Nektulos Forest
+    //     kill Lord Nagafen in the open world
+    //     -> reports difficulty 3 of Nagafen's Lair COMPLETE
+    //
+    // A raid marked done that the player has not done, from one ordinary
+    // zone-in, with no rare input and no unusual state.
+    //
+    // Until 1 Sep the clearing was an ACCIDENT of writing the assignment
+    // unconditionally rather than a decision, and all 130 tests passed with it
+    // guarded. `analysis/mutation-check.js` found it; the triple in
+    // test/grid.test.js is what holds it now — inside, after leaving, and never
+    // entered, because no two of those three distinguish every wrong version.
     if (ev.kind === 'entered') {
       state.currentInstance = ev.instanced
         ? {
@@ -2693,8 +2777,32 @@ function projectGrid(state, now) {
         cellState = 'not_looked';
         because = coverageStart === null
           ? 'no lines seen at all'
+          // ── SAY HOW FAR OVER, NOT ONLY HOW MUCH MISSING. ──────────────
+          //
+          // This said "no record of 25.3h inside this period" and stopped. It
+          // named the gap and never the THRESHOLD, so a reader could not tell
+          // whether they had missed by a day or by half an hour.
+          //
+          // Measured, 1 Sep, two characters in the same group over the same
+          // week: one hole of 24.51 h against a 24 h tolerance — **31 minutes
+          // over** — turned a working grid into 25 `not_looked` cells while the
+          // other player's grid answered normally. Both had observed ~38–40% of
+          // the period, so the floor was not involved. **All 25 cells
+          // disagreed, and neither output said the two were the same evening.**
+          //
+          // The failure is a CLIFF, not a slope, and the engine already holds
+          // both numbers. Naming the excess is what lets a player act on it —
+          // "1.3h too long" is a thing you can fix; "25.3h missing" is not.
+          //
+          // NOT claimed: that 24 h is the wrong tolerance. It is a judgement,
+          // the source says so, and nothing here measures a better one.
           : holes.length
-            ? `no record of ${holes.map((h) => `${h.hours.toFixed(1)}h`).join(' + ')} inside this period`
+            ? `no record of ${holes.map((h) => `${h.hours.toFixed(1)}h`).join(' + ')} ` +
+              `inside this period — ` +
+              `${holes.length === 1
+                  ? `${(holes[0].hours - PERIOD_GAP_TOLERANCE_MS / 3600000).toFixed(1)}h over`
+                  : `each longer than`} ` +
+              `the ${PERIOD_GAP_TOLERANCE_MS / 3600000}h tolerance`
             // The new branch, and it must say WHICH test failed. "Coverage does
             // not span this period" was true of both and told a reader nothing.
             : observedFraction < MIN_OBSERVED_FRACTION
@@ -2943,6 +3051,329 @@ function project(state, now) {
   };
 }
 
+// ===========================================================================
+// ACTIONABILITY — the interface the BIS ranker calls
+// ===========================================================================
+//
+// THE QUESTION IT ANSWERS, and it is narrower than the question that was asked.
+//
+// The ranker wants: "can this character still run the content that drops this
+// item, this week?" It must NOT pass an item id. This module has no loot table,
+// will not acquire one, and would be guessing if it pretended otherwise. The
+// seam is:
+//
+//     the ranker owns   item -> which raid / difficulty drops it
+//     this module owns  that raid / difficulty -> can this character act on it
+//
+// ── THE GATE NOBODY ASKED ABOUT, AND IT IS THE ONE THAT DECIDES ────────────
+//
+// **THE TOKEN CAP, NOT THE GRID, IS WHAT MAKES A RECOMMENDATION UNACTIONABLE.**
+//
+// Measured, per character per week beginning Tuesday:
+//
+//     Avenrae, week of 11 Aug:  18 roster boss kills, 3 grants, 3 tokens
+//     Shara,   week of 11 Aug:  16 roster boss kills, 3 grants, 3 tokens
+//     Both,    week of  4 Aug:   7 roster boss kills, 3 grants, 3 tokens
+//
+// Eighteen raids, three tokens. **A boss can be OPEN on the grid while the cap
+// is SPENT** — and a ranker that asks the grid alone will tell a player with
+// zero tokens left to go and farm a zone, which is the recommendation that
+// loses trust in one click.
+//
+// So this function reads the cap FIRST and the grid second, and it is the cap
+// that can return `no`.
+//
+// ── WHAT `no` IS AND IS NOT ───────────────────────────────────────────────
+//
+// **The loot lockout (LOCKOUT_MODEL) is NOT OBSERVABLE FROM A LOG. Ever.** Its
+// only source is the alt+Z Instance Information window, which no amount of
+// log-reading produces — see `inferenceHazard`. So this function never claims a
+// boss is loot-locked, and a `yes` means "you may run it and spend a token",
+// never "the item will drop".
+//
+// **`completed` on the grid is NOT a blocker.** A locked-out kill still pays a
+// guaranteed drop (28 Jul 2026 patch note), so a finished weekly does not stop a
+// player going back. Mapping `completed` to "unactionable" would delete real
+// upgrades from the ranking.
+//
+// ── THREE-WAY, AND THE NOT-KNOWING VALUE IS LOUD ──────────────────────────
+//
+// Ruled by the Director, 31 Aug: never a boolean. A boolean forces the two
+// not-knowing grid states into a knowing one, and either collapse is a claim we
+// cannot source. `unknown` carries `unknownKind` so the caller can tell a gap
+// that MORE LOG WOULD FIX from one that no log ever will.
+const TOKEN_CAP = Object.freeze({
+  tokens: 3,
+  per: 'character, per weekly period',
+  provenance: 'observed',
+  sampleCharacterWeeks: 3,
+  source: 'Avenrae and Shara, weeks of 4 and 11 Aug 2026',
+  // RE-DERIVED 31 Aug FROM THE LOGS, and it is now much stronger than the
+  // "never exceeded" claim it replaces. Avenrae, two consecutive periods:
+  //
+  //   period beginning Tue 2026-08-04    3 grants, then 4 refusals same day
+  //   period beginning Tue 2026-08-11    3 grants, then 18 refusals over 5 days
+  //
+  // **EVERY ONE OF THE 22 REFUSALS CARRIES A POSITIVE CONTROL AND EVERY ONE
+  // FOLLOWS THE THIRD GRANT OF ITS PERIOD.** That is the difference between an
+  // absence and a denial: a cap of four or five would have produced a fourth
+  // grant somewhere in 22 attempts across two periods. None appeared.
+  //
+  // What it still does not prove: that the ceiling is a property of the token
+  // rather than of something correlated with it in this corpus. Two periods,
+  // one character, one server.
+  caveat:
+    'Two consecutive periods, one character, each reaching exactly three ' +
+    'grants; 22 subsequent hails refused, every one with a positive control ' +
+    'and every one after the third grant. A cap above three would have shown ' +
+    'a fourth grant in 22 attempts. Reproduce with analysis/token-cap-check.js.',
+  reproduce: 'analysis/token-cap-check.js',
+});
+
+// ===========================================================================
+// HORIZONS — how long a bound buys, computed from the HOST's own rate
+// ===========================================================================
+//
+// **THIS FUNCTION EXISTS BECAUSE THE OBVIOUS VERSION WAS FALSIFIED.**
+//
+// I proposed publishing the bounds as horizons using OUR measured rate —
+// "MAX_EVENTS = 5000 buys 29.5 days" — and wrote its falsifier: *if a second
+// character's rate differs materially, the proposal is wrong as stated.*
+//
+// Measured on the second character:
+//
+//                        Shara      Avenrae
+//     peak kills / 7d     1,185       2,770      2.34x
+//     5000 buys          29.5 d      12.6 d
+//
+// **A published horizon would have been wrong by a factor of 2.3 for the very
+// next character measured**, and Avenrae is not an outlier — it is the other
+// character in the same corpus. A single number would have been a rate quoted
+// from one sample, which this project's own doctrine forbids.
+//
+// So the horizon is not published. It is COMPUTED, from the state in front of
+// the caller, and it refuses to answer on a sample too short to carry a rate.
+const MIN_HORIZON_SAMPLE_DAYS = 2;
+
+function horizon(state) {
+  const spans = state.spans || [];
+  if (!spans.length) {
+    return { ...NOT_RECORDED, reason: 'no coverage observed; there is no rate to compute.' };
+  }
+  const from = spans[0].from;
+  const to = spans[spans.length - 1].to;
+  const days = (to - from) / 86400000;
+
+  if (days < MIN_HORIZON_SAMPLE_DAYS) {
+    return {
+      ...NOT_RECORDED,
+      reason:
+        `coverage spans ${days.toFixed(2)} day(s); a rate needs at least ` +
+        `${MIN_HORIZON_SAMPLE_DAYS}. ONE SAMPLE IS A SAMPLE, NOT A RATE.`,
+      observedDays: Number(days.toFixed(2)),
+    };
+  }
+
+  const keys = state.seenCount || 0;
+  const kills = (state.kills || []).length;
+  const keysPerDay = keys / days;
+  const killsPerDay = kills / days;
+
+  const daysLeft = (bound, perDay) =>
+    perDay <= 0 ? null : Number((bound / perDay).toFixed(1));
+
+  return {
+    provenance: 'observed',
+    // WHAT THIS RATE WAS MEASURED ON, so it can never be quoted bare.
+    observedDays: Number(days.toFixed(2)),
+    observedKeys: keys,
+    observedKills: kills,
+    keysPerDay: Number(keysPerDay.toFixed(2)),
+    killsPerDay: Number(killsPerDay.toFixed(2)),
+    // The answer a host actually wants: not "5000 what", but "how long".
+    dedupeIndexDaysRemaining: daysLeft(MAX_SEEN - keys, keysPerDay),
+    killsBufferDaysRemaining: daysLeft(MAX_EVENTS - kills, killsPerDay),
+    bounds: { MAX_SEEN, MAX_EVENTS },
+    note:
+      'Computed from THIS state, not from a published constant. Two characters ' +
+      'in our own corpus differ 2.34x in kill rate, so a horizon shipped as a ' +
+      'number would be wrong for most hosts. Recompute as coverage grows.',
+  };
+}
+
+// `raid` is a key from RAIDS. `difficulty` is 0..4, or null to ask about the
+// raid at any tier. Returns three-way; see the header.
+function actionability(state, now, target) {
+  requireCivil(now);
+  const raidKey = target && target.raid;
+  const difficulty = target && target.difficulty != null ? target.difficulty : null;
+
+  if (target && (target.item !== undefined || target.itemId !== undefined)) {
+    throw new TypeError(
+      'actionability(): this module has no loot table and takes no item id. ' +
+      'Resolve item -> {raid, difficulty} on the ranker side and pass that. ' +
+      'See the ACTIONABILITY header for the seam.'
+    );
+  }
+
+  const grid = projectGrid(state, now);
+  const known = RAIDS.some((r) => r.key === raidKey);
+
+  // ── GATE 1: THE TOKEN CAP ───────────────────────────────────────────────
+  //
+  // THE BOUNDARY IS A DAY, NOT AN INSTANT, AND THE COUNT INHERITS THAT.
+  //
+  // `period.periodStartedAt` is null while the reset hour is unmeasured, which
+  // is every shipped configuration — so it cannot be the period start here.
+  // The only boundary available is `period.boundaryDay`, a whole day.
+  //
+  // **A grant ON the boundary day therefore belongs to either period and we
+  // cannot say which** — the identical ambiguity the grid carries as
+  // `conditional`. Counting such a grant into this period would over-report the
+  // cap and produce a `no` we cannot source; excluding it would under-report and
+  // produce a `yes` we cannot source. So it is counted separately and forces
+  // `unknown`, which is the only answer the evidence supports.
+  const bDay = /^(\d{4})-(\d{2})-(\d{2})$/.exec(grid.period.boundaryDay || '');
+  const boundaryStart = bDay
+    ? civilOf({ year: +bDay[1], month: +bDay[2], day: +bDay[3], hour: 0, minute: 0, second: 0 })
+    : null;
+  const boundaryEnd = boundaryStart === null ? null : boundaryStart + 86400000;
+
+  const rows = classifyRequests(state);
+  const afterBoundaryDay = (c) => boundaryEnd !== null && c >= boundaryEnd;
+  const onBoundaryDayCivil = (c) =>
+    boundaryStart !== null && c >= boundaryStart && c < boundaryEnd;
+
+  // Unambiguously inside the live period.
+  const grantsThisPeriod = rows.filter((r) => r.result === 'granted' && afterBoundaryDay(r.civil));
+  // On the reset day itself — could be either period.
+  const grantsOnBoundary = grid.period.hourKnown
+    ? []
+    : rows.filter((r) => r.result === 'granted' && onBoundaryDayCivil(r.civil));
+  const refusalsThisPeriod = rows.filter((r) => r.result === 'refused' && afterBoundaryDay(r.civil));
+
+  const capSpent = grantsThisPeriod.length >= TOKEN_CAP.tokens;
+  // Ambiguous only when the boundary-day grants could carry it over the cap.
+  const capAmbiguous = !capSpent &&
+    grantsOnBoundary.length > 0 &&
+    grantsThisPeriod.length + grantsOnBoundary.length >= TOKEN_CAP.tokens;
+  const refusedWithControl = refusalsThisPeriod.some((r) => r.positiveControl === true);
+
+  // ── GATE 2: THE GRID CELL ───────────────────────────────────────────────
+  const cells = grid.cells.filter((c) =>
+    c.raid === raidKey && (difficulty === null || c.difficulty === difficulty));
+
+  // ── COMBINE ─────────────────────────────────────────────────────────────
+  let answer = 'unknown';
+  let unknownKind = null;
+  let because;
+  const gates = {};
+
+  gates.tokenCap = {
+    grantsObserved: grantsThisPeriod.length,
+    grantsOnBoundaryDay: grantsOnBoundary.length,
+    cap: TOKEN_CAP.tokens,
+    refusedWithPositiveControl: refusedWithControl,
+    spent: capSpent || refusedWithControl,
+    ambiguous: capAmbiguous,
+    provenance: boundaryStart === null ? 'not recorded' : 'observed',
+  };
+
+  gates.grid = cells.length
+    ? { states: cells.map((c) => ({ difficulty: c.difficulty, state: c.state, why: c.because })) }
+    : { states: [], note: known ? 'no cell at that difficulty' : 'raid not in the observed roster' };
+
+  if (!known) {
+    answer = 'unknown';
+    unknownKind = 'raid-not-in-roster';
+    because =
+      `"${raidKey}" is not in this module's observed roster. The roster is ` +
+      'evidence of structure, not a list of what exists — an unlisted raid is ' +
+      'unmeasured, not absent.';
+  } else if (capSpent) {
+    answer = 'no';
+    because =
+      `${grantsThisPeriod.length} weekly grants observed this period against a ` +
+      `cap of ${TOKEN_CAP.tokens}. The cap is spent, so no raid is actionable ` +
+      'for a token this week regardless of the grid.';
+  } else if (capAmbiguous) {
+    answer = 'unknown';
+    unknownKind = 'reset-hour';
+    because =
+      `${grantsThisPeriod.length} grant(s) certainly this period and ` +
+      `${grantsOnBoundary.length} on the reset day itself, which could belong to ` +
+      `either period. Counted one way the cap of ${TOKEN_CAP.tokens} is spent, ` +
+      'counted the other it is not. The reset HOUR has never been measured.';
+  } else if (refusedWithControl) {
+    // ── A CONTROLLED REFUSAL IS NOT PROOF THE CAP IS SPENT. ────────────────
+    //
+    // This branch returned `no` when first shipped (74609f14) and that was a
+    // FALSE NEGATIVE in the direction the product cannot afford: it would have
+    // deleted a reachable upgrade from the ranking.
+    //
+    // Measured, Avenrae, period beginning Tue 2026-08-11 — refusals INTERLEAVE
+    // with grants, and one grant lands NINE SECONDS after a controlled refusal:
+    //
+    //     20:40:44  GRANTED  Lady Vox
+    //     20:56:17  REFUSED  [control]
+    //     21:15:53  REFUSED  [control]
+    //     21:44:10  REFUSED  [control]
+    //     21:44:19  GRANTED  Lord Nagafen     <- 9 s later
+    //     22:08:18  REFUSED  [control]
+    //     22:38:27  GRANTED  Master Yael
+    //
+    // So a refusal is evidence of A ceiling being hit at that instant, and NOT
+    // evidence that the weekly allowance is gone. Whatever else gates a hail —
+    // the grants here fall roughly an hour apart — is unmeasured, and this
+    // module is not going to name it. `analysis/token-cap-check.js` reproduces
+    // the sequence.
+    answer = 'unknown';
+    unknownKind = 'refusal-not-cap';
+    because =
+      `${grantsThisPeriod.length} of ${TOKEN_CAP.tokens} tokens observed spent, ` +
+      'and a hail was refused with a positive control. Measured data shows ' +
+      'refusals interleaving with grants — one grant arrived 9 s after a ' +
+      'controlled refusal — so a refusal does NOT establish the allowance is ' +
+      'gone. Something gates the hail; what, is not measured.';
+  } else if (boundaryStart === null || !grid.period.coverageSpansPeriod) {
+    answer = 'unknown';
+    unknownKind = 'coverage';
+    because =
+      'coverage does not span the current period, so an absence of grants ' +
+      'cannot be told apart from not having looked. MORE LOG WOULD FIX THIS.';
+  } else if (cells.some((c) => c.state === 'open' || c.state === 'completed')) {
+    // `completed` is deliberately actionable — repeats still pay a drop.
+    answer = 'yes';
+    because =
+      `${TOKEN_CAP.tokens - grantsThisPeriod.length} of ${TOKEN_CAP.tokens} ` +
+      'tokens remain and the raid is reachable. A completed cell is still ' +
+      'actionable: a locked-out kill pays a guaranteed drop (28 Jul 2026).';
+  } else {
+    answer = 'unknown';
+    unknownKind = cells.some((c) => c.state === 'not_looked') ? 'coverage' : 'reset-hour';
+    because = cells.length
+      ? `grid says ${cells.map((c) => c.state).join(', ')} — ` +
+        (unknownKind === 'coverage'
+          ? 'MORE LOG WOULD FIX THIS.'
+          : 'this turns on the reset hour, which has never been measured.')
+      : 'no cell for that target.';
+  }
+
+  return {
+    answer,                 // 'yes' | 'no' | 'unknown' — NEVER a boolean
+    unknownKind,            // 'coverage' | 'reset-hour' | 'raid-not-in-roster' | null
+    because,
+    target: { raid: raidKey, difficulty },
+    gates,
+    // THE LIMIT ON EVERY ANSWER ABOVE, restated where a caller cannot miss it.
+    doesNotAnswer:
+      'whether the LOOT lockout has expired for this character. That is not in ' +
+      'any log — its only source is the alt+Z window. A `yes` means the ' +
+      'character may run it and spend a token, never that the item will drop.',
+    tokenCap: TOKEN_CAP,
+  };
+}
+
 // `eqlog_Avenrae_rivervale.txt` -> `Avenrae`
 // `eqlog_Shara_rivervale_2026-08-14b.txt` -> `Shara`
 //
@@ -2987,6 +3418,9 @@ const THRESHOLDS = Object.freeze({
 
 module.exports = {
   THRESHOLDS,
+  actionability,
+  horizon,
+  TOKEN_CAP,
   // parsing
   parseLine,
   splitStamp,

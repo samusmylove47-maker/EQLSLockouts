@@ -399,3 +399,30 @@ test('SELF-CONTAINMENT IS PROVEN BY A MATCHED PAIR, not by the bundle being clea
   assert.equal(bannedStrings.length > 0, true, 'an empty ban list passes everything');
   assert.ok(html.length > 10000, 'an empty document passes everything too');
 });
+
+test('BUILD: the COMMITTED latest.txt names what the CURRENT SOURCE produces', () => {
+  // THE DRIFT THIS CATCHES, and it had run for seven engine commits.
+  //
+  // `latest.txt` and the artifact are committed; the source that produces them
+  // is committed separately; NOTHING MADE THEM MOVE TOGETHER. On 1 Sep the
+  // pointer had named `eqls-lockouts.14106e64.html` since 30 August while the
+  // source had moved through seven commits to `src/lockoutCore.js` — the token
+  // cap, the false-`no` fix, the Voidling control fix, the dedupe-horizon fix
+  // and the over-tolerance message among them.
+  //
+  // The build is deterministic, so the mismatch was ALWAYS detectable — by
+  // someone who ran the build and compared. Nobody did, because nothing asked.
+  //
+  // Compare against the COMMITTED pointer, not the working-tree one: every
+  // other test in this file builds first, which overwrites `latest.txt` and
+  // makes a working-tree comparison trivially true. Reading it from git is what
+  // makes this a check rather than a tautology.
+  const committed = execFileSync('git', ['show', 'HEAD:public/app/latest.txt'],
+    { cwd: ROOT, encoding: 'utf8' }).trim();
+  const { name } = build();
+
+  assert.equal(committed, name,
+    `the committed pointer names ${committed} but this source builds ` +
+    `${name}. Rebuild and commit public/app/ together, or the repo is ` +
+    `serving a pointer to something it no longer produces.`);
+});
