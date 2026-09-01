@@ -301,6 +301,41 @@ const MUTATIONS = [
     find: "const hash = crypto.createHash('sha256').update(html).digest('hex').slice(0, 8);",
     repl: "const hash = 'deadbeef';",
     probe: () => { const b = built(); const n = fs.readFileSync(path.join(OUT, 'latest.txt'), 'utf8').trim(); return [b, n]; } },
+  // ── AIMED AT grid.test.js roster + instance-name parsing (R92) ──────────
+  //
+  // Two consumers each: the roster is what told C its threat-meter trigger was
+  // not mine, and instance-name parsing is where B's case/article collision
+  // work meets this repo from the other side. A survivor here has two victims.
+
+  { name: 'alsoDies-promoted-to-completion-keys',
+    claim: 'alsoDies is INERT — the Director ruled it must not complete a cell',
+    find: "    bosses: Object.freeze(['Lord Nagafen']),",
+    repl: "    bosses: Object.freeze(['Lord Nagafen', 'King Tranix', 'Magus Rokyl', 'Warlord Skarlon']),",
+    probe: (c) => c.RAIDS.find((r) => r.key === "Nagafen's Lair").bosses.length },
+
+  { name: 'single-boss-forced-true',
+    claim: 'singleBoss is MEASURED, not derived from the length of bosses',
+    find: '    singleBoss: false,                // the window lists four; measured 14/15, 14/15, 12/15',
+    repl: '    singleBoss: true,',
+    probe: (c) => c.RAIDS.find((r) => r.key === "Nagafen's Lair").singleBoss },
+
+  { name: 'difficulty-labels-reordered',
+    claim: 'the label table flags a disagreement with the client, never overrides it',
+    find: "const DIFFICULTY_LABELS = ['Normal', 'Awakened', 'Adaptive', 'Fused', 'Refined'];",
+    repl: "const DIFFICULTY_LABELS = ['Refined', 'Fused', 'Adaptive', 'Awakened', 'Normal'];",
+    probe: (c) => JSON.stringify(c.parseInstanceName("Nagafen's Lair 3 (Fused)")) },
+
+  { name: 'sentence-backstop-disabled',
+    claim: 'a lower-case string is a sentence, not a place',
+    find: 'const LOOKS_LIKE_A_SENTENCE = /^[a-z]/;',
+    repl: 'const LOOKS_LIKE_A_SENTENCE = /(?!)/;',
+    probe: (c) => { const e = c.parseLine(line(19, 10, 0, 'You have entered a string no patch has written yet.')); return e && [e.kind, e.unrecognised === true]; } },
+
+  { name: 'solo-flag-dropped',
+    claim: 'a Solo instance is recognised as solo, even though none is modelled',
+    find: "      solo: /Solo/.test(m[2] || ''),",
+    repl: '      solo: false,',
+    probe: (c) => JSON.stringify(c.parseInstanceName("Nagafen's Lair - Solo 3 (Fused)")) },
 ];
 
 const MUTABLE = [FILE_ENGINE, FILE_TEMPLATE, FILE_BUILD];
