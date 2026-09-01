@@ -203,7 +203,14 @@ const MUTATIONS = [
     claim: 'the Voidling reply set is bounded, and overflow degrades safely',
     find: 'const MAX_VOIDLING_REPLIES = 5000;',
     repl: 'const MAX_VOIDLING_REPLIES = 1;',
-    probe: (c) => stateOf(c, [line(19, 10, 0, "Voidling says, 'a'"), line(19, 10, 30, "Voidling says, 'b'"), line(19, 11, 0, "Voidling says, 'c'")]).voidlingReplies.length },
+    // MUST USE CLOSING LINES. After the 31 Aug fix only the closing line enters
+    // the set, so a probe built from chatter exercises nothing and reports INERT
+    // — which is the harness correctly refusing to rule, not a finding.
+    probe: (c) => stateOf(c, [
+      line(19, 10, 0, "Voidling says, 'Your hubris risks our very reality itself.'"),
+      line(19, 10, 30, "Voidling says, 'Your hubris risks our very reality itself.'"),
+      line(19, 11, 0, "Voidling says, 'Your hubris risks our very reality itself.'"),
+    ]).voidlingReplies.length },
 
   { name: 'window-name-mapping-emptied',
     claim: 'alt+Z names map to kill-line names or a lockout reads as missing',
