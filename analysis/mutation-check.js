@@ -697,16 +697,31 @@ const MUTATIONS = [
     claim: 'pruning the dedupe index keeps the NEWEST half — the oldest is what may be dropped',
     find: '  const keep = entries.slice(Math.floor(entries.length / 2));',
     repl: '  const keep = entries.slice(0, Math.floor(entries.length / 2));',
+    // PRUNING ONLY RUNS ABOVE MAX_SEEN. The first version of this probe put six
+    // entries in the index and reported INERT, because `applyLine` calls
+    // pruneSeen only when seenCount exceeds 200,000 — so the mutated line never
+    // executed. Raising seenCount past the bound with a handful of real entries
+    // reaches it without building 200k of them.
     probe: (c) => {
       const st = c.createState('Avenrae');
       for (let i = 0; i < 6; i++) st.seen[`k${i}`] = 1000 + i;
-      st.seenCount = 6;
-      // Exercise the pruner through the only path that calls it.
-      const before = Object.values(st.seen).sort((a, b) => a - b);
-      c.applyLine(st, line(19, 10, 0, 'You have entered Nektulos Forest.'));
-      return [before.length, Object.keys(st.seen).length];
+      st.seenCount = c.THRESHOLDS.MAX_EVENTS * 1e6;   // safely past MAX_SEEN
+      c.applyLine(st, line(19, 11, 30, 'Lord Nagafen has been slain by Avenrae!'));
+      const kept = Object.values(st.seen).filter((v) => v < 2000).sort((a, b) => a - b);
+      return kept;                                     // WHICH half survived
     } },
 
+  // MEASURED LIVE, NOT DEAD — AND MY REASONING SAID OTHERWISE.
+  //
+  // I argued from the code that this loop was unreachable: a point close enough
+  // to bridge two spans would be caught by the early return above. Then I
+  // instrumented a copy of the engine and ran the real corpus: 749,255 lines,
+  // 8 spans pushed, **1 bridge merge**. The loop is live and fires about once
+  // per three-quarters of a million lines.
+  //
+  // My fixture does not reproduce that shape, so this mutation reports INERT
+  // and I cannot say whether the loop is guarded. That is the honest state:
+  // an unmeasured guard, not a blind one.
   { name: 'span-bridge-merge-removed',
     claim: 'a new observation BRIDGING two spans merges them into one',
     find: '      spans[i - 1].to = Math.max(spans[i - 1].to, spans[i].to);',

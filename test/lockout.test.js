@@ -905,3 +905,57 @@ test('DEDUPE SIBLINGS `weekly-request` and `voidling-reply` COLLAPSE BY DESIGN',
   assert.equal(voidling.voidlingReplies.length, 1,
     'the control is a set of seconds — a second reply in the same second adds nothing');
 });
+
+// --- R177: the INVISIBLE MECHANISMS. Correctness never shows in ordinary
+// output, so no fixture exercised them and both were blind. ------------------
+
+test('PRUNING THE DEDUPE INDEX KEEPS THE NEWEST HALF', () => {
+  // FOUND BLIND. Slicing the other way — keeping the OLDEST half — left all
+  // 136 tests green.
+  //
+  // The index exists so replaying a log does not double-count. The keys worth
+  // keeping are the RECENT ones: a replay re-feeds the tail of a file, so the
+  // newest keys are exactly the ones about to be seen again. Keep the oldest
+  // and recent kills lose their protection while ancient ones are guarded
+  // against a replay that will never happen — the headline guarantee failing
+  // silently, with dropped.beyondDedupeHorizon never firing to say so.
+  const st = core.createState('Avenrae');
+  for (let i = 0; i < 6; i++) st.seen[`k${i}`] = 1000 + i;
+  // Pruning only runs above MAX_SEEN; reach it without building 200k entries.
+  st.seenCount = 1e12;
+  core.applyLine(st, '[Wed Aug 19 11:30:00 2026] Lord Nagafen has been slain by Avenrae!');
+
+  const kept = Object.values(st.seen).filter((v) => v < 2000).sort((a, b) => a - b);
+  assert.deepEqual(kept, [1003, 1004, 1005],
+    'the NEWEST half survives; keeping [1000,1001,1002] would drop protection ' +
+    'from exactly the keys a replay is about to repeat');
+});
+
+test('AN OBSERVATION BEFORE A SPAN EXTENDS IT BACKWARDS', () => {
+  // FOUND BLIND. Disabling the backwards extension left all 136 tests green,
+  // and a span that had covered 20 minutes collapsed to zero width.
+  //
+  // Lines are not guaranteed to arrive in order: a host that backfills a file
+  // and then attaches a live tailer feeds an earlier stamp after a later one.
+  // Without the backwards extension the span records only the first instant
+  // seen, coverage under-reports, and cells fall to `not_looked`.
+  //
+  // That is the SAFE direction — the module claims less than it could — but it
+  // is still wrong, and it is invisible: nothing in the output says coverage
+  // was lost rather than never observed.
+  const st = core.applyLines(core.createState('Avenrae'), [
+    '[Wed Aug 19 10:30:00 2026] You have entered Nektulos Forest.',
+    '[Wed Aug 19 10:10:00 2026] You have entered Nektulos Forest.',
+  ]);
+  assert.equal(st.spans.length, 1, 'both observations are within SPAN_GAP_MS');
+  assert.equal((st.spans[0].to - st.spans[0].from) / 60000, 20,
+    'the span must cover 10:10 to 10:30, not collapse to the first stamp seen');
+
+  // The matched pair: forwards extension must still work, or the assertion
+  // above is satisfied by a span that simply never moves.
+  const fwd = core.applyLines(core.createState('Avenrae'), [
+    '[Wed Aug 19 10:10:00 2026] You have entered Nektulos Forest.',
+    '[Wed Aug 19 10:30:00 2026] You have entered Nektulos Forest.',
+  ]);
+  assert.equal((fwd.spans[0].to - fwd.spans[0].from) / 60000, 20);
+});
