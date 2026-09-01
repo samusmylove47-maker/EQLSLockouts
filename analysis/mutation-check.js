@@ -29,8 +29,25 @@
 //
 //   node analysis/mutation-check.js
 //
-// SAFETY: restores src/lockoutCore.js from git between every run, refuses to
+// SAFETY: restores the mutated file from git between every run, refuses to
 // start on a dirty tree, and verifies clean at the end.
+//
+// ── EVERY CHILD PROCESS MUST BE SYNCHRONOUS. THIS IS A REQUIREMENT, NOT A
+//    STYLE CHOICE (R145). ────────────────────────────────────────────────
+//
+// The Director backgrounded a check with an ampersand; the child outlived the
+// shell and wrote to the tree AFTER a checkout had reported it clean. **"The
+// tree is clean" and "the tree is clean for now" rendered identically at the
+// moment it was read.**
+//
+// This harness holds a MUTANT on disk between writing and restoring. A child
+// that outlives the shell can therefore observe, or write against, a
+// deliberately broken source — and report on it as if it were the real one.
+//
+// `execFileSync` throughout is what prevents that, and until R145 it was an
+// accident of the API I reached for rather than a decision. **Do not replace
+// any call here with `spawn`, `exec`, or a backgrounded shell.** If a step ever
+// needs to be asynchronous, restore the tree BEFORE it starts.
 
 const fs = require('fs');
 const path = require('path');
@@ -476,7 +493,20 @@ function main() {
     if (!live) {
       rows.push({ mut, outcome: 'INERT', detail: `probe unchanged (${before})` });
     } else if (res.failCount > 0) {
-      rows.push({ mut, outcome: 'CAUGHT', detail: `${res.failCount} assertion(s) in ${res.failedFiles.join(', ')}` });
+      // NAME THE TESTS, NOT JUST THE FILES — R143.
+      //
+      // B kept a guard while recording that its unique value was UNDEMONSTRATED:
+      // three mutations failed to show it caught anything the old suite missed.
+      // The same question applies to every test I have added from a blind spot.
+      // **A mutation caught by exactly ONE test is that test earning its place;
+      // caught by several, the newest may be redundant.** Printing the names is
+      // what makes that checkable instead of assumed.
+      rows.push({
+        mut,
+        outcome: 'CAUGHT',
+        detail: `${res.failCount} assertion(s) in ${res.failedFiles.join(', ')}`,
+        catchers: [...res.names],
+      });
     } else {
       rows.push({ mut, outcome: 'BLIND', detail: `probe ${before} -> ${after}, no test failed` });
     }
@@ -492,7 +522,14 @@ function main() {
     const g = group(o);
     if (!g.length) continue;
     console.log(`\n  ${o}  (${g.length})`);
-    for (const r of g) console.log(`    ${r.mut.name.padEnd(34)} ${r.detail}`);
+    for (const r of g) {
+      console.log(`    ${r.mut.name.padEnd(34)} ${r.detail}`);
+      // A SOLE CATCHER is a test earning its place; several means the newest
+      // guard may be redundant and its unique value is a claim, not a fact.
+      if (r.catchers && r.catchers.length === 1) {
+        console.log(`        SOLE CATCHER: ${r.catchers[0]}`);
+      }
+    }
   }
 
   const totalTests = TESTS.reduce((acc, t) =>
