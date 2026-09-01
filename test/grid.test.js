@@ -1649,3 +1649,51 @@ test('A GAP EXACTLY EQUAL TO THE TOLERANCE IS TOLERATED, NOT A HOLE', () => {
     'a gap of exactly the tolerance is tolerated — the comparison is strict');
   assert.equal(g.period.coverageSpansPeriod, true);
 });
+
+test('A NOT_LOOKED CELL SAYS HOW FAR OVER THE TOLERANCE, not just how much is missing', () => {
+  // THE FINDING THIS CLOSES. Two characters in the same group over the same
+  // week, measured 1 Sep: one hole of 24.51 h against a 24 h tolerance — 31
+  // MINUTES OVER — turned a working grid into 25 not_looked cells while the
+  // other player's grid answered normally. Both had observed ~38-40% of the
+  // period, so the floor was not involved. All 25 cells disagreed.
+  //
+  // The old text said "no record of 25.3h inside this period" and stopped. It
+  // named the gap and never the THRESHOLD, so a reader could not tell whether
+  // they had missed by a day or by half an hour. The failure is a CLIFF and the
+  // engine already holds both numbers.
+  //
+  // NOT asserted here: that 24 h is the right tolerance. It is a judgement and
+  // nothing measures a better one. This asserts only that the reader is told
+  // where the edge was.
+  const beat = (from, to) => {
+    const out = [];
+    for (let d = from; d <= to; d++) {
+      for (let m = 0; m < 1440; m += 20) {
+        const x = new Date(Date.UTC(2026, 7, d, Math.floor(m / 60), m % 60, 0));
+        out.push(`[${DAYS[x.getUTCDay()]} Aug ${String(d).padStart(2, '0')} ` +
+          `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}:00 2026] ` +
+          'You have entered Nektulos Forest.');
+      }
+    }
+    return out;
+  };
+  const lines = [...beat(11, 14)];
+  for (let m = 0; m < 600; m += 20) {
+    const h = Math.floor(m / 60) + 1;
+    lines.push(`[Sun Aug 16 ${String(h).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}:00 2026] ` +
+      'You have entered Nektulos Forest.');
+  }
+  const st = core.applyLines(core.createState('Avenrae'), lines);
+  const g = core.projectGrid(st, { year: 2026, month: 8, day: 16, hour: 20, minute: 0, second: 0 });
+
+  assert.equal(g.notLookedCount, 25, 'precondition: one oversized hole blanks the grid');
+  assert.equal(g.period.coverageHoles.length, 1);
+
+  const why = g.cells[0].because;
+  assert.match(why, /no record of/, 'still says how much is missing');
+  assert.match(why, /over the 24h tolerance/,
+    'and now says how far OVER — a cliff a player can act on, not just a gap');
+  // The excess must be DERIVED, not a constant: hole 25.33h - 24h = 1.3h.
+  assert.match(why, /1\.3h over/,
+    'the excess is computed from the measured hole and the published tolerance');
+});

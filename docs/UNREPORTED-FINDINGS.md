@@ -576,3 +576,107 @@ the real corpus:
 here reproduces that shape, so its mutation reports `INERT` and **whether it is
 guarded is unknown.** An unmeasured guard, not a blind one — the distinction is
 the whole reason the third verdict exists.
+
+---
+
+# Part 4 — two vantages on one evening, and a hazard with a trigger date
+
+## THE FINDING: two players in one group, and only one gets an answer
+
+**Measured 1 September**, over the two characters whose logs overlap on this
+machine — **7.38 days, 88,997 seconds logged by both.**
+
+| | Shara | Avenrae |
+|---|---|---|
+| completed / open / conditional | 0 / 0 / 0 | 8 / 10 / 7 |
+| **not_looked** | **25** | 0 |
+| coverage spans period | **false** | true |
+| observed fraction | 0.3817 | 0.3995 |
+| coverage holes > 24 h | **one, 24.51 h** | none |
+| roster-attributed kills | **37** | 43 |
+
+> **CELLS DISAGREEING: 25 OF 25.**
+
+**The cause is 31 minutes.** A single gap 24.51 h long against a 24 h tolerance
+discards all 37 of Shara's attributed kills and returns twenty-five cells of
+*"I have not looked"*, while the player standing next to her gets a working
+grid. **Both observed ~38–40% of the period, so the observed-fraction floor is
+not involved.**
+
+### Why this was invisible
+
+**Compare only completions and you see 37 kills against 43 and conclude they
+raided differently.** They did not. The entire disagreement lives in coverage,
+which is the one thing nobody compares — and **neither output says the two
+grids describe the same evening.**
+
+### What is claimed and what is not
+
+**Claimed:** the failure is a **cliff, not a slope**, and a player cannot see
+which side of it they are on. Fully supported and it does not require knowing
+the right threshold.
+
+**NOT claimed:** that 24 h is wrong. It is a judgement, the source says so, and
+nothing here measures a better one.
+
+### What was done about it
+
+The cell reason now names the excess, not only the gap:
+
+    before   no record of 25.3h inside this period
+    after    no record of 25.3h inside this period — 1.3h over the 24h tolerance
+
+**"1.3h too long" is a thing a player can fix. "25.3h missing" is not.** The
+threshold is unchanged.
+
+### THE METHOD ERROR THAT NEARLY KILLED THIS
+
+**I first reported the two corpora were disjoint in time and the comparison
+impossible.** They are not. I had compared the Desktop `Shara` logs against the
+`state/logs` `Avenrae` logs — **and five more `Shara` logs sit in that same
+directory, covering the same period, which I never looked at.**
+
+**A live instrument aimed at the wrong population returns a real number**, and
+it returns it in the same format as a right one. I had written that sentence to
+the Director about someone else's error ninety minutes earlier. **The correction
+came from a second independent look, not from a more careful first one.**
+
+---
+
+## A HAZARD WITH A TRIGGER, recorded where the work will happen
+
+**This is not a finding about today. It is a precondition on a change the source
+already says should be made.**
+
+`RAIDS` is a hand-written list of ten boss names, and the comment above it says
+so plainly: *a tracker that learns its raids from observed timer rows beats one
+that ships a list*, and if `/dzlisttimers` ever logs, **the roster discovers
+itself and this list is thrown away.**
+
+### Why that change is dangerous, measured
+
+    same-second same-name kill collisions   **147**  (8.3% of 1,774 kill lines)
+    ...of a roster boss                       **0**
+    ...of an `alsoDies` mob                   **0**
+
+**Session C established that a mob name is not an identity** — *"a dar ghoul
+knight"* slain five times in one minute, 201 kills of that one name. **My grid
+is unaffected only because its ten names are hand-checked bosses that never
+collide.**
+
+> **The safety is a property of a human having typed ten names, not of the
+> engine handling the general case.** `dedupeKey` collapses
+> `second|kill|slain-name`, so the moment the roster contains a name that is not
+> an identity, **two distinct kills become one and a cell silently under-counts.**
+
+### THE PRECONDITION
+
+**Before roster self-discovery ships, measure the collision rate over the
+discovered roster, not the hand-written one.** If any discovered name collides
+same-second with itself, `dedupeKey` needs a discriminator beyond the name
+before that roster is trusted — and `analysis/mutation-check.js` already carries
+a mutation (`kill-key-drops-the-slain-name`) that proves the key is load-bearing.
+
+**The `alsoDies` counts are the specific thing to re-check**: 12/12 and 14/15
+were measured over deduped events. They are correct today because those mobs do
+not collide. **They would not survive a roster that included one that does.**

@@ -2282,8 +2282,32 @@ function projectGrid(state, now) {
         cellState = 'not_looked';
         because = coverageStart === null
           ? 'no lines seen at all'
+          // ── SAY HOW FAR OVER, NOT ONLY HOW MUCH MISSING. ──────────────
+          //
+          // This said "no record of 25.3h inside this period" and stopped. It
+          // named the gap and never the THRESHOLD, so a reader could not tell
+          // whether they had missed by a day or by half an hour.
+          //
+          // Measured, 1 Sep, two characters in the same group over the same
+          // week: one hole of 24.51 h against a 24 h tolerance — **31 minutes
+          // over** — turned a working grid into 25 `not_looked` cells while the
+          // other player's grid answered normally. Both had observed ~38–40% of
+          // the period, so the floor was not involved. **All 25 cells
+          // disagreed, and neither output said the two were the same evening.**
+          //
+          // The failure is a CLIFF, not a slope, and the engine already holds
+          // both numbers. Naming the excess is what lets a player act on it —
+          // "1.3h too long" is a thing you can fix; "25.3h missing" is not.
+          //
+          // NOT claimed: that 24 h is the wrong tolerance. It is a judgement,
+          // the source says so, and nothing here measures a better one.
           : holes.length
-            ? `no record of ${holes.map((h) => `${h.hours.toFixed(1)}h`).join(' + ')} inside this period`
+            ? `no record of ${holes.map((h) => `${h.hours.toFixed(1)}h`).join(' + ')} ` +
+              `inside this period — ` +
+              `${holes.length === 1
+                  ? `${(holes[0].hours - PERIOD_GAP_TOLERANCE_MS / 3600000).toFixed(1)}h over`
+                  : `each longer than`} ` +
+              `the ${PERIOD_GAP_TOLERANCE_MS / 3600000}h tolerance`
             // The new branch, and it must say WHICH test failed. "Coverage does
             // not span this period" was true of both and told a reader nothing.
             : observedFraction < MIN_OBSERVED_FRACTION
