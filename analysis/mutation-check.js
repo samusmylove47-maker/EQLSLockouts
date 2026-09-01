@@ -508,6 +508,42 @@ const MUTATIONS = [
       const b = c.project(st, NOW).bosses[0];
       return b ? [b.timesCompleted, JSON.stringify(b.lastCompleted)] : 'no-boss';
     } },
+  // -- AIMED AT INSTANCE ATTRIBUTION AND THE INVITE PATH ------------------
+  //
+  // `currentInstance` is how a kill gets its difficulty. Wrong, and a kill
+  // lands in the wrong tier of the right raid — a cell completed that the
+  // player has not done, which is the failure R160 names.
+
+  { name: 'kill-attributed-with-no-instance',
+    claim: 'a kill in the open world resolves NO cell — attribution is not optional',
+    find: '        difficulty: inst ? inst.difficulty : null,',
+    repl: '        difficulty: inst ? inst.difficulty : 0,',
+    probe: (c) => {
+      const st = stateOf(c, [line(19, 11, 30, 'Lord Nagafen has been slain by Avenrae!')]);
+      return st.kills.length ? [st.kills[0].difficulty, st.kills[0].zone] : 'no-kill';
+    } },
+
+  { name: 'instance-not-cleared-on-open-world',
+    claim: 'zoning into the open world clears the instance, so later kills are unattributed',
+    find: '      state.currentInstance = ev.instanced',
+    repl: '      if (ev.instanced) state.currentInstance = ev.instanced',
+    probe: (c) => {
+      const st = stateOf(c, [
+        line(19, 11, 0, "You have entered Nagafen's Lair - Group 3 (Fused)."),
+        line(19, 12, 0, 'You have entered Nektulos Forest.'),
+        line(19, 12, 30, 'Lord Nagafen has been slain by Avenrae!'),
+      ]);
+      return st.kills.length ? [st.kills[0].difficulty, st.kills[0].zone] : 'no-kill';
+    } },
+
+  { name: 'invite-parsed-as-a-zone-in',
+    claim: 'an INVITE is not an entry — being asked to join is not being inside',
+    find: "    return { kind: 'instance-invite', at, from: m[1], ...parseInstanceName(m[2]) };",
+    repl: "    return { kind: 'entered', at, ...parseInstanceName(m[2]) };",
+    probe: (c) => {
+      const e = c.parseLine(line(19, 10, 0, "Someone has asked you to join the instance: Nagafen's Lair - Group 3 (Fused). Would you like to join?"));
+      return e && e.kind;
+    } },
 ];
 
 const MUTABLE = [FILE_ENGINE, FILE_TEMPLATE, FILE_BUILD];
