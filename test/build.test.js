@@ -9,6 +9,7 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
+const crypto = require('node:crypto');
 
 const ROOT = path.join(__dirname, '..');
 const OUT_DIR = path.join(ROOT, 'public', 'app');
@@ -142,12 +143,30 @@ test('BUILD: every font is inlined as a data: URI, or there are none', () => {
 });
 
 test('BUILD: the filename is content-hashed', () => {
-  const { name } = build();
+  const { name, html } = build();
   assert.match(name, /^eqls-lockouts\.[0-9a-f]{8}\.html$/);
   // Rebuilding unchanged input must produce the same name; a changing hash
   // would bust caches on every build and stop meaning anything.
   const again = build();
   assert.equal(again.name, name);
+
+  // ── AND THE HALF THAT WAS MISSING UNTIL 31 Aug ────────────────────────
+  //
+  // The two assertions above are satisfied by a CONSTANT. Replacing the hash
+  // computation with the literal 'deadbeef' passed both — it is eight hex
+  // characters and it is perfectly stable — and all 125 tests stayed green.
+  // Found by analysis/mutation-check.js.
+  //
+  // The test asserted that the same input gives the same name and never that a
+  // DIFFERENT input gives a different one, which is the only thing "content-
+  // hashed" means. Recomputing the digest here ties the name to the bytes.
+  //
+  // It matters beyond cache-busting: the hash is how a pending publish is
+  // detected at all. Frozen, every build would carry one filename and the
+  // stale-deploy check would go quiet while looking healthy.
+  const digest = crypto.createHash('sha256').update(html).digest('hex').slice(0, 8);
+  assert.equal(name, `eqls-lockouts.${digest}.html`,
+    'the filename must be DERIVED from the page bytes, not merely stable');
 });
 
 test('BUILD: both grounds exist, and no colour is defined ONLY in a media block', () => {

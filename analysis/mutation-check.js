@@ -280,8 +280,11 @@ const MUTATIONS = [
   { name: 'font-inlining-replaced-by-url',
     file: FILE_BUILD,
     claim: 'every font ships as a data: URI, never as a fetch',
-    find: "`    src: url(data:font/woff2;base64,${f.base64}) format('woff2');${range}\n` +",
-    repl: "`    src: url(https://fonts.gstatic.com/s/${f.family}.woff2) format('woff2');${range}\n` +",
+    // THE `\\n` IS A LITERAL BACKSLASH-N IN build-app.js, inside a template
+    // literal. Written `\n` here it becomes a real newline and matches nothing —
+    // which the harness correctly reported as NOANCHOR rather than as a finding.
+    find: "`    src: url(data:font/woff2;base64,${f.base64}) format('woff2');${range}\\n` +",
+    repl: "`    src: url(https://fonts.gstatic.com/s/${f.family}.woff2) format('woff2');${range}\\n` +",
     probe: () => built() },
 
   { name: 'external-script-injected',
