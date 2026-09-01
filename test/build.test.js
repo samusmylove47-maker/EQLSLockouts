@@ -457,3 +457,40 @@ test('BUILD: the artifact HASHES TO ITS OWN NAME, on disk', () => {
     'Something rewrote the file after the build computed its name — check ' +
     '.gitattributes for line-ending normalisation on public/app/.');
 });
+
+test('BUILD: .gitattributes COVERS the artifact directory, at any depth', () => {
+  // THE GAP THIS CLOSES, and it was real rather than hypothetical.
+  //
+  // `public/app/*.html -text` was added after git normalisation broke the
+  // artifact's content-hash name. It covers ONE level. Measured before the
+  // fix, with `git check-attr`, which is the only thing that actually decides
+  // what a glob covers:
+  //
+  //   public/app/eqls-lockouts.<hash>.html   text: unset         covered
+  //   public/app/sub/x.html                  text: unspecified   NOT covered
+  //   public/app/deep/nested/y.html          text: unspecified   NOT covered
+  //
+  // A build output written one directory deeper would have been normalised
+  // again and its name would have been false again — and the on-disk hash
+  // check would only have noticed AFTER a build, on a file already committed.
+  //
+  // Session A raised the coverage question; the measurement is what turned it
+  // from a tidiness note into a live gap.
+  const attr = (p) => execFileSync('git', ['check-attr', 'text', '--', p],
+    { cwd: ROOT, encoding: 'utf8' }).trim().split(': ').pop();
+
+  for (const p of [
+    'public/app/eqls-lockouts.deadbeef.html',
+    'public/app/sub/x.html',
+    'public/app/deep/nested/y.html',
+  ]) {
+    assert.equal(attr(p), 'unset',
+      `${p} must be marked -text — a build output normalised by git cannot ` +
+      'hash to its own name');
+  }
+
+  // THE NEGATIVE CONTROL. Without it, `-text` on everything would pass this
+  // test while telling us nothing about whether the pattern discriminates.
+  assert.equal(attr('public/other.html'), 'unspecified',
+    'the rule must be scoped to the artifact directory, not the whole repo');
+});

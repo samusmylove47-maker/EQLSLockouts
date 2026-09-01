@@ -20,3 +20,20 @@ sources/raw/** -text
 #
 # `-text` stores and restores the bytes the build produced, at every layer.
 public/app/*.html -text
+
+# AND AT ANY DEPTH. The line above covers only the top level, which was the
+# whole shape of the fault it was written for: a glob that looks like it covers
+# a directory and covers one level of it.
+#
+# Measured before this line existed:
+#
+#   public/app/eqls-lockouts.fd053e47.html   text: unset         <- covered
+#   public/app/sub/x.html                    text: unspecified   <- NOT covered
+#   public/app/deep/nested/y.html            text: unspecified   <- NOT covered
+#
+# A build output written one directory deeper would have been normalised again
+# and its name would have been false again, with the on-disk hash check only
+# noticing after a build. `git check-attr` is the instrument that decides this,
+# and test/build.test.js now asserts it rather than trusting the glob reads the
+# way it looks.
+public/app/**/*.html -text
