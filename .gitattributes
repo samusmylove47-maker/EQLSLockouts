@@ -1,3 +1,22 @@
 # The fixture is evidence: it must match the client's own LF line endings byte for byte.
 *.log -text
 sources/raw/** -text
+
+# THE BUILT ARTIFACT IS BYTE-EXACT OR ITS NAME IS A LIE.
+#
+# `eqls-lockouts.<hash>.html` is named for the sha256 of its own contents —
+# build-app.js hashes the exact string it then writes. So any layer that
+# rewrites a byte breaks the name.
+#
+# Measured 1 Sep, and the round trip through git was LOSSY:
+#
+#   as built         309,040 B   3,849 CRLF + 50 BARE LF   -> fd053e47  (its name)
+#   stored as blob   305,191 B   all LF                    -> 15f045ad
+#   fresh checkout   309,090 B   3,899 CRLF, 0 bare LF     -> 41c1a2cb
+#
+# Normalisation folded 50 newlines that were never CRLF into CRLF on the way
+# out, and they do not come back. Session A stopped its copier over exactly
+# this — the artifact did not hash to its own name — and was right to.
+#
+# `-text` stores and restores the bytes the build produced, at every layer.
+public/app/*.html -text
