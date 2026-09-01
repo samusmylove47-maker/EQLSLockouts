@@ -748,6 +748,45 @@ const MUTATIONS = [
       ]);
       return st.spans.map((x) => [(x.to - x.from) / 60000]);
     } },
+  // -- R177 PASS 2: THE REMAINING INVISIBLE MECHANISMS -------------------
+
+  { name: 'beyond-horizon-counter-never-fires',
+    claim: 'a line older than the whole index is COUNTED, not silently accepted',
+    find: '  if (state.seenCount >= MAX_SEEN && civil < oldestSeen(state)) {',
+    repl: '  if (false) {',
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      for (let i = 0; i < 4; i++) st.seen[`k${i}`] = 9e12 + i;   // all far in the future
+      st.seenCount = 1e12;                                        // past MAX_SEEN
+      c.applyLine(st, line(19, 11, 30, 'Lord Nagafen has been slain by Avenrae!'));
+      return st.dropped.beyondDedupeHorizon;
+    } },
+
+  { name: 'oldest-seen-returns-zero-when-empty',
+    claim: 'an EMPTY index has no oldest entry — Infinity, so nothing is beyond it',
+    find: '  let min = Infinity;',
+    repl: '  let min = 0;',
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      st.seenCount = 1e12;                 // past MAX_SEEN with an EMPTY index
+      c.applyLine(st, line(19, 11, 30, 'Lord Nagafen has been slain by Avenrae!'));
+      return [st.dropped.beyondDedupeHorizon, st.kills.length];
+    } },
+
+  { name: 'hole-threshold-becomes-inclusive',
+    claim: 'a gap EQUAL to the tolerance is tolerated, not a hole',
+    find: '  const holes = allGaps.filter((g) => g.to - g.from > PERIOD_GAP_TOLERANCE_MS);',
+    repl: '  const holes = allGaps.filter((g) => g.to - g.from >= PERIOD_GAP_TOLERANCE_MS);',
+    probe: (c) => {
+      // Two blocks exactly 24 h apart — the boundary case the comparison decides.
+      const st = stateOf(c, [
+        ...beat(15, 19),
+        line(20, 12, 0, 'You have entered Nektulos Forest.'),
+        line(21, 12, 0, 'You have entered Nektulos Forest.'),
+      ]);
+      const g = c.projectGrid(st, NOW);
+      return [g.period.coverageHoles.length, g.period.coverageSpansPeriod];
+    } },
 ];
 
 const MUTABLE = [FILE_ENGINE, FILE_TEMPLATE, FILE_BUILD];
