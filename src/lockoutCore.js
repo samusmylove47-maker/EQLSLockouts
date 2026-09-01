@@ -1373,6 +1373,27 @@ function applyLine(state, line) {
   // `events` and never emits a change, because several players share one NPC
   // and the count is meaningless. It is recorded below as a set of seconds.
   if (ev.kind === 'voidling-reply') {
+    // ── ONLY THE CLOSING LINE IS THE CONTROL. ─────────────────────────────
+    //
+    // `parseLine` has always computed `closing`, and until 31 Aug NOTHING READ
+    // IT — every Voidling line entered the control set. A field that looks like
+    // it does something, on an object whose consumer never asks.
+    //
+    // Not latent: measured across both characters, MORE THAN HALF the Voidling
+    // lines are not the closing line — Shara 52 of 96, Avenrae 94 of 196. So
+    // the control set held roughly twice the instants it should, and any of
+    // them landing in the window would corroborate a refusal that had no
+    // corroboration.
+    //
+    // The closing line is the control precisely because it fires on BOTH a
+    // grant and a refusal; ordinary chatter establishes nothing about whether
+    // the hail was answered. Filtering moves un-corroborated hails from
+    // `refused` to `unknown`, which is the safe direction and the one this
+    // module is required to take.
+    //
+    // Found by analysis/mutation-check.js: replacing the flag with a literal
+    // `true` left all 122 tests green.
+    if (!ev.closing) return state;
     if (!state.voidlingReplies.includes(civil)) {
       state.voidlingReplies.push(civil);
       // THE BOUND, AND ITS COST, BOTH STATED — Session C's clause 7.

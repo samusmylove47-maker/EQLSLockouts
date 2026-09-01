@@ -745,3 +745,63 @@ test('THE WEEKDAY IS COMPUTED, NEVER TRUSTED FROM THE LINE', () => {
     'the weekday is DERIVED from the date: 10 Aug 2026 is a Monday (1), ' +
     'whatever the line claims. Trusting the string would return 5.');
 });
+
+// --- Second pass of analysis/mutation-check.js, 31 Aug: two more blind spots ---
+
+test('THE POSITIVE CONTROL KEYS ON THE CLOSING LINE, not on any Voidling line', () => {
+  // THE MOST IMPORTANT OF THE BLIND SPOTS FOUND. `closing` is what turns a
+  // refused hail into evidence: `classifyRequests` reports `refused` only when
+  // a Voidling reply sits in the window, and `actionability()` reads that.
+  //
+  // Replacing `VOIDLING_CLOSING_RE.test(message)` with a literal `true` left
+  // all 122 tests green. Any Voidling chatter would have counted as the
+  // control, and refusals would be over-detected — which pushes cells toward
+  // `refused` on evidence that is not evidence.
+  const closing = core.parseLine(
+    "[Wed Aug 19 10:00:00 2026] Voidling says, 'Your hubris risks our very reality itself.'");
+  assert.equal(closing.kind, 'voidling-reply');
+  assert.equal(closing.closing, true, 'the closing line IS the control');
+
+  const chatter = core.parseLine(
+    "[Wed Aug 19 10:00:00 2026] Voidling says, 'Some other sentence entirely.'");
+  assert.equal(chatter.kind, 'voidling-reply', 'still a Voidling line');
+  assert.equal(chatter.closing, false,
+    'ANY Voidling line is not the control — only the closing one is');
+});
+
+test('A HAIL ANSWERED BY NON-CLOSING VOIDLING CHATTER IS NOT `refused`', () => {
+  // The downstream half of the pair above: the specificity has to survive into
+  // the projection, not just the parse.
+  const st = core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] You say, 'danger'",
+    "[Wed Aug 19 10:00:03 2026] Voidling says, 'Some other sentence entirely.'",
+  ]);
+  const rows = core.classifyRequests(st);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].result, 'unknown',
+    'without the closing line there is no positive control, so the hail is ' +
+    'unknown — not refused');
+  assert.equal(rows[0].positiveControl, false);
+});
+
+test('A KNOWN NON-ZONE NOTICE IS NOT REPORTED AS `unrecognised`', () => {
+  // Emptying NOT_A_ZONE left every test green, because the lower-case
+  // BACKSTOP also catches these strings and still returns kind 'not-a-zone'.
+  // Real defence in depth — but the two layers are not equivalent, and only
+  // the `unrecognised` flag tells them apart.
+  //
+  // Losing that distinction loses the difference between "a notice we have
+  // seen and classified" and "a string we have never seen before", which is
+  // the provenance the whole module exists to keep.
+  const known = core.parseLine(
+    '[Wed Aug 19 10:00:00 2026] You have entered an area where levitation effects do not function.');
+  assert.equal(known.kind, 'not-a-zone');
+  assert.ok(!known.unrecognised,
+    'a NOT_A_ZONE entry is classified, not merely rejected by the backstop');
+
+  const novel = core.parseLine(
+    '[Wed Aug 19 10:00:00 2026] You have entered a string no patch has written yet.');
+  assert.equal(novel.kind, 'not-a-zone', 'the backstop still rejects it');
+  assert.equal(novel.unrecognised, true,
+    'and it is flagged unrecognised, which is what makes it findable later');
+});
