@@ -336,6 +336,46 @@ const MUTATIONS = [
     find: "      solo: /Solo/.test(m[2] || ''),",
     repl: '      solo: false,',
     probe: (c) => JSON.stringify(c.parseInstanceName("Nagafen's Lair - Solo 3 (Fused)")) },
+  // -- AIMED AT PROVENANCE AND THE `why` STRINGS (R95) --------------------
+  //
+  // THREE CONSUMERS: B, E and C all read provenance, and the `why` strings are
+  // what a player eventually reads. Provenance is the whole mechanism that
+  // stops a modelled number being taken for a measured one, so a mutation that
+  // survives here is a licence to quote a guess as a fact.
+
+  { name: 'lockout-days-relabelled-observed',
+    claim: 'the 6-day lockout is CONDITIONAL on the replay period being 1h, never measured',
+    find: "  daysProvenance: 'conditional',",
+    repl: "  daysProvenance: 'observed',",
+    probe: (c) => c.LOCKOUT_MODEL.daysProvenance },
+
+  { name: 'inferred-relabelled-observed',
+    claim: 'a reset bracket is INFERRED from two observations, not itself observed',
+    // No newline in the anchor. Written `\n` inside a double-quoted JS string
+    // it becomes a real newline and matches nothing — the same escaping trap
+    // that has produced a NOANCHOR twice already tonight. `String.replace`
+    // takes the first occurrence, which is deterministic and enough.
+    find: "    provenance: 'inferred',",
+    repl: "    provenance: 'observed',",
+    probe: (c) => JSON.stringify(c.projectReset(stateOf(c, [...beat(15, 21), ...grantPair(19, 10, 'Lord Nagafen')]))).slice(0, 200) },
+
+  { name: 'not-recorded-becomes-a-value',
+    claim: 'an unmeasured field is `not recorded`, never a default',
+    find: "const NOT_RECORDED = Object.freeze({ provenance: 'not recorded', value: null });",
+    repl: "const NOT_RECORDED = Object.freeze({ provenance: 'observed', value: 0 });",
+    probe: (c) => JSON.stringify(c.projectPeriod(c.createState('x'))) },
+
+  { name: 'coverage-provenance-forced-observed',
+    claim: 'coverage with no lines seen is `not recorded`, not observed-empty',
+    find: "      provenance: state.firstSeen === null ? 'not recorded' : 'observed',",
+    repl: "      provenance: 'observed',",
+    probe: (c) => JSON.stringify(c.project(c.createState('x'), NOW).coverage).slice(0, 160) },
+
+  { name: 'cell-why-emptied',
+    claim: 'every cell says WHY it reads as it does — a state without a reason is a verdict',
+    find: "      return { s: 'open', done, repeats: 0, why: 'no kill observed since the reset, and coverage spans the period' };",
+    repl: "      return { s: 'open', done, repeats: 0, why: '' };",
+    probe: (c) => { const g = c.projectGrid(stateOf(c, beat(15, 21)), NOW); const cell = g.cells.find((x) => x.state === 'open'); return cell ? String(cell.because).length > 0 : 'no-open-cell'; } },
 ];
 
 const MUTABLE = [FILE_ENGINE, FILE_TEMPLATE, FILE_BUILD];
