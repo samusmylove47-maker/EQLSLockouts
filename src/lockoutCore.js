@@ -1515,6 +1515,28 @@ function applyLine(state, line) {
     // Only a ZONE-IN moves the player. An invite is someone else's offer and
     // may be declined, so it must never set the current instance — doing so
     // would attribute a later kill to an instance never entered.
+    // ── THE ASSIGNMENT IS UNCONDITIONAL, AND THAT IS THE REQUIREMENT. ─────
+    //
+    // **DO NOT GUARD THIS WITH `if (ev.instanced)`.** It reads like a tidy-up —
+    // "why assign null when we could skip" — and it is the whole clearing
+    // mechanism. Zoning into the OPEN WORLD is what unsets the instance, and it
+    // does so by assigning the null branch below.
+    //
+    // Guarded, the last instance becomes STICKY and follows the player out:
+    //
+    //     enter Nagafen's Lair - Group 3
+    //     zone out to Nektulos Forest
+    //     kill Lord Nagafen in the open world
+    //     -> reports difficulty 3 of Nagafen's Lair COMPLETE
+    //
+    // A raid marked done that the player has not done, from one ordinary
+    // zone-in, with no rare input and no unusual state.
+    //
+    // Until 1 Sep the clearing was an ACCIDENT of writing the assignment
+    // unconditionally rather than a decision, and all 130 tests passed with it
+    // guarded. `analysis/mutation-check.js` found it; the triple in
+    // test/grid.test.js is what holds it now — inside, after leaving, and never
+    // entered, because no two of those three distinguish every wrong version.
     if (ev.kind === 'entered') {
       state.currentInstance = ev.instanced
         ? {

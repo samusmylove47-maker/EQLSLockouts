@@ -544,6 +544,48 @@ const MUTATIONS = [
       const e = c.parseLine(line(19, 10, 0, "Someone has asked you to join the instance: Nagafen's Lair - Group 3 (Fused). Would you like to join?"));
       return e && e.kind;
     } },
+  // -- AIMED AT REPLAY IDEMPOTENCE AND THE DEDUPE KEY --------------------
+  //
+  // The module's headline guarantee is that replaying a log does not
+  // double-count. The dedupe key is what delivers it, and a key that drops a
+  // component collides two distinct events into one — a SILENT LOST
+  // COMPLETION, which for a tool whose job is "do not forget a raid" is the
+  // wrong direction to fail in.
+
+  { name: 'kill-key-drops-the-slain-name',
+    claim: 'two different bosses dying in the same second are two events',
+    find: "      return `${civil}|kill|${ev.slain}`;",
+    repl: "      return `${civil}|kill`;",
+    probe: (c) => stateOf(c, [
+      line(19, 11, 0, "You have entered The Plane of Fear - Group 3 (Fused)."),
+      line(19, 11, 30, 'Terror has been slain by Avenrae!'),
+      line(19, 11, 30, 'Dread has been slain by Avenrae!'),
+    ]).kills.length },
+
+  { name: 'task-key-drops-the-task-name',
+    claim: 'two different weeklies granted in the same second are two grants',
+    find: "      return `${civil}|${ev.kind}|${ev.task}`;",
+    repl: "      return `${civil}|${ev.kind}`;",
+    probe: (c) => {
+      const st = stateOf(c, [
+        line(19, 10, 0, "You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'."),
+        line(19, 10, 0, "You have been assigned the task 'Potential of the Void - Lady Vox - Weekly'."),
+      ]);
+      return Object.keys(st.tasks).length;
+    } },
+
+  { name: 'dedupe-index-never-consulted',
+    claim: 'replaying a log is IDEMPOTENT — the headline guarantee',
+    find: '  if (Object.prototype.hasOwnProperty.call(state.seen, key)) {',
+    repl: '  if (false) {',
+    probe: (c) => {
+      const lines = [
+        line(19, 11, 0, "You have entered Nagafen's Lair - Group 3 (Fused)."),
+        line(19, 11, 30, 'Lord Nagafen has been slain by Avenrae!'),
+      ];
+      const st = stateOf(c, [...lines, ...lines]);   // the same log, twice
+      return [st.kills.length, st.dropped.duplicate];
+    } },
 ];
 
 const MUTABLE = [FILE_ENGINE, FILE_TEMPLATE, FILE_BUILD];
