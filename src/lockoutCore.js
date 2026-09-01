@@ -1427,6 +1427,26 @@ function applyLine(state, line) {
     state.dropped.duplicate++;
     return state;
   }
+  // ── CAPTURED BEFORE THE INSERT, AND THAT IS THE WHOLE FIX. ────────────
+  //
+  // The horizon check below asks "is this line older than everything I still
+  // hold". Until 1 Sep it called `oldestSeen(state)` AFTER this line's own key
+  // had been written into the index — so the line always contributed its own
+  // value to the minimum, and `civil < oldestSeen(state)` was UNSATISFIABLE.
+  //
+  // Measured, not argued: 199,999 pre-seeded keys all at 9e12 (far in the
+  // future), a line genuinely older than every one of them, and
+  // `dropped.beyondDedupeHorizon` still read 0.
+  //
+  // **The counter the source calls the guard against "the worst failure this
+  // module can have" could not fire.** An instrument that cannot return one of
+  // its two answers, sitting in the guard against silent double-counting.
+  //
+  // `pruneSeen` also had to be crossed: it halves `seenCount` when the bound is
+  // passed, so the count is captured here too rather than read after.
+  const horizonCount = state.seenCount;
+  const horizonOldest = horizonCount >= MAX_SEEN ? oldestSeen(state) : Infinity;
+
   state.seen[key] = civil;
   state.seenCount++;
   if (state.seenCount > MAX_SEEN) pruneSeen(state);
@@ -1447,7 +1467,9 @@ function applyLine(state, line) {
   // `dropped.beyondDedupeHorizon > 0` tells a host "you fed me something from
   // before my memory; I can no longer promise idempotence, rebuild from the
   // log." Visible beats silent.
-  if (state.seenCount >= MAX_SEEN && civil < oldestSeen(state)) {
+  // Both operands captured ABOVE, before the insert and before any prune. See
+  // the note there: read after, this condition is unsatisfiable.
+  if (horizonCount >= MAX_SEEN && civil < horizonOldest) {
     state.dropped.beyondDedupeHorizon++;
   }
 

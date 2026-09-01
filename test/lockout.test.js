@@ -959,3 +959,49 @@ test('AN OBSERVATION BEFORE A SPAN EXTENDS IT BACKWARDS', () => {
   ]);
   assert.equal((fwd.spans[0].to - fwd.spans[0].from) / 60000, 20);
 });
+
+test('THE DEDUPE-HORIZON COUNTER CAN ACTUALLY FIRE', () => {
+  // IT COULD NOT, UNTIL 1 Sep. `oldestSeen(state)` was called AFTER this
+  // line's own key had been written into the index, so the line always
+  // contributed its own value to the minimum and `civil < oldestSeen(state)`
+  // was UNSATISFIABLE.
+  //
+  // Measured before the fix: 199,999 keys all at 9e12, a line genuinely older
+  // than every one, and the counter still read 0.
+  //
+  // What makes it worth a test rather than a note: the source calls silent
+  // double-counting "the worst failure this module can have" and names THIS
+  // COUNTER as what makes it visible instead. The guard against the worst
+  // failure was an instrument that could not return one of its two answers.
+  const idx = (n, base) => {
+    const st = core.createState('Avenrae');
+    for (let i = 0; i < n; i++) st.seen['k' + i] = base + i;
+    st.seenCount = n;
+    return st;
+  };
+  const OLD = '[Wed Aug 19 11:30:00 2026] Lord Nagafen has been slain by Avenrae!';
+  const MAX_SEEN = 200000;
+
+  // FIRES: the index is full and this line predates everything in it.
+  const older = idx(MAX_SEEN, 9e12);
+  core.applyLine(older, OLD);
+  assert.equal(older.dropped.beyondDedupeHorizon, 1,
+    'a line from before the whole index must be COUNTED — idempotence can no ' +
+    'longer be promised and the host has to be told');
+
+  // DOES NOT FIRE: full index, but the line is newer than everything in it.
+  const newer = idx(MAX_SEEN, 1e12);
+  core.applyLine(newer, OLD);
+  assert.equal(newer.dropped.beyondDedupeHorizon, 0);
+
+  // DOES NOT FIRE: the index is not full, so there is no horizon yet.
+  const small = idx(10, 9e12);
+  core.applyLine(small, OLD);
+  assert.equal(small.dropped.beyondDedupeHorizon, 0);
+
+  // AND THE LINE IS STILL RECORDED IN EVERY CASE. The counter is a warning,
+  // not a filter — discarding real data would be worse than the warning.
+  assert.equal(older.kills.length, 1);
+  assert.equal(newer.kills.length, 1);
+  assert.equal(small.kills.length, 1);
+});

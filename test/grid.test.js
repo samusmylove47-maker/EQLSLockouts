@@ -1623,3 +1623,29 @@ test('INSTANCE ATTRIBUTION IS NOT STICKY — leaving the instance unattributes l
   assert.equal(never[0].difficulty, null,
     'difficulty 0 is a REAL TIER — an unattributed kill must be null, not Normal');
 });
+
+test('A GAP EXACTLY EQUAL TO THE TOLERANCE IS TOLERATED, NOT A HOLE', () => {
+  // FOUND BLIND by analysis/mutation-check.js. Changing `>` to `>=` on the
+  // hole filter left all 138 tests green, and a period that spanned stopped
+  // spanning: coverageHoles went 0 to 1 and coverageSpansPeriod true to false.
+  //
+  // The tolerance is 24 h and the comparison is what decides the boundary case.
+  // A player who logs at the same time two days running produces a gap of
+  // EXACTLY 24 h; under `>=` every one of those becomes a hole and the whole
+  // week reads not_looked — the state that must never render as available.
+  const st = core.applyLines(core.createState('Avenrae'), [
+    ...heartbeat(15, 19),
+    '[Thu Aug 20 12:00:00 2026] You have entered Nektulos Forest.',
+    '[Fri Aug 21 12:00:00 2026] You have entered Nektulos Forest.',
+  ]);
+  const g = core.projectGrid(st, NOW);
+
+  // The 24-hour gap is present and TOLERATED — both halves matter. Asserting
+  // only "no holes" passes for a fixture that has no gap at all.
+  const day = g.period.coverageGaps.find((x) => x.hours === 24);
+  assert.ok(day, 'precondition: the fixture must contain a gap of exactly 24 h');
+  assert.equal(day.tolerated, true);
+  assert.equal(g.period.coverageHoles.length, 0,
+    'a gap of exactly the tolerance is tolerated — the comparison is strict');
+  assert.equal(g.period.coverageSpansPeriod, true);
+});
