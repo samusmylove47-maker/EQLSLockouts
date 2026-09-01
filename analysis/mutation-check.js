@@ -41,6 +41,20 @@ const SRC = path.join(ROOT, 'src', 'lockoutCore.js');
 const TESTS = ['build', 'grid', 'lockout', 'actionability']
   .map((t) => path.join(ROOT, 'test', `${t}.test.js`));
 
+// EVERY MUTATION NAMES THE FILE IT EDITS, and the default is the engine.
+//
+// The first 22 mutations all edited `src/lockoutCore.js`, and `build.test.js`
+// survived every one of them with a perfect record. **That is exactly the state
+// that cannot be read from outside**: a file that never fails is either testing
+// something no mutation reached, or testing nothing, and only a mutation aimed
+// AT it separates the two. `build.test.js` asserts on the PACKAGING — fonts,
+// hosts, hashing, the absence of a clock — which no edit to the engine can
+// disturb, so the harness could never have reached it.
+const REL = (f) => path.join(ROOT, f);
+const FILE_ENGINE = 'src/lockoutCore.js';
+const FILE_TEMPLATE = 'src/app.template.html';
+const FILE_BUILD = 'build-app.js';
+
 // `git checkout` restores CRLF under core.autocrlf while the working copy may
 // be LF. That silently broke every multi-line anchor once.
 const lf = (s) => s.replace(/\r\n/g, '\n');
@@ -84,6 +98,26 @@ const sparse = (from, to) => {
   }
   return out;
 };
+
+
+// BUILD PROBE. `build.test.js` asserts on the GENERATED PAGE, so a probe for it
+// must build. Returns cheap facts about the artifact rather than the whole
+// 290 KB string.
+const OUT = path.join(ROOT, 'public', 'app');
+function built() {
+  try {
+    execFileSync(process.execPath, [path.join(ROOT, 'build-app.js')],
+      { cwd: ROOT, stdio: 'ignore' });
+  } catch (e) { return 'BUILD-FAILED'; }
+  const name = fs.readFileSync(path.join(OUT, 'latest.txt'), 'utf8').trim();
+  const html = fs.readFileSync(path.join(OUT, name), 'utf8');
+  return {
+    googleFontHosts: /fonts\.(googleapis|gstatic)\.com/.test(html),
+    dataFontFaces: (html.match(/url\(data:font\/woff2;base64,/g) || []).length,
+    httpsUrls: (html.match(/https?:\/\/[^"'\s)]+/g) || []).length,
+    scriptSrc: /<script[^>]+src=/i.test(html),
+  };
+}
 
 // ---------------------------------------------------------------------------
 // The mutations. Each names the CLAIM it tests.
@@ -229,10 +263,47 @@ const MUTATIONS = [
     find: 'const PERIOD_GAP_TOLERANCE_MS = 24 * 60 * 60 * 1000;',
     repl: 'const PERIOD_GAP_TOLERANCE_MS = 0;',
     probe: (c) => { const g = c.projectGrid(stateOf(c, sparse(15, 21)), NOW); return [g.period.coverageSpansPeriod, g.period.coverageHoles.length]; } },
+  // ── AIMED AT build.test.js (R90) ────────────────────────────────────────
+  //
+  // Twenty-two engine mutations left this file with a perfect record. These
+  // five decide whether that is coverage it cannot reach or coverage it does
+  // not have.
+
+  { name: 'google-fonts-link-injected',
+    file: FILE_TEMPLATE,
+    claim: 'the page never references fonts.googleapis.com or fonts.gstatic.com',
+    find: '<meta name="viewport" content="width=device-width,initial-scale=1">',
+    repl: '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+          '\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel">',
+    probe: () => built() },
+
+  { name: 'font-inlining-replaced-by-url',
+    file: FILE_BUILD,
+    claim: 'every font ships as a data: URI, never as a fetch',
+    find: "`    src: url(data:font/woff2;base64,${f.base64}) format('woff2');${range}\n` +",
+    repl: "`    src: url(https://fonts.gstatic.com/s/${f.family}.woff2) format('woff2');${range}\n` +",
+    probe: () => built() },
+
+  { name: 'external-script-injected',
+    file: FILE_TEMPLATE,
+    claim: 'the page carries exactly one script block and fetches nothing',
+    find: '<title>EQLS Lockouts</title>',
+    repl: '<title>EQLS Lockouts</title>' +
+          '\n<script src="https://cdn.example.com/x.js"></script>',
+    probe: () => built() },
+
+  { name: 'content-hash-frozen',
+    file: FILE_BUILD,
+    claim: 'the filename is content-hashed, so a changed page changes its name',
+    find: "const hash = crypto.createHash('sha256').update(html).digest('hex').slice(0, 8);",
+    repl: "const hash = 'deadbeef';",
+    probe: () => { const b = built(); const n = fs.readFileSync(path.join(OUT, 'latest.txt'), 'utf8').trim(); return [b, n]; } },
 ];
 
+const MUTABLE = [FILE_ENGINE, FILE_TEMPLATE, FILE_BUILD];
+
 function restore() {
-  execFileSync('git', ['checkout', '--', 'src/lockoutCore.js'], { cwd: ROOT });
+  execFileSync('git', ['checkout', '--', ...MUTABLE], { cwd: ROOT });
 }
 
 function probeOf(mut) {
@@ -264,15 +335,18 @@ function runTests() {
 }
 
 function main() {
-  const dirty = execFileSync('git', ['status', '--porcelain', 'src/lockoutCore.js'],
+  const dirty = execFileSync('git', ['status', '--porcelain', ...MUTABLE],
     { cwd: ROOT, encoding: 'utf8' }).trim();
   if (dirty) {
-    console.error('src/lockoutCore.js is dirty. Commit or stash first — this ' +
+    console.error('A mutable file is dirty. Commit or stash first — this ' +
                   'harness restores from git and would discard your changes.');
+    console.error(dirty);
     process.exit(2);
   }
 
-  const original = lf(fs.readFileSync(SRC, 'utf8'));
+  // One original per mutable file.
+  const originals = new Map();
+  for (const f of MUTABLE) originals.set(f, lf(fs.readFileSync(REL(f), 'utf8')));
 
   console.log('=== BASELINE ===');
   const base = runTests();
@@ -291,11 +365,13 @@ function main() {
 
   console.log('\n=== MUTATIONS ===');
   for (const mut of MUTATIONS) {
+    const file = mut.file || FILE_ENGINE;
+    const original = originals.get(file);
     if (!original.includes(lf(mut.find))) {
-      rows.push({ mut, outcome: 'NOANCHOR', detail: 'anchor text not in source' });
+      rows.push({ mut, outcome: 'NOANCHOR', detail: `anchor not in ${file}` });
       continue;
     }
-    fs.writeFileSync(SRC, original.replace(lf(mut.find), lf(mut.repl)), 'utf8');
+    fs.writeFileSync(REL(file), original.replace(lf(mut.find), lf(mut.repl)), 'utf8');
 
     // THE MATCHED PAIR: did this mutation change behaviour at all?
     const after = probeOf(mut);
@@ -321,7 +397,7 @@ function main() {
   }
 
   restore();
-  const after = execFileSync('git', ['status', '--porcelain', 'src/lockoutCore.js'],
+  const after = execFileSync('git', ['status', '--porcelain', ...MUTABLE],
     { cwd: ROOT, encoding: 'utf8' }).trim();
 
   // Outcomes never share a column.
