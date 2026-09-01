@@ -837,3 +837,71 @@ test('THE TASK DEDUPE KEY CARRIES THE TASK NAME — same second, two weeklies, t
     'the same task twice in one second is one assignment — replay must not double-count');
   assert.equal(dup.dropped.duplicate, 1);
 });
+
+// --- R167: EVERY dedupeKey SIBLING, NAMED COVERED OR EXCLUDED ---------------
+//
+// `kill` carried twelve lines of reasoning about same-second collisions and a
+// test. Every other case in the switch had neither. A mutation per sibling
+// found all three remaining discriminator-carrying cases blind, 3 for 3 — so
+// the reasoning was done once and applied once, and the comment explaining why
+// `kill` is careful was evidence the others had NOT been considered.
+
+test('DEDUPE SIBLING `given`: two different items in one second are two grants', () => {
+  const two = core.applyLines(core.createState('Avenrae'), [
+    '[Wed Aug 19 10:00:00 2026] You have been given: a Shiny Brass Idol.',
+    '[Wed Aug 19 10:00:00 2026] You have been given: a Rusty Dagger.',
+  ]);
+  assert.equal(two.grants.length, 2);
+  // The source says `grants` exists so a caller can reconcile against the
+  // 3-per-week cap without re-parsing. A collapsed grant undercounts it.
+  const dup = core.applyLines(core.createState('Avenrae'), [
+    '[Wed Aug 19 10:00:00 2026] You have been given: a Shiny Brass Idol.',
+    '[Wed Aug 19 10:00:00 2026] You have been given: a Shiny Brass Idol.',
+  ]);
+  assert.equal(dup.grants.length, 1, 'the same item twice in one second is one grant');
+});
+
+test('DEDUPE SIBLING `entered`: same zone, different tier, in one second are two entries', () => {
+  // THIS ONE IS ATTRIBUTION AGAIN. Dropping the difficulty from the key
+  // collapses the second zone-in, and `currentInstance` is left at the FIRST
+  // tier — so a later kill is credited to the wrong cell of the right raid.
+  const st = core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] You have entered Nagafen's Lair - Group 3 (Fused).",
+    "[Wed Aug 19 10:00:00 2026] You have entered Nagafen's Lair - Group 4 (Refined).",
+    '[Wed Aug 19 10:30:00 2026] Lord Nagafen has been slain by Avenrae!',
+  ]);
+  assert.equal(Object.keys(st.instances).length, 2);
+  assert.equal(st.currentInstance.difficulty, 4, 'the LAST zone-in wins');
+  assert.equal(st.kills[0].difficulty, 4,
+    'a collapsed entry would credit the kill to tier 3 — the wrong cell of the right raid');
+});
+
+test('DEDUPE SIBLING `instance-invite`: two senders in one second are two invites', () => {
+  const st = core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] Alpha has asked you to join the instance: Nagafen's Lair - Group 3 (Fused). Would you like to join?",
+    "[Wed Aug 19 10:00:00 2026] Beta has asked you to join the instance: Nagafen's Lair - Group 3 (Fused). Would you like to join?",
+  ]);
+  assert.equal(st.dropped.duplicate, 0, 'different senders are different invites');
+});
+
+test('DEDUPE SIBLINGS `weekly-request` and `voidling-reply` COLLAPSE BY DESIGN', () => {
+  // THE TWO SIBLINGS WITH NO DISCRIMINATOR, asserted so the omission reads as a
+  // decision rather than as the same oversight the other three were.
+  //
+  // A hail is collapsed deliberately — COLLAPSE_MS folds repeats within six
+  // seconds into one request, so two in the same second are one attempt. And
+  // the Voidling set is a set of SECONDS used as a presence control; a second
+  // reply in the same second adds nothing a control can use.
+  const hails = core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] You say, 'danger'",
+    "[Wed Aug 19 10:00:00 2026] You say, 'danger'",
+  ]);
+  assert.equal(hails.requests.length, 1, 'same-second hails are one request, by design');
+
+  const voidling = core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] Voidling says, 'Your hubris risks our very reality itself.'",
+    "[Wed Aug 19 10:00:00 2026] Voidling says, 'Your hubris risks our very reality itself.'",
+  ]);
+  assert.equal(voidling.voidlingReplies.length, 1,
+    'the control is a set of seconds — a second reply in the same second adds nothing');
+});
