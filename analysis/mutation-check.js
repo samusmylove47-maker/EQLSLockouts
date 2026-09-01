@@ -472,14 +472,19 @@ const MUTATIONS = [
     claim: 'on the boundary day two hypotheses run, and disagreement is conditional',
     find: '      const h2 = (onBoundaryDay && !hourKnown) ? under(priorBoundaryStart, d) : h1;',
     repl: '      const h2 = h1;',
+    // THE KILL MUST LAND WHERE THE HYPOTHESES DISAGREE. A kill on the boundary
+    // day itself is `conditional` via the onDay branch whether or not h2 runs,
+    // so the first version of this probe returned [1,0,24] both ways and was
+    // INERT. A kill on day 17 is INSIDE the prior period (h2) and OUTSIDE the
+    // new one (h1) — which is the only place the pair can be seen.
     probe: (c) => {
       const st = stateOf(c, [
         ...beat(11, 18),
-        line(18, 6, 0, 'You have entered The Plane of Hate - Group 3 (Fused).'),
-        line(18, 6, 10, 'Innoruuk, the Prince of Hate has been slain by X!'),
+        line(17, 20, 0, 'You have entered The Plane of Hate - Group 3 (Fused).'),
+        line(17, 20, 10, 'Innoruuk, the Prince of Hate has been slain by X!'),
       ]);
       const g = c.projectGrid(st, { year: 2026, month: 8, day: 18, hour: 20, minute: 0, second: 0 });
-      return [g.conditionalCount, g.completedCount, g.openCount];
+      return [g.conditionalCount, g.completedCount, g.openCount, g.uncertainCount];
     } },
 
   { name: 'boundary-day-detection-disabled',
@@ -495,9 +500,13 @@ const MUTATIONS = [
     claim: 'the per-boss view distinguishes when a task was GRANTED from when it was DONE',
     find: '    const lastCompleted = t.completions[t.completions.length - 1] || null;',
     repl: '    const lastCompleted = t.assignments[t.assignments.length - 1] || null;',
+    // READ THE FIELD, DO NOT TRUNCATE TOWARD IT. The first version sliced the
+    // serialised bosses array at 240 characters and stopped just before
+    // `lastCompleted` — so the probe reported INERT on a live mutation.
     probe: (c) => {
       const st = stateOf(c, [...beat(15, 21), ...grantPair(19, 10, 'Lord Nagafen')]);
-      return JSON.stringify(c.project(st, NOW).bosses).slice(0, 240);
+      const b = c.project(st, NOW).bosses[0];
+      return b ? [b.timesCompleted, JSON.stringify(b.lastCompleted)] : 'no-boss';
     } },
 ];
 

@@ -1539,3 +1539,45 @@ test('A GRANT MUST COME AFTER ITS HAIL — causality, not proximity', () => {
     'a task assigned BEFORE the hail belongs to an earlier request, not this one');
   assert.equal(backward[0].boss, null);
 });
+
+test('THE PER-BOSS VIEW SEPARATES GRANTED FROM DONE', () => {
+  // FOUND BLIND. Pointing `lastCompleted` at `t.assignments` instead of
+  // `t.completions` left all 129 tests green.
+  //
+  // The mutant reports a task that was GRANTED and never killed as having a
+  // completion — `timesCompleted: 0` sitting beside an OBSERVED completion
+  // timestamp, which is internally contradictory and which a consumer reading
+  // one field would never notice.
+  //
+  // This is the product's core failure stated exactly: telling a player they
+  // have done something they have not. The grid and this view are separate
+  // paths to the same claim, and only the grid was guarded.
+
+  // GRANTED, NOT KILLED.
+  const granted = core.project(core.applyLines(core.createState('Avenrae'), [
+    ...heartbeat(15, 21),
+    "[Wed Aug 19 10:00:00 2026] You say, 'danger'",
+    "[Wed Aug 19 10:00:02 2026] You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.",
+  ]), NOW).bosses[0];
+  assert.equal(granted.timesAssigned, 1);
+  assert.equal(granted.timesCompleted, 0);
+  assert.equal(granted.lastCompleted.provenance, 'not recorded',
+    'a granted task is not a completed one');
+  assert.equal(granted.lastCompleted.value, null);
+
+  // GRANTED AND KILLED — and `lastCompleted` must carry the KILL time, not the
+  // grant time. Without this half, the assertion above is satisfied by a field
+  // that is always `not recorded`.
+  const done = core.project(core.applyLines(core.createState('Avenrae'), [
+    ...heartbeat(15, 21),
+    "[Wed Aug 19 10:00:00 2026] You say, 'danger'",
+    "[Wed Aug 19 10:00:02 2026] You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.",
+    "[Wed Aug 19 11:00:00 2026] You have entered Nagafen's Lair - Group 3 (Fused).",
+    '[Wed Aug 19 11:30:00 2026] Lord Nagafen has been slain by Avenrae!',
+    "[Wed Aug 19 11:30:05 2026] Your task 'Potential of the Void - Lord Nagafen - Weekly' has been updated.",
+  ]), NOW).bosses[0];
+  assert.equal(done.timesCompleted, 1);
+  assert.equal(done.lastCompleted.provenance, 'observed');
+  assert.notEqual(done.lastCompleted.value, done.lastAssigned.value,
+    'the completion time must be the kill, not the grant');
+});
