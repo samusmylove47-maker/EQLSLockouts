@@ -426,3 +426,34 @@ test('BUILD: the COMMITTED latest.txt names what the CURRENT SOURCE produces', (
     `${name}. Rebuild and commit public/app/ together, or the repo is ` +
     `serving a pointer to something it no longer produces.`);
 });
+
+test('BUILD: the artifact HASHES TO ITS OWN NAME, on disk', () => {
+  // SESSION A'S ASSERTION, and it encodes a convention now established rather
+  // than assumed. `build-app.js` computes `sha256(html).slice(0,8)` and then
+  // writes THAT SAME STRING — so the filename is the file's own hash, and any
+  // layer that rewrites a byte makes the name false.
+  //
+  // A stopped its copier because the artifact in the repo did not hash to its
+  // name. A was right, and the cause was not the build. Measured 1 Sep:
+  //
+  //   as built         309,040 B   3,849 CRLF + 50 BARE LF   -> fd053e47
+  //   stored as blob   305,191 B   all LF                    -> 15f045ad
+  //   fresh checkout   309,090 B   3,899 CRLF, 0 bare LF     -> 41c1a2cb
+  //
+  // Git normalised on the way in and re-expanded on the way out, folding 50
+  // newlines that were never CRLF. `.gitattributes` now marks the artifact
+  // `-text` so the bytes survive; this asserts the property that mark protects.
+  //
+  // The existing hash test proves the name is DERIVED from the content. This
+  // proves the file on disk still IS that content — the sensitivity direction,
+  // and it fires before `latest.txt` is ever written.
+  const { name } = build();
+  const bytes = fs.readFileSync(path.join(OUT_DIR, name));
+  const actual = crypto.createHash('sha256').update(bytes).digest('hex').slice(0, 8);
+  const claimed = /^eqls-lockouts\.([0-9a-f]{8})\.html$/.exec(name)[1];
+
+  assert.equal(actual, claimed,
+    `the artifact is named ${claimed} but its bytes hash to ${actual}. ` +
+    'Something rewrote the file after the build computed its name — check ' +
+    '.gitattributes for line-ending normalisation on public/app/.');
+});
