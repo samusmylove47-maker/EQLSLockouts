@@ -1116,13 +1116,32 @@ function parseLine(line) {
   }
   // parseLine stays OPEN TO ANY NAME. Whether a slain thing is a raid boss is a
   // roster question, decided later; nothing here filters by roster.
-  // SELF-DAMAGE FIRST, and the order is load-bearing: `You hit yourself ...`
-  // also matches the melee shape below, and E measured that counting it inflated
-  // a character's apparent output by 3.7% — worst on exactly the support builds
-  // a damage tool gets pointed at. E named Cannibalize; in OUR corpus the same
-  // shape carries `Lifetap Strike` (9) and `Lifebite` (2) and Cannibalize does
-  // not appear at all. So the exclusion keys on the SHAPE, never on a spell
-  // allowlist, which would have missed both of ours.
+  // SELF-DAMAGE FIRST — and THE ORDERING CLAIM HERE WAS OVERSTATED, corrected
+  // 31 Aug after a mutation harness showed nothing tested it.
+  //
+  // This said the order is load-bearing because `You hit yourself ...` "also
+  // matches the melee shape below". **MEASURED, IT DOES NOT.** Over 276 real
+  // self-damage lines in the corpus, ZERO also match `DAMAGE_MELEE_RE`: self
+  // requires a trailing `by <spell>.` and melee requires the line to end at
+  // `damage.`, so the two shapes are disjoint. Disabling this branch entirely
+  // left all 119 tests green — the claim was never a guard.
+  //
+  // WHAT IS ACTUALLY LOAD-BEARING is the FLAG, not the order: `outgoing: false`.
+  // E measured that counting self-hits as output inflates apparent damage by
+  // 3.7%, worst on exactly the support builds a damage tool gets pointed at. E
+  // named Cannibalize; in OUR corpus the same shape carries `Lifetap Strike` (9)
+  // and `Lifebite` (2) and Cannibalize does not appear at all — so the exclusion
+  // keys on the SHAPE, never on a spell allowlist, which would have missed both
+  // of ours. That flag is now tested; the ordering is kept because it is free
+  // and correct, not because it is doing work.
+  //
+  // TWO SHAPES THIS DOES NOT COVER, both measured and both left alone:
+  //   · a self-hit with no `by <spell>` clause falls through to melee and is
+  //     emitted as ordinary OUTGOING damage against a target named `yourself`;
+  //   · 801 of 137,690 damage rows (0.58%) carry `actor === target`, under just
+  //     two names. **The log cannot tell one entity hitting itself apart from
+  //     two entities sharing a name**, so a name-equality filter would silently
+  //     drop real damage. Not filtered here for that reason.
   if ((m = DAMAGE_SELF_RE.exec(message))) {
     return { kind: 'self-damage', at, actor: 'You', target: 'You',
              amount: Number(m[1]), damageType: m[2], spell: m[3], outgoing: false };

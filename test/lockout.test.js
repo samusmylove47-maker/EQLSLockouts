@@ -679,3 +679,69 @@ test('DAMAGE MUST NOT ENTER THE DEDUPE INDEX — a correctness guard, not a memo
   assert.equal(core.parseLine(damage[0]).kind, 'damage');
   assert.equal(core.parseLine(damage[1]).kind, 'song-pulse');
 });
+
+// ---------------------------------------------------------------------------
+// BLIND SPOTS FOUND BY analysis/mutation-check.js, 31 Aug
+// ---------------------------------------------------------------------------
+//
+// Both of these claims were made in source comments and NOTHING TESTED THEM.
+// The mutation harness broke each on purpose and every one of 119 tests stayed
+// green. Written now so the claims are gates rather than assertions.
+
+test('SELF-DAMAGE carries outgoing:false — and the ORDERING claim was overstated', () => {
+  // THE COMMENT ABOVE THE REGEXES SAYS THE MATCH ORDER IS LOAD-BEARING BECAUSE
+  // `You hit yourself ...` "also matches the melee shape". MEASURED, IT DOES
+  // NOT: over 276 real self-damage lines in the corpus, ZERO also match
+  // DAMAGE_MELEE_RE. The shapes are disjoint — self requires a trailing
+  // `by <spell>.` and melee requires the line to end at `damage.`
+  //
+  // The real claim, which is what E depends on, is the FLAG: a self-hit must
+  // never be counted as outgoing output. That is what this guards.
+  const self = core.parseLine(
+    '[Mon Aug 10 17:14:49 2026] You hit yourself for 50 points of magic damage by Lifetap Strike.');
+  assert.equal(self.kind, 'self-damage');
+  assert.equal(self.outgoing, false, 'counting a self-hit as output inflates DPS');
+  assert.equal(self.actor, 'You');
+  assert.equal(self.target, 'You');
+
+  // And it must not reach the lockout state — the early return above the
+  // dedupe index covers `self-damage` as well as `damage`.
+  const st = core.createState('Avenrae');
+  core.applyLine(st, '[Mon Aug 10 17:14:49 2026] You hit yourself for 50 points of magic damage by Lifetap Strike.');
+  assert.equal(st.seenCount, 0, 'self-damage must not enter the dedupe index');
+});
+
+test('A SELF-HIT WITH NO `by <spell>` IS NOT COVERED, and that gap is asserted so it cannot move silently', () => {
+  // KNOWN GAP, RECORDED RATHER THAN FIXED. `DAMAGE_SELF_RE` requires a trailing
+  // `by <spell>.`, so a bare self-hit falls through to melee and is emitted as
+  // ORDINARY OUTGOING DAMAGE against a target literally named `yourself`.
+  //
+  // Not fixed here because I have not observed the shape in the corpus and
+  // would be guarding a line I have never seen — but a consumer summing
+  // `outgoing` damage would count it, so the behaviour is pinned.
+  const ev = core.parseLine(
+    '[Mon Aug 10 17:14:49 2026] You hit yourself for 50 points of damage.');
+  assert.equal(ev.kind, 'damage');
+  assert.equal(ev.outgoing, true);
+  assert.equal(ev.target, 'yourself',
+    'if this ever becomes self-damage, that is an improvement — but it must be ' +
+    'a deliberate change, not a silent one');
+});
+
+test('THE WEEKDAY IS COMPUTED, NEVER TRUSTED FROM THE LINE', () => {
+  // The source says the client's three-letter weekday is carried verbatim and
+  // never recomputed, and that `civilWeekday` derives the real one so a
+  // mismatch is surfaced rather than silently resolved. NOTHING TESTED IT:
+  // replacing the computation with `indexOf(at.weekday)` left all 119 green,
+  // because every fixture line has a CORRECT weekday and the two agree.
+  //
+  // 10 Aug 2026 is a MONDAY. This line lies and says Fri.
+  const lying = '[Fri Aug 10 17:14:49 2026] You have been assigned the task ' +
+                "'Potential of the Void - Lord Nagafen - Weekly'.";
+  const ev = core.parseLine(lying);
+
+  assert.equal(ev.at.weekday, 'Fri', 'the client string is carried verbatim');
+  assert.equal(core.civilWeekday(ev.at), 1,
+    'the weekday is DERIVED from the date: 10 Aug 2026 is a Monday (1), ' +
+    'whatever the line claims. Trusting the string would return 5.');
+});
