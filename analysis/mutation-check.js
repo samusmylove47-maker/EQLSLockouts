@@ -442,6 +442,25 @@ const MUTATIONS = [
       line(15, 4, 0, "Voidling says, 'Your hubris risks our very reality itself.'"),
       line(19, 10, 0, "You say, 'danger'"),
     ]))[0].positiveControl },
+  // R143 PROBE FOR ONE OF MY OWN TESTS.
+  //
+  // I wrote TWO tests for the Voidling blind spot: one at the parse layer
+  // (closing is computed correctly) and one at the projection layer (a
+  // non-closing reply does not corroborate a refusal). Both catch
+  // `voidling-closing-matches-anything`, so neither is a sole catcher and the
+  // second one's unique value is a CLAIM.
+  //
+  // This mutation separates them: it leaves parseLine alone and removes the
+  // applyLine filter, which is a different code path. If only the projection
+  // test fires, the second test earns its place. If neither fires, I wrote two
+  // tests for one layer and left the other unguarded.
+  { name: 'closing-filter-removed-from-applyLine',
+    claim: 'the CONTROL SET itself excludes non-closing replies, not just the parse',
+    find: '    if (!ev.closing) return state;',
+    repl: '    if (false) return state;',
+    probe: (c) => stateOf(c, [
+      line(19, 10, 0, "Voidling says, 'Some other sentence entirely.'"),
+    ]).voidlingReplies.length },
 ];
 
 const MUTABLE = [FILE_ENGINE, FILE_TEMPLATE, FILE_BUILD];
