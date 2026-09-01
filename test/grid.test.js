@@ -1465,3 +1465,46 @@ test('A SOLO INSTANCE IS FLAGGED `solo`, which is the only signal that Solo cont
     'bare `- Solo` must not inherit the bare `- Group` rule — zero observations');
   assert.equal(bare.difficultyFromOmission, false);
 });
+
+// --- Provenance pass of analysis/mutation-check.js, 31 Aug: two blind spots ---
+
+test('AN EMPTY STATE REPORTS COVERAGE AS `not recorded`, NEVER observed-empty', () => {
+  // FOUND BLIND. Forcing coverage provenance to 'observed' when nothing has
+  // been seen left all 126 tests green.
+  //
+  // THE DIFFERENCE IS THE WHOLE PRODUCT. "I looked and the week is empty" and
+  // "I have not looked" are opposite claims that render identically once the
+  // provenance is stripped — and B, E and C all read this field. A live tailer
+  // started mid-session has no history; told `observed`, a consumer would show
+  // an empty week as a measured one.
+  const empty = core.project(core.createState('Avenrae'), NOW);
+  assert.equal(empty.coverage.provenance, 'not recorded');
+  assert.equal(empty.coverage.from, null);
+  assert.equal(empty.coverage.to, null);
+
+  // The matched pair: once lines ARE seen, it becomes observed and carries the
+  // bounds. Without this half the assertion above is satisfied by a constant.
+  const seen = core.project(core.applyLines(core.createState('Avenrae'), [
+    '[Wed Aug 19 10:00:00 2026] You have entered Nektulos Forest.',
+    '[Wed Aug 19 10:20:00 2026] You have entered Nektulos Forest.',
+  ]), NOW);
+  assert.equal(seen.coverage.provenance, 'observed');
+  assert.ok(seen.coverage.from, 'observed coverage must carry its bounds');
+});
+
+test('EVERY CELL CARRIES A REASON — a state without a `because` is a verdict', () => {
+  // FOUND BLIND. Emptying the `why` on an open cell left all 126 tests green.
+  //
+  // The `because` string is what a player reads and what makes a cell
+  // auditable: "no kill observed since the reset, AND COVERAGE SPANS THE
+  // PERIOD" is the difference between an inference and an assertion. A cell
+  // that says `open` with no reason is this tool doing the thing it exists to
+  // prevent — publishing a verdict without its grounds.
+  const st = core.applyLines(core.createState('Avenrae'), heartbeat(15, 21));
+  const g = core.projectGrid(st, NOW);
+  assert.ok(g.cells.length >= 25, 'precondition: a full grid');
+  for (const cell of g.cells) {
+    assert.ok(typeof cell.because === 'string' && cell.because.trim().length > 0,
+      `every cell must say why; ${cell.label} D${cell.difficulty} (${cell.state}) did not`);
+  }
+});

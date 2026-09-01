@@ -357,7 +357,15 @@ const MUTATIONS = [
     // takes the first occurrence, which is deterministic and enough.
     find: "    provenance: 'inferred',",
     repl: "    provenance: 'observed',",
-    probe: (c) => JSON.stringify(c.projectReset(stateOf(c, [...beat(15, 21), ...grantPair(19, 10, 'Lord Nagafen')]))).slice(0, 200) },
+    // NEEDS A RE-ASSIGNMENT. A bracket is only measurable across the SAME task
+    // being granted twice, so a single grant leaves projectReset at
+    // `not recorded` and the `inferred` branch is never reached. The first
+    // version of this probe did exactly that and reported INERT.
+    probe: (c) => JSON.stringify(c.projectReset(stateOf(c, [
+      ...beat(8, 21),
+      ...grantPair(12, 10, 'Lord Nagafen'),
+      ...grantPair(19, 10, 'Lord Nagafen'),
+    ]))).slice(0, 220) },
 
   { name: 'not-recorded-becomes-a-value',
     claim: 'an unmeasured field is `not recorded`, never a default',
