@@ -461,6 +461,44 @@ const MUTATIONS = [
     probe: (c) => stateOf(c, [
       line(19, 10, 0, "Voidling says, 'Some other sentence entirely.'"),
     ]).voidlingReplies.length },
+  // -- AIMED AT THE BOUNDARY-DAY HYPOTHESIS PAIR AND THE PER-BOSS VIEW ----
+  //
+  // On the reset day itself the period start is ambiguous, so projectGrid runs
+  // TWO hypotheses and only agrees a cell when both do. That pair is the entire
+  // machinery behind `conditional`, and `conditional` is the state that exists
+  // to carry an unmeasured reset hour.
+
+  { name: 'second-hypothesis-collapsed',
+    claim: 'on the boundary day two hypotheses run, and disagreement is conditional',
+    find: '      const h2 = (onBoundaryDay && !hourKnown) ? under(priorBoundaryStart, d) : h1;',
+    repl: '      const h2 = h1;',
+    probe: (c) => {
+      const st = stateOf(c, [
+        ...beat(11, 18),
+        line(18, 6, 0, 'You have entered The Plane of Hate - Group 3 (Fused).'),
+        line(18, 6, 10, 'Innoruuk, the Prince of Hate has been slain by X!'),
+      ]);
+      const g = c.projectGrid(st, { year: 2026, month: 8, day: 18, hour: 20, minute: 0, second: 0 });
+      return [g.conditionalCount, g.completedCount, g.openCount];
+    } },
+
+  { name: 'boundary-day-detection-disabled',
+    claim: 'the module knows when NOW is the reset day itself',
+    find: '  const onBoundaryDay = nowCivil >= boundaryDayStart && nowCivil < boundaryDayEnd;',
+    repl: '  const onBoundaryDay = false;',
+    probe: (c) => {
+      const g = c.projectGrid(stateOf(c, beat(11, 18)), { year: 2026, month: 8, day: 18, hour: 20, minute: 0, second: 0 });
+      return [g.period.nowIsOnBoundaryDay, g.conditionalCount];
+    } },
+
+  { name: 'last-completed-reads-assignments',
+    claim: 'the per-boss view distinguishes when a task was GRANTED from when it was DONE',
+    find: '    const lastCompleted = t.completions[t.completions.length - 1] || null;',
+    repl: '    const lastCompleted = t.assignments[t.assignments.length - 1] || null;',
+    probe: (c) => {
+      const st = stateOf(c, [...beat(15, 21), ...grantPair(19, 10, 'Lord Nagafen')]);
+      return JSON.stringify(c.project(st, NOW).bosses).slice(0, 240);
+    } },
 ];
 
 const MUTABLE = [FILE_ENGINE, FILE_TEMPLATE, FILE_BUILD];
