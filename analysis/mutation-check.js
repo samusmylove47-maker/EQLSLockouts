@@ -401,6 +401,47 @@ const MUTATIONS = [
     find: "      return { s: 'open', done, repeats: 0, why: 'no kill observed since the reset, and coverage spans the period' };",
     repl: "      return { s: 'open', done, repeats: 0, why: '' };",
     probe: (c) => { const g = c.projectGrid(stateOf(c, beat(15, 21)), NOW); const cell = g.cells.find((x) => x.state === 'open'); return cell ? String(cell.because).length > 0 : 'no-open-cell'; } },
+  // -- AIMED AT REQUEST CLASSIFICATION AND THE CONTROL WINDOW -------------
+  //
+  // classifyRequests is what turns a hail into evidence, and the control window
+  // is what makes a refusal corroborated rather than merely unanswered. Both
+  // feed actionability(), which E reads.
+
+  { name: 'control-window-before-widened',
+    claim: 'a Voidling line 6 hours earlier is NOT a control for this hail',
+    find: 'const CONTROL_BEFORE_MS = 20000;',
+    repl: 'const CONTROL_BEFORE_MS = 6 * 60 * 60 * 1000;',
+    probe: (c) => c.classifyRequests(stateOf(c, [
+      line(19, 4, 0, "Voidling says, 'Your hubris risks our very reality itself.'"),
+      line(19, 10, 0, "You say, 'danger'"),
+    ]))[0].result },
+
+  { name: 'control-window-after-widened',
+    claim: 'the control window after a hail is seconds, not hours',
+    find: 'const CONTROL_AFTER_MS = 5000;',
+    repl: 'const CONTROL_AFTER_MS = 6 * 60 * 60 * 1000;',
+    probe: (c) => c.classifyRequests(stateOf(c, [
+      line(19, 10, 0, "You say, 'danger'"),
+      line(19, 16, 0, "Voidling says, 'Your hubris risks our very reality itself.'"),
+    ]))[0].result },
+
+  { name: 'grant-matched-backwards-in-time',
+    claim: 'a grant must come AFTER its hail, never before',
+    find: 'const grant = assignments.find((a) => a.civil >= r.civil && a.civil - r.civil <= GRANT_WINDOW_MS);',
+    repl: 'const grant = assignments.find((a) => Math.abs(a.civil - r.civil) <= GRANT_WINDOW_MS);',
+    probe: (c) => c.classifyRequests(stateOf(c, [
+      line(19, 10, 0, "You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'."),
+      line(19, 10, 0, "You say, 'danger'", 2),
+    ]))[0].result },
+
+  { name: 'reply-binary-search-always-true',
+    claim: 'the control search actually looks in the window',
+    find: '    return a < sortedReplies.length && sortedReplies[a] <= hi;',
+    repl: '    return sortedReplies.length > 0;',
+    probe: (c) => c.classifyRequests(stateOf(c, [
+      line(15, 4, 0, "Voidling says, 'Your hubris risks our very reality itself.'"),
+      line(19, 10, 0, "You say, 'danger'"),
+    ]))[0].positiveControl },
 ];
 
 const MUTABLE = [FILE_ENGINE, FILE_TEMPLATE, FILE_BUILD];
