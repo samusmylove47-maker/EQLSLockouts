@@ -1581,3 +1581,45 @@ test('THE PER-BOSS VIEW SEPARATES GRANTED FROM DONE', () => {
   assert.notEqual(done.lastCompleted.value, done.lastAssigned.value,
     'the completion time must be the kill, not the grant');
 });
+
+test('INSTANCE ATTRIBUTION IS NOT STICKY — leaving the instance unattributes later kills', () => {
+  // TWO BLIND SPOTS FOUND TOGETHER, both R160's failure: a cell completed that
+  // the player did not do.
+  //
+  // 1. A kill with NO instance defaulting to difficulty 0 rather than null
+  //    would silently complete the Normal tier of the right raid.
+  // 2. Worse: not clearing `currentInstance` on an open-world zone-in makes the
+  //    last instance STICKY, so a kill anywhere afterwards is credited to it.
+  //    Enter Nagafen's Lair at D3, zone out, kill Lord Nagafen in the open
+  //    world, and the mutant reports D3 of Nagafen's Lair complete.
+  //
+  // Both left all 130 tests green.
+
+  const kills = (lines) => core.applyLines(core.createState('Avenrae'), lines).kills;
+
+  // INSIDE the instance: attributed, with its difficulty.
+  const inside = kills([
+    "[Wed Aug 19 11:00:00 2026] You have entered Nagafen's Lair - Group 3 (Fused).",
+    '[Wed Aug 19 11:30:00 2026] Lord Nagafen has been slain by Avenrae!',
+  ]);
+  assert.equal(inside.length, 1);
+  assert.equal(inside[0].difficulty, 3);
+  assert.equal(inside[0].zone, "Nagafen's Lair");
+
+  // AFTER ZONING OUT: the instance must not follow the player.
+  const after = kills([
+    "[Wed Aug 19 11:00:00 2026] You have entered Nagafen's Lair - Group 3 (Fused).",
+    '[Wed Aug 19 12:00:00 2026] You have entered Nektulos Forest.',
+    '[Wed Aug 19 12:30:00 2026] Lord Nagafen has been slain by Avenrae!',
+  ]);
+  assert.equal(after.length, 1, 'the kill is still recorded');
+  assert.equal(after[0].difficulty, null,
+    'a kill after leaving the instance resolves NO cell — attribution is not sticky');
+  assert.equal(after[0].zone, null);
+
+  // NO INSTANCE AT ALL: null, never a default tier.
+  const never = kills(['[Wed Aug 19 12:30:00 2026] Lord Nagafen has been slain by Avenrae!']);
+  assert.equal(never.length, 1);
+  assert.equal(never[0].difficulty, null,
+    'difficulty 0 is a REAL TIER — an unattributed kill must be null, not Normal');
+});
