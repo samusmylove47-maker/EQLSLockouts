@@ -680,3 +680,90 @@ a mutation (`kill-key-drops-the-slain-name`) that proves the key is load-bearing
 **The `alsoDies` counts are the specific thing to re-check**: 12/12 and 14/15
 were measured over deduped events. They are correct today because those mobs do
 not collide. **They would not survive a roster that included one that does.**
+
+---
+
+# Part 5 — two vantages on one fight: the log is a good witness, the parser is not
+
+**Measured 1 September** over the thirteen boss kills that appear in **both**
+characters' logs at the same second. Recorded here rather than left in a
+message, because the enumerated list below is being tested against another
+program and a description is not a source.
+
+## The co-witnessed set exists
+
+    Shara    37 distinct roster-boss kills
+    Avenrae  43
+    **same second, same boss, BOTH logs: 13**
+
+Across 10–16 August: Lord Nagafen, Lady Vox, Master Yael, Innoruuk, Dread,
+Cazic-Thule, Terror, a dracoliche, Maestro of Rancor.
+
+**A positive control fell out of it at no cost.** On six of the thirteen the
+`byYou` flags differ — one log wrote *"You have slain Lady Vox!"* and the other
+*"Lady Vox has been slain by Avenrae!"*. **Same event, two sentence forms, one
+kill.** The first-person/third-person equivalence this parser assumes is now
+demonstrated on real data rather than assumed.
+
+## A SINGLE PLAYER'S LOG IS A GOOD WITNESS
+
+Damage on the boss, three-minute window before the kill:
+
+| fight | Shara | Avenrae | apart |
+|---|---|---|---|
+| Innoruuk | 195,703 | 195,678 | **0.01%** |
+| Terror | 118,601 | 117,991 | **0.51%** |
+| Cazic-Thule | 208,122 | 206,190 | **0.93%** |
+| Maestro of Rancor | 63,701 | 62,919 | **1.23%** |
+
+**Two clients, one fight, agreeing to about a percent.** The apparent
+"each log sees one actor the other does not" is entirely the **`You` confound** —
+`"Avenrae"` in Shara's log and `"You"` in Avenrae's are the same entity.
+Resolved, **the actor sets are identical.**
+
+## THE UNDERCOUNT IS IN THIS PARSER, NOT IN THE VANTAGE
+
+    Shara     2,789 damage-shaped lines   **2,402 parsed — 86.1%**   22,673 damage missed
+    Avenrae   2,788                        **2,356 parsed — 84.5%**   25,302 damage missed
+
+**Both logs miss the same amount, which is how you know it is coverage and not
+vantage.** About one damage line in seven, and roughly a tenth of the damage in
+a real boss fight, never reaches a consumer.
+
+### The families, enumerated — these are game sentence forms, not quirks of this code
+
+    You frenzy on X for N points of damage.                        49
+    Valestia frenzies on X for N points of damage.                 29
+    X hit Y for N points of prismatic damage **by Puma Maw.**          113+
+        ^ melee SHAPE with a spell suffix. DAMAGE_MELEE_RE requires the
+          line to END at "damage." so the trailing "by <spell>." breaks it.
+    X is pierced by Y's thorns for N points of non-melee damage.   70
+        ^ damage shields, wholly unmodelled
+    A gorgon cleaves X for N points of damage.                     29
+        ^ "cleaves" absent from the melee verb list
+
+**Counts are from one fight (Cazic-Thule, 12 Aug) and are illustrative of the
+shapes, not a census of the corpus.**
+
+### THE BOUND, and it travels with the number
+
+**84–86% is against THIS FILE'S definition of "damage-shaped"** —
+`for N points of ... damage.` or `has taken N damage`. **My instrument, my
+denominator, not an absolute.** Quote the percentage without this sentence and
+it means something narrower than it appears to.
+
+## WHY THE REGEXES WERE NOT WIDENED
+
+**Deliberate, and it is a ruling rather than an omission.** Session E's meter is
+calibrated against the shapes this parser emits today. **Widening them silently
+recalibrates someone else's published figures from a third repository** — the
+same class as an artifact drifting from its source, with a person in the middle
+instead of a build. It needs E in the conversation, not self-dispatch.
+
+## ONE MECHANISM CONSIDERED AND NOT CLAIMED
+
+Mid-measurement the shape *"the parser has a first-person spell-damage gap"*
+fit: third-person showed 43 spell rows for one actor and first-person zero.
+**It was tidy, and it could not be separated from the game simply not echoing
+your own spell damage in that form.** The finding above needs no such mechanism,
+so it was dropped rather than reported.
