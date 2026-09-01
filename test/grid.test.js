@@ -1508,3 +1508,34 @@ test('EVERY CELL CARRIES A REASON — a state without a `because` is a verdict',
       `every cell must say why; ${cell.label} D${cell.difficulty} (${cell.state}) did not`);
   }
 });
+
+test('A GRANT MUST COME AFTER ITS HAIL — causality, not proximity', () => {
+  // FOUND BLIND. Replacing the forward-only match with a symmetric
+  // Math.abs(a.civil - r.civil) <= GRANT_WINDOW_MS left all 128 tests green.
+  //
+  // WHY IT IS NOT COSMETIC. `actionability()` counts grants in the period and
+  // returns `no` once three are seen. A task assigned moments BEFORE a hail —
+  // one belonging to an earlier request, or arriving mid-conversation — would
+  // be attributed to that hail as well, counting one grant twice. The cap
+  // reaches three early and a reachable raid is reported unactionable.
+  //
+  // That is the direction this product cannot afford: a false `no` does not
+  // produce a visibly wrong answer, it produces a silently shorter list.
+
+  // FORWARD: the task follows the hail by 2 s, inside the 3 s window.
+  const forward = core.classifyRequests(core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] You say, 'danger'",
+    "[Wed Aug 19 10:00:02 2026] You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.",
+  ]));
+  assert.equal(forward[0].result, 'granted');
+  assert.equal(forward[0].boss, 'Lord Nagafen');
+
+  // BACKWARD: the same 2 s gap, the other way round. It must NOT pair.
+  const backward = core.classifyRequests(core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.",
+    "[Wed Aug 19 10:00:02 2026] You say, 'danger'",
+  ]));
+  assert.equal(backward[0].result, 'unknown',
+    'a task assigned BEFORE the hail belongs to an earlier request, not this one');
+  assert.equal(backward[0].boss, null);
+});
