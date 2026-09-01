@@ -1432,3 +1432,36 @@ test('THE HOUR HAS SOMEWHERE TO GO NOW — and had nowhere before', () => {
   const json = JSON.stringify({ ...after, resetRule: null });
   assert.ok(!/"hour"\s*:\s*12/.test(json), 'the hour must not leak outside resetRule');
 });
+
+test('A SOLO INSTANCE IS FLAGGED `solo`, which is the only signal that Solo content exists', () => {
+  // FOUND BY analysis/mutation-check.js. Replacing `solo: /Solo/.test(...)`
+  // with a constant `false` left all 125 tests green.
+  //
+  // WHY IT MATTERS MORE THAN AN UNUSED FIELD. `- Solo` is deliberately modelled
+  // as nothing: `grep -a -- " - Solo"` returns 0 across all 16 log files, so
+  // extending the bare-Group difficulty rule to it would be inventing a number.
+  // But the owner's alt+Z window shows a `Solo 3` lock, so Solo instances exist
+  // and they lock.
+  //
+  // `solo` is therefore the ONLY thing in this engine that would let a consumer
+  // notice a Solo instance at all. Silently stuck false, the engine loses its
+  // single signal that a known gap is being hit — and the gap is one we have
+  // published as known.
+  const solo = core.parseInstanceName("Nagafen's Lair - Solo 3 (Fused)");
+  assert.equal(solo.solo, true);
+  assert.equal(solo.group, false);
+  assert.equal(solo.difficulty, 3, 'an explicit index is still read from a Solo line');
+
+  // The matched pair: the same shape as Group must NOT be flagged solo.
+  const group = core.parseInstanceName("Nagafen's Lair - Group 3 (Fused)");
+  assert.equal(group.solo, false);
+  assert.equal(group.group, true);
+
+  // And a bare `- Solo` gets NO difficulty, unlike bare `- Group`, because the
+  // convention was never measured for it. This is the asymmetry, asserted.
+  const bare = core.parseInstanceName('The Plane of Fear - Solo');
+  assert.equal(bare.solo, true);
+  assert.equal(bare.difficulty, null,
+    'bare `- Solo` must not inherit the bare `- Group` rule — zero observations');
+  assert.equal(bare.difficultyFromOmission, false);
+});
