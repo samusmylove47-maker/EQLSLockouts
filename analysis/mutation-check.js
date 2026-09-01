@@ -624,6 +624,69 @@ const MUTATIONS = [
       line(19, 10, 0, "Alpha has asked you to join the instance: Nagafen's Lair - Group 3 (Fused). Would you like to join?"),
       line(19, 10, 0, "Beta has asked you to join the instance: Nagafen's Lair - Group 3 (Fused). Would you like to join?"),
     ]).dropped.duplicate },
+  // -- R167 APPLIED TO THE FIVE CELL STATES ------------------------------
+  //
+  // The second sibling family in this engine, and the one with the most
+  // consumers: the cell-state vocabulary. B encodes it as data in a
+  // disjointness test, C renders it, and a player reads it. Five production
+  // sites, one mutation each, swapping the state for a plausible neighbour.
+  //
+  // R167's question, asked of a family that is not a switch: which of these
+  // siblings has a guard, and which merely has a call site?
+
+  { name: 'state-completed-becomes-open',
+    claim: '`completed` is OBSERVED — a kill line at that tier in this period',
+    find: "          s: 'completed',",
+    repl: "          s: 'open',",
+    probe: (c) => {
+      const st = stateOf(c, [...beat(15, 21),
+        line(19, 11, 0, "You have entered Nagafen's Lair - Group 3 (Fused)."),
+        line(19, 11, 30, 'Lord Nagafen has been slain by Avenrae!')]);
+      const g = c.projectGrid(st, NOW);
+      return [g.completedCount, g.openCount];
+    } },
+
+  { name: 'state-open-becomes-unknown',
+    claim: '`open` is INFERRED from the one-per-tier model plus spanning coverage',
+    find: "      return { s: 'open', done, repeats: 0, why: 'no kill observed since the reset, and coverage spans the period' };",
+    repl: "      return { s: 'unknown', done, repeats: 0, why: 'no kill observed since the reset, and coverage spans the period' };",
+    probe: (c) => {
+      const g = c.projectGrid(stateOf(c, beat(15, 21)), NOW);
+      return [g.openCount, g.uncertainCount];
+    } },
+
+  { name: 'state-not-looked-becomes-open',
+    claim: '`not_looked` must NEVER render as available — the whole product',
+    find: "        cellState = 'not_looked';",
+    repl: "        cellState = 'open';",
+    probe: (c) => {
+      const g = c.projectGrid(c.createState('Avenrae'), NOW);
+      return [g.notLookedCount, g.openCount];
+    } },
+
+  { name: 'state-unknown-becomes-open',
+    claim: 'a kill at a tier the game did not state makes the ROW unknown, not open',
+    find: "        return { s: 'unknown', done, repeats: 0, why: `${unstated.length} kill(s) this period at a tier the game did not state — one of this raid's five tiers may be done` };",
+    repl: "        return { s: 'open', done, repeats: 0, why: `${unstated.length} kill(s) this period at a tier the game did not state — one of this raid's five tiers may be done` };",
+    probe: (c) => {
+      const st = stateOf(c, [...beat(15, 21),
+        line(19, 11, 0, 'You have entered The Plane of Fear - Solo.'),
+        line(19, 11, 30, 'Cazic-Thule has been slain by Avenrae!')]);
+      const g = c.projectGrid(st, NOW);
+      return [g.uncertainCount, g.openCount];
+    } },
+
+  { name: 'hypothesis-disagreement-collapses-to-unknown',
+    claim: 'disagreement emits `conditional` WITH both outcomes, never a bare shrug',
+    find: "        cellState = 'conditional';",
+    repl: "        cellState = 'unknown';",
+    probe: (c) => {
+      const st = stateOf(c, [...beat(11, 18),
+        line(17, 20, 0, 'You have entered The Plane of Hate - Group 3 (Fused).'),
+        line(17, 20, 10, 'Innoruuk, the Prince of Hate has been slain by X!')]);
+      const g = c.projectGrid(st, { year: 2026, month: 8, day: 18, hour: 20, minute: 0, second: 0 });
+      return [g.conditionalCount, g.uncertainCount];
+    } },
 ];
 
 const MUTABLE = [FILE_ENGINE, FILE_TEMPLATE, FILE_BUILD];
