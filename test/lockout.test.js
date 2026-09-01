@@ -805,3 +805,35 @@ test('A KNOWN NON-ZONE NOTICE IS NOT REPORTED AS `unrecognised`', () => {
   assert.equal(novel.unrecognised, true,
     'and it is flagged unrecognised, which is what makes it findable later');
 });
+
+test('THE TASK DEDUPE KEY CARRIES THE TASK NAME — same second, two weeklies, two grants', () => {
+  // FOUND BLIND. Dropping `${ev.task}` from the task key left all 131 tests
+  // green, and two different weeklies granted in the same second collapsed
+  // into one.
+  //
+  // THE KILL KEY WAS ALREADY FIXED FOR EXACTLY THIS and says so in a comment —
+  // "two different bosses dying in the same second collapse into one, a silent
+  // lost completion". The task key has the identical shape and had no test.
+  //
+  // It is consequential in the opposite direction to the sticky-attribution
+  // defect: actionability() COUNTS grants against the cap of three, so a
+  // collapsed grant leaves the count short and pushes toward a false `yes` —
+  // a raid reported actionable when the allowance is spent.
+  const two = core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.",
+    "[Wed Aug 19 10:00:00 2026] You have been assigned the task 'Potential of the Void - Lady Vox - Weekly'.",
+  ]);
+  assert.equal(Object.keys(two.tasks).length, 2,
+    'two DIFFERENT tasks in one second are two grants, not one');
+
+  // The matched pair: a genuine duplicate — the same task, same second — must
+  // still be suppressed, or the key is not deduping at all.
+  const dup = core.applyLines(core.createState('Avenrae'), [
+    "[Wed Aug 19 10:00:00 2026] You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.",
+    "[Wed Aug 19 10:00:00 2026] You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'.",
+  ]);
+  assert.equal(Object.keys(dup.tasks).length, 1);
+  assert.equal(dup.tasks['Potential of the Void - Lord Nagafen - Weekly'].assignments.length, 1,
+    'the same task twice in one second is one assignment — replay must not double-count');
+  assert.equal(dup.dropped.duplicate, 1);
+});
