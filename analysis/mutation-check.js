@@ -586,6 +586,44 @@ const MUTATIONS = [
       const st = stateOf(c, [...lines, ...lines]);   // the same log, twice
       return [st.kills.length, st.dropped.duplicate];
     } },
+  // -- R167: EVERY SIBLING OF THE dedupeKey SWITCH ------------------------
+  //
+  // The task-key gap was found because its sibling `kill` had twelve lines of
+  // reasoning and a test while it had neither. R167 says a fix in a switch is
+  // not complete until every sibling is named covered or excluded. dedupeKey
+  // has eight. These mutate the three remaining ones that carry a
+  // discriminator; the two that carry NONE are handled by the test below
+  // rather than here, because for them collapsing is the intent.
+
+  { name: 'given-key-drops-the-item',
+    claim: 'two different items given in the same second are two grants',
+    find: "      return `${civil}|given|${ev.item}`;",
+    repl: "      return `${civil}|given`;",
+    probe: (c) => stateOf(c, [
+      line(19, 10, 0, 'You have been given: a Shiny Brass Idol.'),
+      line(19, 10, 0, 'You have been given: a Rusty Dagger.'),
+    ]).grants.length },
+
+  { name: 'entered-key-drops-the-difficulty',
+    claim: 'two zone-ins to the same zone at different tiers are two entries',
+    find: "      return `${civil}|entered|${ev.zone}|${ev.difficulty}`;",
+    repl: "      return `${civil}|entered|${ev.zone}`;",
+    probe: (c) => {
+      const st = stateOf(c, [
+        line(19, 10, 0, "You have entered Nagafen's Lair - Group 3 (Fused)."),
+        line(19, 10, 0, "You have entered Nagafen's Lair - Group 4 (Refined)."),
+      ]);
+      return [Object.keys(st.instances).length, st.currentInstance && st.currentInstance.difficulty];
+    } },
+
+  { name: 'invite-key-drops-the-sender',
+    claim: 'two invites in the same second from different players are two invites',
+    find: "      return `${civil}|invite|${ev.from}|${ev.zone}|${ev.difficulty}`;",
+    repl: "      return `${civil}|invite|${ev.zone}|${ev.difficulty}`;",
+    probe: (c) => stateOf(c, [
+      line(19, 10, 0, "Alpha has asked you to join the instance: Nagafen's Lair - Group 3 (Fused). Would you like to join?"),
+      line(19, 10, 0, "Beta has asked you to join the instance: Nagafen's Lair - Group 3 (Fused). Would you like to join?"),
+    ]).dropped.duplicate },
 ];
 
 const MUTABLE = [FILE_ENGINE, FILE_TEMPLATE, FILE_BUILD];
