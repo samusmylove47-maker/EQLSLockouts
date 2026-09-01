@@ -2505,15 +2505,98 @@ const TOKEN_CAP = Object.freeze({
   provenance: 'observed',
   sampleCharacterWeeks: 3,
   source: 'Avenrae and Shara, weeks of 4 and 11 Aug 2026',
-  // STATED BECAUSE IT IS SMALL. Three character-weeks, all from one corpus,
-  // all showing exactly three. That is consistent with a cap of three and with
-  // any cap >= 3 that was never reached. The refusals are what argue for a
-  // real ceiling, and they carry a positive control.
+  // RE-DERIVED 31 Aug FROM THE LOGS, and it is now much stronger than the
+  // "never exceeded" claim it replaces. Avenrae, two consecutive periods:
+  //
+  //   period beginning Tue 2026-08-04    3 grants, then 4 refusals same day
+  //   period beginning Tue 2026-08-11    3 grants, then 18 refusals over 5 days
+  //
+  // **EVERY ONE OF THE 22 REFUSALS CARRIES A POSITIVE CONTROL AND EVERY ONE
+  // FOLLOWS THE THIRD GRANT OF ITS PERIOD.** That is the difference between an
+  // absence and a denial: a cap of four or five would have produced a fourth
+  // grant somewhere in 22 attempts across two periods. None appeared.
+  //
+  // What it still does not prove: that the ceiling is a property of the token
+  // rather than of something correlated with it in this corpus. Two periods,
+  // one character, one server.
   caveat:
-    'n=3 character-weeks. Every observed week reached exactly three grants and ' +
-    'no week exceeded it. A refused hail with a positive control corroborates ' +
-    'a ceiling; it does not prove the ceiling is three rather than higher.',
+    'Two consecutive periods, one character, each reaching exactly three ' +
+    'grants; 22 subsequent hails refused, every one with a positive control ' +
+    'and every one after the third grant. A cap above three would have shown ' +
+    'a fourth grant in 22 attempts. Reproduce with analysis/token-cap-check.js.',
+  reproduce: 'analysis/token-cap-check.js',
 });
+
+// ===========================================================================
+// HORIZONS — how long a bound buys, computed from the HOST's own rate
+// ===========================================================================
+//
+// **THIS FUNCTION EXISTS BECAUSE THE OBVIOUS VERSION WAS FALSIFIED.**
+//
+// I proposed publishing the bounds as horizons using OUR measured rate —
+// "MAX_EVENTS = 5000 buys 29.5 days" — and wrote its falsifier: *if a second
+// character's rate differs materially, the proposal is wrong as stated.*
+//
+// Measured on the second character:
+//
+//                        Shara      Avenrae
+//     peak kills / 7d     1,185       2,770      2.34x
+//     5000 buys          29.5 d      12.6 d
+//
+// **A published horizon would have been wrong by a factor of 2.3 for the very
+// next character measured**, and Avenrae is not an outlier — it is the other
+// character in the same corpus. A single number would have been a rate quoted
+// from one sample, which this project's own doctrine forbids.
+//
+// So the horizon is not published. It is COMPUTED, from the state in front of
+// the caller, and it refuses to answer on a sample too short to carry a rate.
+const MIN_HORIZON_SAMPLE_DAYS = 2;
+
+function horizon(state) {
+  const spans = state.spans || [];
+  if (!spans.length) {
+    return { ...NOT_RECORDED, reason: 'no coverage observed; there is no rate to compute.' };
+  }
+  const from = spans[0].from;
+  const to = spans[spans.length - 1].to;
+  const days = (to - from) / 86400000;
+
+  if (days < MIN_HORIZON_SAMPLE_DAYS) {
+    return {
+      ...NOT_RECORDED,
+      reason:
+        `coverage spans ${days.toFixed(2)} day(s); a rate needs at least ` +
+        `${MIN_HORIZON_SAMPLE_DAYS}. ONE SAMPLE IS A SAMPLE, NOT A RATE.`,
+      observedDays: Number(days.toFixed(2)),
+    };
+  }
+
+  const keys = state.seenCount || 0;
+  const kills = (state.kills || []).length;
+  const keysPerDay = keys / days;
+  const killsPerDay = kills / days;
+
+  const daysLeft = (bound, perDay) =>
+    perDay <= 0 ? null : Number((bound / perDay).toFixed(1));
+
+  return {
+    provenance: 'observed',
+    // WHAT THIS RATE WAS MEASURED ON, so it can never be quoted bare.
+    observedDays: Number(days.toFixed(2)),
+    observedKeys: keys,
+    observedKills: kills,
+    keysPerDay: Number(keysPerDay.toFixed(2)),
+    killsPerDay: Number(killsPerDay.toFixed(2)),
+    // The answer a host actually wants: not "5000 what", but "how long".
+    dedupeIndexDaysRemaining: daysLeft(MAX_SEEN - keys, keysPerDay),
+    killsBufferDaysRemaining: daysLeft(MAX_EVENTS - kills, killsPerDay),
+    bounds: { MAX_SEEN, MAX_EVENTS },
+    note:
+      'Computed from THIS state, not from a published constant. Two characters ' +
+      'in our own corpus differ 2.34x in kill rate, so a horizon shipped as a ' +
+      'number would be wrong for most hosts. Recompute as coverage grows.',
+  };
+}
 
 // `raid` is a key from RAIDS. `difficulty` is 0..4, or null to ask about the
 // raid at any tier. Returns three-way; see the header.
@@ -2604,13 +2687,6 @@ function actionability(state, now, target) {
       `"${raidKey}" is not in this module's observed roster. The roster is ` +
       'evidence of structure, not a list of what exists — an unlisted raid is ' +
       'unmeasured, not absent.';
-  } else if (refusedWithControl) {
-    answer = 'no';
-    unknownKind = null;
-    because =
-      'a weekly hail was REFUSED this period with a positive control — the ' +
-      'character has used its allowance. This is a statement about the CAP, ' +
-      'never about this boss.';
   } else if (capSpent) {
     answer = 'no';
     because =
@@ -2625,6 +2701,37 @@ function actionability(state, now, target) {
       `${grantsOnBoundary.length} on the reset day itself, which could belong to ` +
       `either period. Counted one way the cap of ${TOKEN_CAP.tokens} is spent, ` +
       'counted the other it is not. The reset HOUR has never been measured.';
+  } else if (refusedWithControl) {
+    // ── A CONTROLLED REFUSAL IS NOT PROOF THE CAP IS SPENT. ────────────────
+    //
+    // This branch returned `no` when first shipped (74609f14) and that was a
+    // FALSE NEGATIVE in the direction the product cannot afford: it would have
+    // deleted a reachable upgrade from the ranking.
+    //
+    // Measured, Avenrae, period beginning Tue 2026-08-11 — refusals INTERLEAVE
+    // with grants, and one grant lands NINE SECONDS after a controlled refusal:
+    //
+    //     20:40:44  GRANTED  Lady Vox
+    //     20:56:17  REFUSED  [control]
+    //     21:15:53  REFUSED  [control]
+    //     21:44:10  REFUSED  [control]
+    //     21:44:19  GRANTED  Lord Nagafen     <- 9 s later
+    //     22:08:18  REFUSED  [control]
+    //     22:38:27  GRANTED  Master Yael
+    //
+    // So a refusal is evidence of A ceiling being hit at that instant, and NOT
+    // evidence that the weekly allowance is gone. Whatever else gates a hail —
+    // the grants here fall roughly an hour apart — is unmeasured, and this
+    // module is not going to name it. `analysis/token-cap-check.js` reproduces
+    // the sequence.
+    answer = 'unknown';
+    unknownKind = 'refusal-not-cap';
+    because =
+      `${grantsThisPeriod.length} of ${TOKEN_CAP.tokens} tokens observed spent, ` +
+      'and a hail was refused with a positive control. Measured data shows ' +
+      'refusals interleaving with grants — one grant arrived 9 s after a ' +
+      'controlled refusal — so a refusal does NOT establish the allowance is ' +
+      'gone. Something gates the hail; what, is not measured.';
   } else if (boundaryStart === null || !grid.period.coverageSpansPeriod) {
     answer = 'unknown';
     unknownKind = 'coverage';
@@ -2709,6 +2816,7 @@ const THRESHOLDS = Object.freeze({
 module.exports = {
   THRESHOLDS,
   actionability,
+  horizon,
   TOKEN_CAP,
   // parsing
   parseLine,

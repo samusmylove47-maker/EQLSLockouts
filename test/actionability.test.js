@@ -141,17 +141,44 @@ test('A BOSS OPEN ON THE GRID WHILE THE CAP IS SPENT ANSWERS `no`', () => {
   assert.match(r.because, /cap/i);
 });
 
-test('A REFUSED HAIL WITH A POSITIVE CONTROL ANSWERS `no`, and says it is about the CAP', () => {
+test('A REFUSED HAIL WITH A POSITIVE CONTROL IS `unknown`, NOT `no`', () => {
+  // THIS TEST ASSERTED `no` WHEN FIRST WRITTEN, AND THE TEST WAS WRONG.
+  //
+  // It encoded my belief that a controlled refusal means "your three are
+  // spent". `analysis/token-cap-check.js`, written to CORROBORATE the cap,
+  // refuted it instead: in Avenrae's period beginning Tue 2026-08-11 refusals
+  // interleave with grants and one grant lands NINE SECONDS after a controlled
+  // refusal. A green test does not make a belief true — it only proves the code
+  // agrees with the belief.
   const st = build([
     ...heartbeat(15, 21),
     ...refusal(20, 14),
   ]);
   const r = core.actionability(st, NOW, { raid: NAG, difficulty: 3 });
 
-  assert.equal(r.answer, 'no');
+  assert.equal(r.answer, 'unknown',
+    'a refusal is evidence of A ceiling at that instant, not that the weekly ' +
+    'allowance is gone — answering `no` deletes a reachable upgrade');
+  assert.equal(r.unknownKind, 'refusal-not-cap');
   assert.equal(r.gates.tokenCap.refusedWithPositiveControl, true);
-  assert.match(r.because, /never about this boss/,
-    'a refusal is a statement about the allowance, not about the boss');
+  assert.match(r.because, /does NOT establish the allowance is gone/);
+});
+
+test('A REFUSAL PLUS A SPENT CAP STILL ANSWERS `no` — the count decides, not the refusal', () => {
+  // The matched pair for the test above: same refusal, but with three grants
+  // observed. If this returned `unknown` the fix would have gone too far and
+  // taken the real `no` with it.
+  const st = build([
+    ...heartbeat(15, 21),
+    ...grant(19, 10, 'Lord Nagafen'),
+    ...grant(19, 12, 'Lady Vox'),
+    ...grant(20, 10, 'Master Yael'),
+    ...refusal(20, 14),
+  ]);
+  const r = core.actionability(st, NOW, { raid: NAG, difficulty: 3 });
+
+  assert.equal(r.answer, 'no', 'three grants observed — the cap itself is spent');
+  assert.equal(r.gates.tokenCap.grantsObserved, 3);
 });
 
 // ---------------------------------------------------------------------------
@@ -215,9 +242,43 @@ test('EVERY answer carries what it does NOT answer', () => {
   }
 });
 
-test('the token cap ships its own sample size', () => {
+test('the token cap ships its evidence and a way to reproduce it', () => {
   assert.equal(core.TOKEN_CAP.tokens, 3);
-  assert.equal(core.TOKEN_CAP.sampleCharacterWeeks, 3);
-  assert.match(core.TOKEN_CAP.caveat, /n=3/,
-    'a cap measured over three character-weeks must say so where it is read');
+  // The caveat must carry the DENIAL half, not just the absence. An absence of
+  // a fourth grant is consistent with any higher cap never reached; 22
+  // controlled refusals with no fourth grant is the thing that argues.
+  assert.match(core.TOKEN_CAP.caveat, /positive control/,
+    'the refusals are the evidence — say so where the constant is read');
+  assert.match(core.TOKEN_CAP.caveat, /22/,
+    'the number of refusals is the strength of the claim');
+  assert.equal(core.TOKEN_CAP.reproduce, 'analysis/token-cap-check.js');
+  // R69: a cited path must exist in the repo that ships the citation.
+  const fs = require('node:fs');
+  const path = require('node:path');
+  assert.ok(fs.existsSync(path.join(__dirname, '..', core.TOKEN_CAP.reproduce)),
+    'a constant citing a script must ship the script');
+});
+
+test('horizon() REFUSES to quote a rate from too short a sample', () => {
+  // "ONE SAMPLE IS A SAMPLE, NOT A RATE." The published-horizon version of this
+  // was falsified by the second character measured — Shara 1,185 peak kills/7d
+  // against Avenrae 2,770, so one constant would have been 2.34x wrong.
+  const empty = core.createState('x');
+  assert.equal(core.horizon(empty).provenance, 'not recorded');
+
+  const short = build(heartbeat(20, 20));          // one day
+  const h = core.horizon(short);
+  assert.equal(h.provenance, 'not recorded');
+  assert.match(h.reason, /ONE SAMPLE IS A SAMPLE, NOT A RATE/);
+});
+
+test('horizon() ANSWERS on a long enough sample, and states what it measured on', () => {
+  const st = build(heartbeat(15, 21));
+  const h = core.horizon(st);
+  assert.equal(h.provenance, 'observed');
+  assert.ok(h.observedDays >= 2, 'must report the sample it used');
+  assert.ok(typeof h.keysPerDay === 'number');
+  assert.ok(h.dedupeIndexDaysRemaining === null || h.dedupeIndexDaysRemaining > 0);
+  assert.deepEqual(h.bounds, { MAX_SEEN: 200000, MAX_EVENTS: 5000 });
+  assert.match(h.note, /2\.34x/, 'the reason it is computed, not published');
 });
