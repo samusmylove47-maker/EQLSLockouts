@@ -481,3 +481,98 @@ shape has to cope with them.
 state at all, and proposing machinery for a requirement I have not confirmed is
 the failure this whole exercise is about. **It is a question for C, and the
 answer changes whether this is urgent or irrelevant.**
+
+---
+
+# Part 3 — the mutation sweep, 31 Aug–1 Sep
+
+Added at the end of the session that produced it. **Everything below is a fact
+about the test suite, not about the engine**, and the numbers are reproducible
+with `node analysis/mutation-check.js`.
+
+## What the harness is for
+
+A test that certifies a belief rather than testing it passes when the code it
+covers is broken. That is mechanically decidable: break the source on purpose,
+one targeted change at a time, and see which tests notice.
+
+    node analysis/mutation-check.js
+
+Four verdicts, and they never share a column:
+
+| | |
+|---|---|
+| `CAUGHT` | probe moved, ≥1 test failed — the guard is a gate |
+| `BLIND` | probe moved, **no test failed** — the only real finding |
+| `INERT` | probe did not move — **the verdict is meaningless, fix the mutation** |
+| `NOANCHOR` | the anchor text is gone — the harness is stale |
+
+**`INERT` means "my probe saw no difference", never "the mutation does
+nothing".** It fired five times in this session and every one was a bad probe of
+mine, not a dead mutation. Twice it stopped me reporting a blind spot that did
+not exist.
+
+## The result, with its denominator
+
+    tests in the suite                    140
+    demonstrably non-vacuous               ~90
+    never exercised by this mutation set   ~50
+
+**Twenty real blind spots across ~64 mutations.** The second number is the one
+that matters: **the rest is a fact about the mutations I wrote, not proof those
+tests are hollow.**
+
+## THE AIMING HEURISTIC, which is the most portable thing here
+
+Two sibling families were audited the same way and gave opposite results:
+
+    dedupeKey     8 siblings   3 of 3 discriminator-carrying cases BLIND
+    cell states   5 siblings   0 of 5 blind, at 14 and 16 assertions deep
+
+**Sibling-ness is not the predictor. Observability is.** `dedupeKey` is an
+internal mechanism whose correctness never appears in ordinary output — a
+collision only shows if two events land in the same second, which no ordinary
+fixture produces. The cell states *are* the output, so every test asserted on
+them before anyone aimed.
+
+> **Guards go missing where the failure mode requires a constructed input to
+> see — however carefully the code was written.** `dedupeKey` was correct at all
+> eight sites and guarded at one.
+
+## TWO THIN GUARDS, NAMED SO THEY STAY KNOWN
+
+Recorded because "thin and known" is only true while it is written somewhere a
+future session reads. **Neither is blind. Both are one edit from it**, and both
+sit on the paths that carry refusals rather than answers — which is where this
+engine's honesty lives.
+
+| guard | assertions | what it protects |
+|---|---|---|
+| `unknown` from an unstated tier | **1** | a kill at a tier the game did not state makes the ROW unknown, not open |
+| hypothesis disagreement | **2** | on the reset day, disagreement emits `conditional` WITH both outcomes, never a bare shrug |
+
+**They were deliberately not padded.** A guard that exists is not improved by a
+second guard nobody can show catches anything the first misses — that is R143
+pointed inward. If this family ever regresses, these are where to look first.
+
+## NAMED NEXT TARGETS, chosen by the heuristic rather than by guessing
+
+All three are invisible mechanisms and each is a full aim-mutate-verify cycle:
+
+- **`oldestSeen`** — returns `Infinity` on an empty index; a mutation to `0` was
+  written but its probe never reached the branch. Unmeasured, not clean.
+- **`coverageHoles`** — the gap-to-hole computation upstream of the threshold.
+- **`applyLines`' loop** — the only place ordering across lines is decided.
+
+## One guard that is measured LIVE but still unguarded
+
+The span **bridge** merge in `noteCoverage`. I argued from the code that it was
+unreachable and nearly filed it as dead code. Instrumenting a copy and running
+the real corpus:
+
+    749,255 lines · 8 spans pushed · **1 bridge merge**
+
+**Live, firing about once per three-quarters of a million lines.** No fixture
+here reproduces that shape, so its mutation reports `INERT` and **whether it is
+guarded is unknown.** An unmeasured guard, not a blind one — the distinction is
+the whole reason the third verdict exists.
