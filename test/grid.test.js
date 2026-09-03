@@ -717,6 +717,63 @@ test('RAIDS: the Hate row says WHICH INSTANCE SHAPE it describes, on every cell'
   }
 });
 
+test('INSTANCE ID: parsed and recorded, and it drives NO cell state', () => {
+  // `Player <you> creating instance <Zone> <N>.` is the only line in the corpus
+  // that identifies an instance — 63 lines, 63 distinct ids, none reused. I told
+  // the Director the client never wrote one, which was a universal inferred from
+  // the four zone shapes I had modelled. One grep refuted it.
+  //
+  // The Director's ruling was: parse it, record it, do NOT model on it. The
+  // reason is coverage — it fires only when YOU create the instance, so it saw
+  // 63 of 256 instanced zone-ins in our corpus. This test is what keeps it a
+  // witness: the SAME log with and without the creation line must produce
+  // identical cells.
+  const base = [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Wed Aug 19 20:30:00 2026] Maestro of Rancor has been slain by Chrysaetos!',
+  ];
+  const withCreate = [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 19:59:30 2026] Player Avenrae creating instance The Plane of Hate 3846.',
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Wed Aug 19 20:30:00 2026] Maestro of Rancor has been slain by Chrysaetos!',
+  ];
+  const a = core.createState('Avenrae'); core.applyLines(a, base);
+  const b = core.createState('Avenrae'); core.applyLines(b, withCreate);
+  const ga = core.projectGrid(a, NOW), gb = core.projectGrid(b, NOW);
+
+  // The cells are byte-identical. If a future change lets the id decide
+  // anything, this fails and someone has to say so out loud.
+  assert.deepEqual(gb.cells, ga.cells, 'a creation line must not move any cell');
+  assert.equal(gb.completedCount, ga.completedCount);
+  assert.equal(gb.openCount, ga.openCount);
+
+  // And it IS recorded — parsed, not dropped.
+  assert.equal(ga.instanceCreations.count, 0);
+  assert.equal(gb.instanceCreations.count, 1);
+  const rec = gb.instanceCreations.seen[0];
+  assert.equal(rec.instanceId, 3846, 'the id is captured, not the tier');
+  assert.equal(rec.zone, 'The Plane of Hate', 'and the zone is bare — no shape, no tier');
+  assert.equal(rec.player, 'Avenrae');
+
+  // 3846 is an ID, not a difficulty. Reading it as a tier is the failure this
+  // whole line shape invited, since every other trailing number in a zone
+  // string IS a tier.
+  assert.ok(rec.instanceId > 4, 'ids run past the 0-4 tier range');
+
+  // THE DENOMINATOR TRAVELS. Without it, count 0 cannot be told apart from
+  // "joined instances somebody else created", which is the common case.
+  assert.equal(typeof gb.instanceCreations.instancedEntries, 'number');
+  assert.ok(gb.instanceCreations.instancedEntries >= 1, 'instanced entries are counted');
+  assert.equal(gb.instanceCreations.coveragePct,
+    Math.round((1 / gb.instanceCreations.instancedEntries) * 1000) / 10);
+  // A state that entered no instance reports null coverage rather than 0% —
+  // 0% would assert a measured absence where there is no denominator at all.
+  const empty = core.projectGrid(core.createState('Avenrae'), NOW);
+  assert.equal(empty.instanceCreations.coveragePct, null, 'no denominator, no percentage');
+});
+
 test('RAIDS: a kill records both the raid and the boss', () => {
   const st = core.createState('Avenrae');
   core.applyLines(st, [
@@ -1063,6 +1120,15 @@ const GRID_SHAPE = [
   'cells[].tierFromOmission',
   'cells[].weeklyTaskObserved',
   'completed',
+  // The instance-id witness. Declared with its DENOMINATOR beside it:
+  // `count` alone cannot tell "created none" from "joined someone
+  // else's", which is the common case. Recorded, never used to decide.
+  'instanceCreations',
+  'instanceCreations.count',
+  'instanceCreations.coveragePct',
+  'instanceCreations.instancedEntries',
+  'instanceCreations.note',
+  'instanceCreations.seen',
   'completedCount',
   'conditional',
   'conditionalCount',

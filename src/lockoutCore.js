@@ -383,6 +383,31 @@ const NOT_A_ZONE = new Set([
 // the instance the way the levitation notice did.
 const LOOKS_LIKE_A_SENTENCE = /^[a-z]/;
 
+// Player Avenrae creating instance The Plane of Sky 716.
+//
+// THE ONLY LINE IN THE CORPUS THAT IDENTIFIES AN INSTANCE. 63 occurrences, 63
+// distinct trailing numbers, none reused, range 13–20,807 — a server-side
+// serial, NOT a difficulty tier (tiers are 0–4 and appear in the zone name).
+//
+// I told the Director the client never writes an instance identifier and that
+// the question "is each raid instance separate?" was unanswerable from logs by
+// anyone, ever. That was a universal inferred from the four zone shapes I had
+// already modelled, and one grep refuted it. See CANON's correction.
+//
+// PARSED AND RECORDED. IT MUST NOT DRIVE LOCKOUT STATE, and the reason is its
+// coverage: 63 creations against 256 instanced zone-ins, and the `Player` field
+// was the logging character in all 63 — it cannot see an instance somebody else
+// made. A signal present a quarter of the time and blind to other people's
+// creations is a witness, not a model. `state.instanceCreations` records it and
+// `projectGrid` reports the coverage beside it, so a reader can tell "no
+// creation line" from "no instance created" — two states that would otherwise
+// render identically.
+//
+// The zone name here is BARE: no shape, no tier. The tier comes from the zone-in
+// that follows, which paired 63 of 63 in our corpus. That pairing is measured
+// but NOT performed here — joining them is a model decision, not a parse.
+const CREATING_RE = /^Player (.+?) creating instance (.+?) (\d+)\.$/;
+
 // Lumbarin has asked you to join the instance: Nagafen's Lair - Group 1 (Awakened).        Would you like to join? ...
 // Client string 3527. The run of spaces is the client's, and is matched
 // loosely so a change in its width cannot break the parse.
@@ -1148,6 +1173,9 @@ function parseLine(line) {
   if ((m = INSTANCE_INVITE_RE.exec(message))) {
     return { kind: 'instance-invite', at, from: m[1], ...parseInstanceName(m[2]) };
   }
+  if ((m = CREATING_RE.exec(message))) {
+    return { kind: 'instance-created', at, player: m[1], zone: m[2], instanceId: +m[3] };
+  }
   if (SELF_DANGER_RE.test(message)) {
     return { kind: 'weekly-request', at };
   }
@@ -1273,6 +1301,18 @@ function createState(character, opts) {
     })),
     // Kills of roster bosses, each carrying the instance it happened in.
     kills: [],
+    // `Player <you> creating instance <Zone> <N>.` — the only line that names an
+    // instance. RECORDED, NEVER ACTED ON: nothing in this module reads this to
+    // decide a cell, and a test asserts that adding one changes no cell state.
+    //
+    // Bounded like every other unbounded-growth list here. A creation is a rare
+    // event (63 in a 7.8M-line corpus) so the cap is small, and — as with the
+    // other bounds — it drops the OLDEST so a long log keeps its recent truth.
+    instanceCreations: [],
+    // The denominator that must travel with it. Without this a reader cannot
+    // tell "no creation line was written" from "no instance was created", and
+    // those are opposite facts that would otherwise render identically.
+    instancedEntries: 0,
     // The instance most recently entered, so a kill can be attributed to a
     // difficulty. Null means the open world or nothing seen yet.
     currentInstance: null,
@@ -1322,6 +1362,10 @@ const MAX_EVENTS = 5000;
 // single character over 434 MB. See the note at the insert site for what
 // overflowing costs — it degrades a refusal to `unknown`, never the reverse.
 const MAX_VOIDLING_REPLIES = 5000;
+
+// 63 creations in a 7.8M-line corpus, so 2000 is far above anything observed
+// and still bounded. Drops the OLDEST, like the other bounds here.
+const MAX_INSTANCE_CREATIONS = 2000;
 // The dedupe index is deliberately far larger than the provenance log. The
 // owner's own corpus produces ~12k observations for one character, so a bound
 // of 5000 was actively corrupting counts.
@@ -1553,6 +1597,23 @@ function applyLine(state, line) {
     if (state.requests.length > MAX_EVENTS) state.requests.shift();
   }
 
+  // A WITNESS, NEVER EVIDENCE. Sits at the TOP LEVEL of this dispatch on
+  // purpose: my first attempt nested it inside the `entered || instance-invite`
+  // block below, where it was unreachable and silently recorded nothing. The
+  // test that says "the id is recorded" is the only reason that surfaced —
+  // the test that says "it changes no cell" passed either way, because a branch
+  // that never runs also changes no cell. See CREATING_RE.
+  if (ev.kind === 'instance-created') {
+    state.instanceCreations.push({
+      at: formatCivil(civilOf(ev.at)),
+      player: ev.player,
+      zone: ev.zone,
+      instanceId: ev.instanceId,
+    });
+    if (state.instanceCreations.length > MAX_INSTANCE_CREATIONS) state.instanceCreations.shift();
+    return state;
+  }
+
   if (ev.kind === 'entered' || ev.kind === 'instance-invite') {
     if (ev.instanced) {
       const k = `${ev.zone}|${ev.group ? 'group' : 'raid'}|${ev.difficulty}`;
@@ -1604,6 +1665,7 @@ function applyLine(state, line) {
     // test/grid.test.js is what holds it now — inside, after leaving, and never
     // entered, because no two of those three distinguish every wrong version.
     if (ev.kind === 'entered') {
+      if (ev.instanced) state.instancedEntries++;
       state.currentInstance = ev.instanced
         ? {
             zone: ev.zone,
@@ -2528,6 +2590,25 @@ function projectGrid(state, now) {
     notLookedCount: by('not_looked').length,
     completed: by('completed'),
     completedCount: by('completed').length,
+    // THE WITNESS, WITH ITS DENOMINATOR ATTACHED. `Player <you> creating
+    // instance <Zone> <N>` is the only line that identifies an instance, and it
+    // drives NOTHING here — no cell reads it. It ships with `coveragePct`
+    // because the signal is worthless without it: the line fires only when YOUR
+    // character creates the instance, so a zero can mean "created none" or
+    // "joined someone else's", and a denominator is the only thing that tells
+    // those apart. A figure that travels without its denominator is how a 70.7%
+    // becomes a fact.
+    instanceCreations: {
+      seen: state.instanceCreations.slice(),
+      count: state.instanceCreations.length,
+      instancedEntries: state.instancedEntries,
+      coveragePct: state.instancedEntries
+        ? Math.round((state.instanceCreations.length / state.instancedEntries) * 1000) / 10
+        : null,
+      note: 'creation lines name an instance id; they are written only when YOU ' +
+            'create the instance, never when you join one. Recorded, not used to ' +
+            'decide any cell.',
+    },
     cells,
   };
 }
