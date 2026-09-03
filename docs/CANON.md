@@ -146,6 +146,45 @@ was a clearance asserted without a string.
 My hexdump was piped through `grep`, which strips the terminator and appends its
 own LF. **I hexdumped my instrument, not the file.**
 
+### THE CORPUS STRADDLES A WEEKLY-RESET BEHAVIOUR CHANGE. Found 3 Sep 2026
+
+**Staff broadcast, `Tue Aug 18 00:36:13 2026` client-local, one occurrence,
+staff name folded:**
+
+> `<SYSTEMWIDE_MESSAGE>: <staff> : Due to a known issue with the weekly reset,
+> we will be disabling personal and raid instances at 10 PM PDT tonight.
+> Instances will be available again when the servers come back up after the
+> scheduled patch in the morning. The weekly reset issue will be resolved by
+> the changes included in tomorrow's patch.`
+
+**The client does not state a patch date.** It names "10 PM PDT tonight" and a
+patch "in the morning", so the change lands on or about **18 Aug 2026**.
+
+**The corpus runs `2026-08-04 13:33:15` → `2026-09-03 15:34:26`.** It straddles:
+**14 days before, 16 days after.**
+
+**AND THE LOAD-BEARING CONSTANTS FALL ON OPPOSITE SIDES.** This is not one
+average across two regimes; it is a model assembled from both:
+
+| constant | measured | side |
+|---|---|---|
+| `RESET_RULE.measuredBracketPacific` | Mon 10 Aug → Tue 11 Aug | **BEFORE** |
+| `TOKEN_CAP` | weeks of 4 and 11 Aug | **BEFORE** |
+| `LOCKOUT_MODEL` | alt+Z window, 25 Aug | **AFTER** |
+
+`RESET_RULE.source` is the owner speaking on 23 Aug — **post-patch testimony
+corroborated by a pre-patch measurement.** If the rule changed on the 18th, the
+statement and the bracket describe different regimes and agreeing means nothing.
+
+**OTHER CANDIDATE BOUNDARIES in the same corpus**, listed without investigation:
+`A new client has been pushed to the servers` on **6 Aug 19:26:52** and
+**2 Sep 16:03:48**; server-down sequences on **25 Aug** at 15:15 and 17:57.
+Only the 18 Aug broadcast names the weekly reset.
+
+**NOTHING RE-DERIVED AND NOTHING SPLIT.** Splitting a corpus is a modelling
+decision and it is the Director's. Recorded so that no figure derived from this
+corpus is quoted again without someone knowing it may span a discontinuity.
+
 ### ~~"The client never writes an instance identifier."~~ REFUTED 3 Sep 2026
 
 I told the Director this was **"not answerable from logs by anyone, with any
