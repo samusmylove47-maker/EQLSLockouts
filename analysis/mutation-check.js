@@ -752,7 +752,10 @@ const MUTATIONS = [
 
   { name: 'beyond-horizon-counter-never-fires',
     claim: 'a line older than the whole index is COUNTED, not silently accepted',
-    find: '  if (state.seenCount >= MAX_SEEN && civil < oldestSeen(state)) {',
+    // ANCHOR REPAIRED 3 Sep: the 1 Sep horizon fix moved both operands out of
+    // this line and the harness went NOANCHOR — correctly reporting itself stale
+    // rather than reporting the guard as blind.
+    find: '  if (horizonCount >= MAX_SEEN && civil < horizonOldest) {',
     repl: '  if (false) {',
     probe: (c) => {
       const st = c.createState('Avenrae');
@@ -786,6 +789,80 @@ const MUTATIONS = [
       ]);
       const g = c.projectGrid(st, NOW);
       return [g.period.coverageHoles.length, g.period.coverageSpansPeriod];
+    } },
+  // -- R177 SWEEP, 3 Sep: SEVEN INVISIBLE MECHANISMS, NONE PREVIOUSLY TOUCHED
+  //
+  // Chosen by the heuristic, not by guessing: each one's correctness never
+  // appears in ordinary output, and each needs a constructed input to see fail.
+
+  { name: 'observed-fraction-double-counts-overlap',
+    claim: 'overlapping spans are counted ONCE toward the observed fraction',
+    find: '    if (b > a && b > cursorObs) observedMs += b - Math.max(a, cursorObs);',
+    repl: '    if (b > a) observedMs += b - a;',
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      // Two DELIBERATELY overlapping spans, which noteCoverage would merge but
+      // a restored/persisted state can carry.
+      st.spans = [{ from: Date.UTC(2026,7,18,0,0,0), to: Date.UTC(2026,7,20,0,0,0) },
+                  { from: Date.UTC(2026,7,19,0,0,0), to: Date.UTC(2026,7,21,0,0,0) }];
+      st.firstSeen = st.spans[0].from; st.lastSeen = st.spans[1].to;
+      return c.projectGrid(st, NOW).period.coverageObservedFraction;
+    } },
+
+  { name: 'from-civil-weekday-off-by-one',
+    claim: 'fromCivil is the exact inverse of civilOf, weekday included',
+    find: "    weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()],",
+    repl: "    weekday: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d.getUTCDay()],",
+    probe: (c) => {
+      const at = { weekday: 'Wed', year: 2026, month: 8, day: 19, hour: 10, minute: 0, second: 0 };
+      return JSON.stringify(c.fromCivil(c.civilOf(at)));
+    } },
+
+  { name: 'character-from-filename-takes-the-server',
+    claim: 'the CHARACTER is the first field of the log filename, not the server',
+    find: "  const m = /^eqlog_([^_]+)_/i.exec(String(filename).replace(/^.*[\\/]/, ''));",
+    repl: "  const m = /^eqlog_[^_]+_([^_.]+)/i.exec(String(filename).replace(/^.*[\\/]/, ''));",
+    probe: (c) => [c.characterFromLogFilename('eqlog_Avenrae_rivervale.txt'),
+                   c.characterFromLogFilename('C:/x/eqlog_Shara_rivervale_2026-08-19.txt')] },
+
+  { name: 'bracket-width-measured-from-the-wrong-end',
+    claim: 'a reset bracket is as wide as the interval it brackets',
+    find: '        widthHours: (next.civil - after.civil) / 3600000,',
+    repl: '        widthHours: 0,',
+    probe: (c) => {
+      const st = stateOf(c, [...beat(8, 21),
+        ...grantPair(12, 10, 'Lord Nagafen'), ...grantPair(19, 10, 'Lord Nagafen')]);
+      return JSON.stringify(c.projectReset(st)).slice(0, 200);
+    } },
+
+  { name: 'voidling-bound-drops-the-NEWEST',
+    claim: 'the Voidling bound drops the OLDEST second — a refusal degrades to unknown, never to a false refused',
+    find: '      if (state.voidlingReplies.length > MAX_VOIDLING_REPLIES) state.voidlingReplies.shift();',
+    repl: '      if (state.voidlingReplies.length > MAX_VOIDLING_REPLIES) state.voidlingReplies.pop();',
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      const CLOSE = "Voidling says, 'Your hubris risks our very reality itself.'";
+      for (let i = 0; i < 3; i++) c.applyLine(st, line(19, 10, i * 10, CLOSE));
+      st.voidlingReplies = st.voidlingReplies.slice(0, 2);
+      return st.voidlingReplies.slice();
+    } },
+
+  { name: 'task-cadence-dropped',
+    claim: 'a task name yields series, boss AND cadence — cadence is what makes it weekly',
+    find: '  return { task: taskName, series: m[1], boss: m[2], cadence: m[3] };',
+    repl: '  return { task: taskName, series: m[1], boss: m[2], cadence: null };',
+    probe: (c) => {
+      const e = c.parseLine(line(19, 10, 0, "You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'."));
+      return e ? [e.series, e.boss, e.cadence] : null;
+    } },
+
+  { name: 'requests-bound-drops-the-NEWEST',
+    claim: 'the request log drops the OLDEST when bounded',
+    find: '    if (state.requests.length > MAX_EVENTS) state.requests.shift();',
+    repl: '    if (state.requests.length > MAX_EVENTS) state.requests.pop();',
+    probe: (c) => {
+      const st = stateOf(c, [line(19, 10, 0, "You say, 'danger'"), line(19, 11, 0, "You say, 'danger'")]);
+      return st.requests.map((r) => r.civil);
     } },
 ];
 
