@@ -20,20 +20,39 @@
 //   (b) MANY SEPARATE LOCKS. Each raid instance is its own lockable unit, so
 //       one row per raid zone is the wrong shape for raid content.
 //
-// I WROTE THIS SCRIPT BELIEVING THE CORPUS COULD DISCRIMINATE THEM. IT CANNOT,
-// and the reason is structural rather than a gap in our sample — see the
-// verdict this prints. Two entries into "The Plane of Hate 4 (Refined)" are
-// character-for-character identical in the log whether they are one instance
-// re-entered or two fresh ones, because the client never writes an instance
-// identifier. My intended discriminator — counting distinct instances per
-// (character, zone, week) — cannot count instances at all. It counts TIERS,
-// which the grid already models as separate cells, and which say nothing about
-// locks.
+// I WROTE THIS SCRIPT BELIEVING THE CORPUS COULD DISCRIMINATE THEM, and my
+// intended discriminator does not: counting distinct instances per (character,
+// zone, week) cannot count instances at all. It counts TIERS, which the grid
+// already models as separate cells and which say nothing about locks.
 //
-// The script is kept because the question will be asked again and this is the
-// proof of what an answer would cost: an alt+Z Replay Timer reading, which is
-// an ACQUISITION, not an analysis. It also measures the one thing that IS
-// established and load-bearing — roster-boss kills by instance shape.
+// ~~"The client never writes an instance identifier, so this is not answerable
+// from logs by anyone, with any corpus, ever."~~ **I WROTE THAT HERE AND SAID IT
+// TO THE DIRECTOR. IT IS FALSE.** REFUTED 3 Sep 2026, by grepping my own corpus
+// for every line shape containing "instance" instead of reasoning from the
+// shapes I had already modelled:
+//
+//     Player Avenrae creating instance The Plane of Sky 716.
+//     Player Avenrae creating instance The Ruins of Old Paineel 4583.
+//
+// **63 such lines, 63 distinct N, none reused, range 13-20,807.** Not tiers —
+// tiers are 0-4. It is a server-side instance serial, and `parseLine` returns
+// null for it. The claim was never measured; I inferred it from the four zone
+// shapes I had modelled, which is reasoning from my own configuration to a
+// claim about the game.
+//
+// WHAT THE INSTRUMENT ACTUALLY SUPPORTS, measured:
+//   - 63 of 63 creations are followed by a zone-in to the SAME zone, so an id
+//     is attributable to a tier via the following entry line.
+//   - It fires ONLY when your own character creates the instance — the player
+//     field was the logging character in all 63. Entering someone else's
+//     instance writes nothing. 63 creations against 256 instanced zone-ins.
+//   - For Hate it does NOT settle the question today: exactly 2 creations, in
+//     different weeks by different characters. But it means the question is
+//     answerable from FUTURE logs rather than requiring an alt+Z reading.
+//
+// The script is kept because the question will be asked again, and now because
+// it records how the universal was wrong. It also measures the one thing that
+// IS established and load-bearing — roster-boss kills by instance shape.
 //
 // Reads the owner's raw logs read-only and writes nothing.
 
@@ -171,14 +190,19 @@ function periodKey(at) {
   if (!repeats) console.log('  none');
 
   console.log('\n=== WHAT THIS CAN AND CANNOT SETTLE ===');
-  console.log('CANNOT, and the reason is structural rather than a gap in our corpus:');
-  console.log('  THE CLIENT NEVER WRITES AN INSTANCE IDENTIFIER. A zone-in line carries a');
-  console.log('  zone, a shape and a tier and nothing else, and the invite line carries the');
-  console.log('  same string. Two entries into "The Plane of Hate 4 (Refined)" are IDENTICAL');
-  console.log('  in the log whether they are one instance re-entered or two fresh ones.');
-  console.log('  So "each raid instance is unique and separate" can be neither confirmed nor');
-  console.log('  contradicted from logs, by us or by anyone. The instrument that separates');
-  console.log('  them is the alt+Z Replay Timer, which is an ACQUISITION, not an analysis.');
+  console.log('THE ZONE-IN LINE cannot: it carries zone, shape and tier and nothing else, so');
+  console.log('  two entries into "The Plane of Hate 4 (Refined)" are identical whether they');
+  console.log('  are one instance re-entered or two fresh ones.');
+  console.log();
+  console.log('BUT ANOTHER LINE CAN, and I claimed otherwise before I looked:');
+  console.log('  "Player <You> creating instance <Zone> <N>." carries a server-side instance');
+  console.log('  serial — 63 lines, 63 distinct N, never reused, 13 to 20,807. parseLine');
+  console.log('  returns null for it today. It fires only when YOUR character creates the');
+  console.log('  instance, so it sees 63 of 256 instanced zone-ins, and it states no tier');
+  console.log('  (the following zone-in does, and pairs 63 of 63).');
+  console.log('  For Hate it does not settle the question yet — 2 creations, different weeks,');
+  console.log('  different characters — but it makes the question answerable from FUTURE');
+  console.log('  logs rather than requiring an alt+Z reading.');
   console.log();
   console.log('DOES establish, and it is the load-bearing one. Roster-boss kills by shape:');
   console.log('    group instance : ' + rosterKills.group);

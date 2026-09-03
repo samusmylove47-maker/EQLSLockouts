@@ -146,6 +146,39 @@ was a clearance asserted without a string.
 My hexdump was piped through `grep`, which strips the terminator and appends its
 own LF. **I hexdumped my instrument, not the file.**
 
+### ~~"The client never writes an instance identifier."~~ REFUTED 3 Sep 2026
+
+I told the Director this was **"not answerable from logs by anyone, with any
+corpus, ever"** — a universal, about a game, inferred from the four zone shapes
+I had already modelled. **Reasoning from my own configuration to a claim about
+the client.** The same error as `singleBoss` being read off our own list length,
+one day after I refuted the Hate population claim the same way.
+
+It took one grep of every distinct line shape containing "instance":
+
+    Player Avenrae creating instance The Plane of Sky 716.
+    Player Avenrae creating instance The Ruins of Old Paineel 4583.
+
+**63 lines, 63 distinct N, none reused, range 13–20,807.** Not tiers — tiers are
+0–4. A server-side instance serial. **`parseLine` returns `null` for it.**
+
+| | |
+|---|---|
+| creations followed by a zone-in to the same zone | **63 of 63** — an id is attributable to a tier |
+| the `Player` field | the logging character in all 63 — **your own creations only** |
+| coverage | 63 creations against **256** instanced zone-ins |
+| tier stated on the line | **none** — it comes from the following entry |
+| Plane of Hate | **2** creations, different weeks, different characters |
+
+**What it changes.** "Each hate raid instance is unique and separate" is not
+answerable from *this* corpus, but it IS answerable from logs — a character who
+creates two Hate raid instances in one week writes two distinct N. **It needs
+future logs, not an alt+Z reading.** That is a much cheaper acquisition than the
+one I told the Director was required.
+
+**Not modelled deliberately.** Consuming this line is model work and is the
+Director's to rule on. Recorded, not built.
+
 ### ~~"Hate's group and raid shapes hold different populations."~~ REFUTED 3 Sep 2026
 
 I wrote that ten further bosses die in Hate instances **only** in the bare
