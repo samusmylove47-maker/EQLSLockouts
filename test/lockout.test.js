@@ -1104,3 +1104,76 @@ test('BOUNDS: every bounded array drops the OLDEST, and the family is read FROM 
       'for kills this is a lost completion');
   }
 });
+
+test('WEEKDAY: our weekday agrees with the CLIENT and with an independent algorithm', () => {
+  // An off-by-one in a weekday, inside a tool whose entire subject is a weekly
+  // reset. This was BLIND: the weekday table could be rotated by one and the
+  // whole suite stayed green, while every cell moved to the wrong period.
+  //
+  // TWO GROUNDINGS, because neither alone is enough:
+  //   1. THE CLIENT ITSELF. Every stamp carries the game's own three-letter
+  //      weekday. That is an outside authority, not our arithmetic — but our
+  //      fixture only covers Mon and Tue, so on its own it leaves five names
+  //      free to be wrong.
+  //   2. ZELLER'S CONGRUENCE, implemented here. A genuinely different algorithm
+  //      reaching the same answer, over seven consecutive days so all seven
+  //      names are exercised. Re-using `Date.getUTCDay` would have tested the
+  //      table against itself.
+  const NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // h = 0 is Saturday. Jan and Feb count as months 13 and 14 of the prior year.
+  const zeller = (y, m, d) => {
+    if (m < 3) { m += 12; y -= 1; }
+    const K = y % 100, J = Math.floor(y / 100);
+    const h = (d + Math.floor((13 * (m + 1)) / 5) + K + Math.floor(K / 4) + Math.floor(J / 4) + 5 * J) % 7;
+    return ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'][h];
+  };
+
+  // ── 1. THE CLIENT IS THE AUTHORITY WHERE WE HAVE IT ──────────────────
+  const seen = new Set();
+  let checked = 0;
+  for (const l of fixtureLines) {
+    const s = core.splitStamp(l);
+    if (!s) continue;
+    checked++;
+    const ours = NAMES[core.civilWeekday(s.at)];
+    assert.equal(ours, s.at.weekday,
+      `we computed ${ours} where the CLIENT wrote ${s.at.weekday} for ${core.formatCivil(s.at)}`);
+    seen.add(s.at.weekday);
+  }
+  assert.ok(checked > 30, `expected the fixture's stamped lines, checked ${checked}`);
+
+  // AND THE CLIENT VALIDATES ZELLER, not the other way round. Without this the
+  // second grounding would be an unverified algorithm I wrote in this file.
+  for (const l of fixtureLines) {
+    const s = core.splitStamp(l);
+    if (!s) continue;
+    assert.equal(zeller(s.at.year, s.at.month, s.at.day), s.at.weekday,
+      'the independent algorithm must agree with the client before it can judge us');
+  }
+
+  // ── 2. ALL SEVEN NAMES, against that now-validated algorithm ─────────
+  const produced = new Set();
+  for (let day = 1; day <= 30; day++) {
+    const at = { year: 2026, month: 9, day, hour: 12, minute: 0, second: 0 };
+    const ours = NAMES[core.civilWeekday(at)];
+    assert.equal(ours, zeller(2026, 9, day),
+      `weekday disagreement on 2026-09-${day}: ours ${ours}`);
+    produced.add(ours);
+  }
+  assert.equal(produced.size, 7,
+    'thirty consecutive days must exercise all seven names, or a rotated table could hide');
+
+  // ── 3. fromCivil IS THE EXACT INVERSE OF civilOf, WEEKDAY INCLUDED ────
+  // The mutation that survived rotated the table inside `fromCivil` only, so a
+  // round trip is what catches it: the weekday that goes in must come back.
+  for (let day = 1; day <= 30; day++) {
+    const at = { weekday: zeller(2026, 9, day), year: 2026, month: 9, day, hour: 13, minute: 45, second: 7 };
+    assert.deepEqual(core.fromCivil(core.civilOf(at)), at,
+      `fromCivil(civilOf(x)) must return x exactly, for 2026-09-${day}`);
+  }
+
+  // THE NEGATIVE CONTROL. A checker that says yes to everything says nothing.
+  assert.notEqual(zeller(2026, 9, 1), zeller(2026, 9, 2),
+    'consecutive days must differ, or this whole test is comparing a constant');
+});

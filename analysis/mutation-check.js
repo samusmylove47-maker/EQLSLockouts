@@ -900,6 +900,107 @@ const MUTATIONS = [
   // which my report did not say. `kills` is the one that matters: dropping the
   // NEWEST kill loses a completion, which is the single failure this tool
   // exists to prevent.
+
+  // ── WORKING THE 42 UNTOUCHED (3 Sep, after the bound family) ───────────
+  //
+  // The count read as 42 unguarded behaviours. It is not: one is the universal
+  // catcher, correctly excluded now, and several are SOURCE-TEXT invariants
+  // rather than behaviour. These are aimed at the genuinely mutable ones.
+
+  { name: 'boss-match-becomes-substring',
+    claim: 'a roster name matches by exact equality, never by substring',
+    // The near-miss names in roster-evidence.json exist precisely because a
+    // substring match would swallow them. This is the mutation those were
+    // collected against, and nothing had ever run it.
+    find: 'function normaliseBossName(name) {\n  return String(name).toLowerCase();\n}',
+    repl: 'function normaliseBossName(name) {\n  return String(name).toLowerCase().replace(/^(a|an|the) /, \'\');\n}',
+    probe: (c) => [c.normaliseBossName('a dracoliche'), c.normaliseBossName('A dracoliche'),
+                   c.RAID_OF_BOSS[c.normaliseBossName('a dracoliche')]] },
+
+  { name: 'slain-and-killer-swapped',
+    claim: 'a kill line yields the SLAIN first and the killer second',
+    // My first version made the first group greedy instead of lazy. That is
+    // behaviour-identical here — the ` has been slain by ` anchor is
+    // unambiguous, so both give the same split — and the harness said INERT.
+    // A mutation has to be able to be wrong before its verdict means anything.
+    find: '    return { kind: \'kill\', at, slain: m[1], killer: m[2], byYou: false };',
+    repl: '    return { kind: \'kill\', at, slain: m[2], killer: m[1], byYou: false };',
+    probe: (c) => {
+      const e = c.parseLine(line(19, 10, 0, 'Innoruuk, the Prince of Hate has been slain by Chrysaetos!'));
+      return e ? [e.slain, e.killer] : null;
+    } },
+
+  { name: 'space-padded-day-rejected',
+    claim: 'a space-padded single-digit day still parses',
+    // Session E found this shape; C measured our corpus as zero-padded and the
+    // tolerance was kept anyway because the failure it prevents is silent.
+    // The test exists. Nothing had ever checked that it could fail.
+    find: 'const TS_RE = /^\\[([A-Za-z]{3}) ([A-Za-z]{3}) {1,2}(\\d{1,2}) (\\d{2}):(\\d{2}):(\\d{2}) (\\d{4})\\] ?(.*)$/;',
+    repl: 'const TS_RE = /^\\[([A-Za-z]{3}) ([A-Za-z]{3}) (\\d{2}):(\\d{2}):(\\d{2}):(\\d{2}) (\\d{4})\\] ?(.*)$/;',
+    probe: (c) => {
+      const e = c.parseLine('[Tue Sep  1 10:00:00 2026] You have entered Nektulos Forest.');
+      const f = c.parseLine('[Tue Sep 01 10:00:00 2026] You have entered Nektulos Forest.');
+      return [e && e.kind, f && f.kind];
+    } },
+
+  { name: 'unstamped-line-is-guessed-at',
+    claim: 'an unstamped line is ignored and counted, never given a stamp',
+    find: '    if (typeof line === \'string\' && line.length && !stamped) state.dropped.unstamped++;',
+    repl: '    if (typeof line === \'string\' && line.length && !stamped) { state.dropped.unstamped++; state.lastSeen = state.lastSeen || 0; }',
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      c.applyLine(st, 'this line has no stamp at all');
+      return [st.dropped.unstamped, st.lastSeen, st.firstSeen];
+    } },
+
+  { name: 'project-accepts-an-epoch',
+    claim: 'project refuses a Date or an epoch rather than guessing a timezone',
+    find: '  if (!now || typeof now !== \'object\' || typeof now.year !== \'number\') {',
+    repl: '  if (false) {',
+    probe: (c) => {
+      const st = stateOf(c, beat(19, 20));
+      try { c.project(st, 1787133600000); return 'ACCEPTED-AN-EPOCH'; }
+      catch (e) { return 'threw:' + e.constructor.name; }
+    } },
+
+  { name: 'shared-lock-assumption-unstated',
+    claim: 'the one-cell-per-raid assumption stays written down in the module',
+    // A source-text invariant, and those are exactly as losable as behaviour:
+    // the sentence is the only thing telling the next reader the cell is an
+    // assumption rather than a measurement.
+    find: '// One cell per raid is correct only if the bosses inside a raid SHARE a lock.',
+    repl: '// One cell per raid.',
+    // THE PROBE MUST NOT SHARE THE TEST'S DEFECT. Written as a whole-file grep
+    // for /SHARE a lock/i — which is what the TEST does — it read "unchanged",
+    // because today I added a SECOND occurrence of that phrase in the Plane of
+    // Hate note. The guard has been satisfiable by unrelated text ever since.
+    // The probe now checks the specific sentence, so the verdict is about the
+    // test rather than about my instrument.
+    probe: () => {
+      const src = fs.readFileSync(REL(FILE_ENGINE), 'utf8');
+      return [/One cell per raid is correct only if/.test(src),
+              (src.match(/share a lock/gi) || []).length];
+    } },
+
+  { name: 'third-kill-shape-quietly-parsed',
+    claim: '"<Name> died." is deliberately NOT parsed — it covers players and pets',
+    find: "const SLAIN_BY_RE = /^(.+?) has been slain by (.+?)!$/;",
+    repl: "const SLAIN_BY_RE = /^(.+?) (?:has been slain by (.+?)!|died\\.)$/;",
+    probe: (c) => {
+      const a = c.parseLine(line(19, 10, 0, 'Avenrae died.'));
+      const b = c.parseLine(line(19, 10, 0, 'Maestro of Rancor has been slain by Chrysaetos!'));
+      return [a && a.kind, a && a.slain, b && b.slain];
+    } },
+
+  { name: 'grid-emits-a-countdown',
+    claim: 'no cell ever carries a countdown — this page has never had one',
+    find: '        difficulty: d,',
+    repl: '        difficulty: d,\n        secondsUntilReset: 3600,',
+    probe: (c) => {
+      const g = c.projectGrid(stateOf(c, beat(19, 20)), NOW);
+      return Object.keys(g.cells[0]).sort().join(',');
+    } },
+
   { name: 'events-bound-drops-the-NEWEST',
     claim: 'the event log drops the OLDEST when bounded',
     find: '  if (state.events.length > MAX_EVENTS) state.events.shift();',
@@ -1268,6 +1369,21 @@ function main() {
   console.log(`  tests in the suite                   : ${totalTests}`);
   console.log(`  tests that failed under >=1 mutation : ${everFired.size}`);
   console.log(`  never exercised by THIS mutation set : ${totalTests - everFired.size}`);
+  // NAME THEM. A count cannot be worked through; a list can. And some of these
+  // are assertions no CODE mutation can reach — repo layout, doc content, git
+  // attributes — which is a different thing from a test that cannot fail, and
+  // the distinction is invisible in the number alone.
+  {
+    const all = [];
+    for (const t of TESTS) {
+      const body = fs.readFileSync(t, 'utf8');
+      for (const m of body.matchAll(/^test\('([^']+)'/gm)) all.push({ file: path.basename(t), name: m[1] });
+    }
+    const untouched = all.filter((t) => !everFired.has(t.name));
+    console.log(`\n  NEVER EXERCISED (${untouched.length}):`);
+    for (const t of untouched) console.log(`    [${t.file}] ${t.name}`);
+    console.log('');
+  }
   console.log('  The last number is a fact about these mutations, NOT proof the');
   console.log('  remaining tests are vacuous. Add mutations to shrink it.');
 
