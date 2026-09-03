@@ -231,6 +231,64 @@ test('BUILD: the licence notice ships with the fonts it describes', () => {
   }
   assert.match(lic, /Reserved Font Name/i, 'the notice must explain the rename');
   assert.match(lic, /name.{0,20}table/i, 'and must state the gap: the rename is CSS-only');
+
+  // ── COVERAGE, NOT EXISTENCE. ─────────────────────────────────────────
+  //
+  // The two assertions above are the ones the 3 Sep guard survey found WEAK.
+  // `/Reserved Font Name/i` matches FOUR times in this file — correctly, there
+  // are four families — so it is satisfied by any one of them, and this test
+  // would pass with three of the four notices deleted. It counted EXISTENCE
+  // where it means COVERAGE, and it could never have caught what it claims.
+  //
+  // Its multiplicity is not the bug and making the pattern unique would not
+  // fix it. The relation being asserted is: EVERY FACE THE ARTIFACT SHIPS HAS
+  // A NOTICE. So the membership is read off the artifact, the way the bound
+  // family reads its members off the source. Embed a fifth font and this fails
+  // until the notice exists.
+  const shipped = [...html.matchAll(/@font-face\s*\{[^}]*\}/g)].map((b) => {
+    const fam = /font-family:\s*'([^']+)'/.exec(b[0]);
+    const wt = /font-weight:\s*(\d+)/.exec(b[0]);
+    return { css: fam && fam[1], weight: wt && wt[1] };
+  });
+  assert.equal(shipped.length, faces.length, 'every @font-face block must be readable');
+  for (const f of shipped) {
+    assert.ok(f.css && f.weight, `an embedded face states no family or weight: ${JSON.stringify(f)}`);
+  }
+
+  // The notice's own table: | upstream | weight | `CSS family` | reserved | ...
+  const rows = [...lic.matchAll(/^\| ([^|]+?) \| (\d+) \| `([^`]+)` \| ([^|]+?) \|/gm)]
+    .map((m) => ({ upstream: m[1].trim(), weight: m[2], css: m[3].trim(), reserved: m[4].trim() }));
+  assert.ok(rows.length > 0, 'the notice must carry its table of embedded faces');
+
+  // FORWARD: every shipped face is described.
+  for (const f of shipped) {
+    const row = rows.find((r) => r.css === f.css && r.weight === f.weight);
+    assert.ok(row, `the page embeds ${f.css} ${f.weight} with NO entry in LICENSES.md`);
+    // And the upstream family it derives from must carry a copyright line.
+    assert.ok(lic.includes(row.upstream),
+      `${row.upstream} is embedded but has no copyright line in the notice`);
+  }
+
+  // REVERSE: a described face that is no longer shipped fails too. Without this
+  // the notice could outlive the font it describes — a guard outliving its
+  // subject, which is the same fault in the other direction.
+  for (const r of rows) {
+    assert.ok(shipped.some((f) => f.css === r.css && f.weight === r.weight),
+      `LICENSES.md describes ${r.css} ${r.weight}, which the page no longer embeds`);
+  }
+  assert.equal(rows.length, shipped.length,
+    'the notice must describe exactly the faces shipped, no more and no fewer');
+
+  // A RESERVED NAME MUST BE EXPLAINED FOR EACH FAMILY THAT DECLARES ONE, and
+  // the CSS family must not be the reserved one.
+  for (const r of rows.filter((x) => x.reserved !== '—')) {
+    const word = /"([^"]+)"/.exec(r.reserved);
+    assert.ok(word, `a reserved-name cell must quote the name: ${r.reserved}`);
+    assert.ok(new RegExp(`reserved font name\\s*"?${word[1]}`, 'i').test(lic),
+      `${r.upstream} reserves ${word[1]} and the notice must quote that reservation`);
+    assert.ok(!r.css.includes(word[1]),
+      `the CSS family ${r.css} must not contain the reserved name ${word[1]}`);
+  }
 });
 
 test('BUILD: no wall-clock time is ever rendered on the page surface', () => {

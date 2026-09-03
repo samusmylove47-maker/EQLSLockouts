@@ -1816,3 +1816,83 @@ test('A NOT_LOOKED CELL SAYS HOW FAR OVER THE TOLERANCE, not just how much is mi
   assert.match(why, /1\.3h over/,
     'the excess is computed from the measured hole and the published tolerance');
 });
+
+test('ROSTER: normaliseBossName is a PURE CASE-FOLD and does nothing else', () => {
+  // This was BLIND: `normaliseBossName` could be loosened — made to strip
+  // leading articles, trim, collapse whitespace — and no test noticed.
+  //
+  // AND THE CONSEQUENCE IS NOT WHAT IT LOOKS LIKE. Article-stripping causes
+  // ZERO false completions on our corpus: every one of the ten near-miss names
+  // in roster-evidence.json still fails to equal a roster key after stripping.
+  // Measured, not assumed. So this is not a live false-completion hazard; it is
+  // CONTRACT EROSION — the folding function can drift with nothing objecting,
+  // and the NEXT loosening, or the next mob name, is where it would land.
+  //
+  // Written against the contract rather than against the consequence, because
+  // the consequence is currently absent and the contract is the thing that
+  // keeps it absent.
+  const n = core.normaliseBossName;
+
+  // Case, and ONLY case.
+  assert.equal(n('Cazic-Thule'), 'cazic-thule', 'case folds');
+  assert.equal(n('a dracoliche'), 'a dracoliche', 'a LEADING ARTICLE IS PART OF THE NAME');
+  assert.equal(n('A dracoliche'), 'a dracoliche', 'and folds with the rest');
+  assert.equal(n('  Terror  '), '  terror  ', 'no trimming — whitespace is not ours to remove');
+  assert.equal(n('Innoruuk,  the Prince'), 'innoruuk,  the prince', 'no whitespace collapsing');
+  assert.equal(n('Innoruuk`s Chosen'), 'innoruuk`s chosen', 'punctuation survives, backtick included');
+
+  // Derived over the whole roster rather than spot-checked: folding must equal
+  // lower-casing for every key we actually ship.
+  for (const r of core.RAIDS) {
+    for (const b of r.bosses) {
+      assert.equal(n(b), b.toLowerCase(),
+        `${b} must fold to exactly its lower-case form and nothing else`);
+    }
+  }
+
+  // AND THE FOLD MUST STAY INJECTIVE ACROSS THE ROSTER. Two different bosses
+  // folding together is the failure this function could cause, so it is
+  // asserted directly rather than left to follow from the cases above.
+  const folded = core.RAIDS.flatMap((r) => r.bosses).map(n);
+  assert.equal(new Set(folded).size, folded.length,
+    'no two roster names may fold to the same string');
+});
+
+test('ROSTER: every near-miss name in the evidence completes NOTHING', () => {
+  // roster-evidence.json collected ten near-miss names across 189 kills,
+  // specifically because a loose match would swallow them. Until now exactly
+  // THREE of the ten were ever driven through the parser, all of them
+  // Innoruuk's. The fixture existed and sat idle.
+  //
+  // Names are read FROM THE EVIDENCE, never typed here — a typed list would
+  // stop covering the file it came from the moment the file grew.
+  const misses = ROSTER_EVIDENCE.roster.flatMap((r) => r.nearMisses.map((m) => m.name));
+  assert.ok(misses.length >= 10, `expected the collected near misses, got ${misses.length}`);
+
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    // Every near miss, in both kill-line shapes the client writes.
+    ...misses.flatMap((name, i) => [
+      `[Wed Aug 19 20:${String(10 + i).padStart(2, '0')}:00 2026] ${name} has been slain by Orlando!`,
+      `[Wed Aug 19 20:${String(30 + i).padStart(2, '0')}:00 2026] You have slain ${name}!`,
+    ]),
+  ]);
+  assert.equal(st.kills.length, 0,
+    `a near-miss name completed something: ${st.kills.map((k) => k.boss).join(', ')}`);
+
+  const grid = core.projectGrid(st, NOW);
+  assert.equal(grid.completedCount, 0, '189 kills of near-miss names must complete no cell');
+
+  // THE POSITIVE CONTROL. Without it this passes on a parser that reads nothing
+  // at all, which is the shape that has cost me an afternoon today.
+  const ctl = core.createState('Avenrae');
+  core.applyLines(ctl, [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Wed Aug 19 20:30:00 2026] Maestro of Rancor has been slain by Orlando!',
+  ]);
+  assert.equal(ctl.kills.length, 1, 'the instrument must still register a REAL kill');
+  assert.equal(core.projectGrid(ctl, NOW).completedCount, 1);
+});
