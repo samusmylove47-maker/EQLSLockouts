@@ -820,8 +820,8 @@ const MUTATIONS = [
 
   { name: 'character-from-filename-takes-the-server',
     claim: 'the CHARACTER is the first field of the log filename, not the server',
-    find: "  const m = /^eqlog_([^_]+)_/i.exec(String(filename).replace(/^.*[\\/]/, ''));",
-    repl: "  const m = /^eqlog_[^_]+_([^_.]+)/i.exec(String(filename).replace(/^.*[\\/]/, ''));",
+    find: "  const m = /^eqlog_([^_]+)_/i.exec(String(filename)",
+    repl: "  const m = /^eqlog_[^_]+_([^_.]+)/i.exec(String(filename)",
     probe: (c) => [c.characterFromLogFilename('eqlog_Avenrae_rivervale.txt'),
                    c.characterFromLogFilename('C:/x/eqlog_Shara_rivervale_2026-08-19.txt')] },
 
@@ -832,19 +832,24 @@ const MUTATIONS = [
     probe: (c) => {
       const st = stateOf(c, [...beat(8, 21),
         ...grantPair(12, 10, 'Lord Nagafen'), ...grantPair(19, 10, 'Lord Nagafen')]);
-      return JSON.stringify(c.projectReset(st)).slice(0, 200);
+      const r = c.projectReset(st);
+      return r.brackets ? r.brackets.map((b) => b.widthHours) : String(r.provenance);
     } },
 
   { name: 'voidling-bound-drops-the-NEWEST',
     claim: 'the Voidling bound drops the OLDEST second — a refusal degrades to unknown, never to a false refused',
     find: '      if (state.voidlingReplies.length > MAX_VOIDLING_REPLIES) state.voidlingReplies.shift();',
     repl: '      if (state.voidlingReplies.length > MAX_VOIDLING_REPLIES) state.voidlingReplies.pop();',
+    // THE BOUND ONLY RUNS ABOVE MAX_VOIDLING_REPLIES. Pre-fill to exactly the
+    // cap with sentinel values, then add one real reply so the guard fires on
+    // this call. A three-element fixture never reaches it and reports INERT.
     probe: (c) => {
       const st = c.createState('Avenrae');
-      const CLOSE = "Voidling says, 'Your hubris risks our very reality itself.'";
-      for (let i = 0; i < 3; i++) c.applyLine(st, line(19, 10, i * 10, CLOSE));
-      st.voidlingReplies = st.voidlingReplies.slice(0, 2);
-      return st.voidlingReplies.slice();
+      const CAP = c.THRESHOLDS.MAX_VOIDLING_REPLIES;
+      st.voidlingReplies = Array.from({ length: CAP }, (_, i) => i + 1);
+      c.applyLine(st, line(19, 10, 0, "Voidling says, 'Your hubris risks our very reality itself.'"));
+      const v = st.voidlingReplies;
+      return [v.length, v[0], v[v.length - 1]];
     } },
 
   { name: 'task-cadence-dropped',
@@ -860,9 +865,14 @@ const MUTATIONS = [
     claim: 'the request log drops the OLDEST when bounded',
     find: '    if (state.requests.length > MAX_EVENTS) state.requests.shift();',
     repl: '    if (state.requests.length > MAX_EVENTS) state.requests.pop();',
+    // Same shape: pre-fill to the cap so the shift/pop actually runs.
     probe: (c) => {
-      const st = stateOf(c, [line(19, 10, 0, "You say, 'danger'"), line(19, 11, 0, "You say, 'danger'")]);
-      return st.requests.map((r) => r.civil);
+      const st = c.createState('Avenrae');
+      const CAP = c.THRESHOLDS.MAX_EVENTS;
+      st.requests = Array.from({ length: CAP }, (_, i) => ({ civil: i + 1, at: null }));
+      c.applyLine(st, line(19, 10, 0, "You say, 'danger'"));
+      const r = st.requests;
+      return [r.length, r[0].civil, r[r.length - 1].civil];
     } },
 ];
 
