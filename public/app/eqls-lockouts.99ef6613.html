@@ -1178,13 +1178,36 @@ const WEEKLY_TASK_IS_PER_BOSS = false;
 //    activity, not the client's word for the instance shape, and nothing in this
 //    module should key on the shape believing otherwise.
 //
-// 2. **THE PLANE OF HATE LIST IS INCOMPLETE FOR THE RAID SHAPE.** Ten further
-//    bosses from raids-measured.json die inside Plane of Hate instances — but
-//    only in the bare `Zone N` shape, and Innoruuk and the Maestro appear only
-//    in `- Group N`. The two shapes hold different populations. The alt+Z window
+// 2. **THE PLANE OF HATE ROW DESCRIBES THE GROUP INSTANCE.** The alt+Z window
 //    was taken after Group-shape runs, so it could only ever have shown these
 //    two. **A Hate row built from that window describes the group instance and
 //    not the raid instance**, and that is not yet decided anywhere.
+//
+//    ~~"Ten further bosses die in Hate instances but only in the bare `Zone N`
+//    shape. The two shapes hold different populations."~~ **REFUTED 3 Sep 2026,
+//    by me, against my own claim.** raids-measured.json holds 12 distinct Hate
+//    bosses over 65 rows. Split on its own `group_instance` flag:
+//
+//        only in the group shape  2   Innoruuk, Maestro of Rancor
+//        only in the raid shape   1   High Priest M`kari
+//        in BOTH shapes           9
+//
+//    **Nine of the ten "further" bosses die in the group shape as well.** The
+//    two shapes hold LARGELY THE SAME population, not different ones. An
+//    independent pass over the 16 raw logs, classifying through this module's
+//    own `parseLine`, agrees in structure: 12 of 15 distinct named mobs appear
+//    in both, the same 2 group-only, 1 raid-only.
+//
+//    The count of ten was right and the exclusivity was invented. It read as
+//    the strongest argument for splitting this row in two, and it was the one
+//    part of it never measured.
+//
+//    **WHAT SURVIVES, AND IT IS SHARPER.** The two bosses this row is keyed on
+//    are exactly the two never once seen in the raid shape — across 10 raid-
+//    shape Hate visits, neither died. So the raid shape has never produced a
+//    completion for this row. **That is still not a lockout fact:** a shared
+//    population does not imply a shared lock, and neither does a disjoint one.
+//    Whether the shapes lock together is unmeasured and stays unmeasured.
 //
 // 3. **THE PLANE OF FEAR LIST IS COMPLETE AT FIVE.** The only other candidate,
 //    Phoboplasm, fails on its own evidence: it is absent from
@@ -1309,6 +1332,20 @@ const RAIDS = Object.freeze([
     alsoDies: Object.freeze([]),
     singleBoss: false,
     weeklyTaskObserved: false,
+    // WHICH INSTANCE THIS ROW IS ABOUT, on the page rather than in a comment.
+    //
+    // Hate is the one zone where the question is live and reader-facing. Both
+    // of this row's bosses have been seen ONLY in the group shape; the raid
+    // shape was entered 10 times and produced neither. Whether the two shapes
+    // share a lock is UNMEASURED and cannot be settled from our corpus — the
+    // alt+Z window was taken after Group runs, so it could only ever have
+    // returned the group shape. See note 2 above RAIDS.
+    //
+    // Carries no corpus count: 10 visits is a fact about OUR logs, and this
+    // string is read by someone looking at THEIRS.
+    shapeNote: 'both of these have only ever been seen dying in the GROUP ' +
+               'instance — whether the raid shape (“The Plane of Hate N”) ' +
+               'shares this lock is NOT KNOWN, so read this cell as the group one',
   },
 ].map(Object.freeze));
 
@@ -1721,6 +1758,10 @@ function createState(character, opts) {
       singleBoss: r.singleBoss === true,
       // Observed in OUR corpus; not a property of the raid. See the note above.
       weeklyTaskObserved: r.weeklyTaskObserved === true,
+      // Which instance shape the row describes, where that is in doubt. Null
+      // for rows with nothing to say. Copied so a restored snapshot renders
+      // the same tooltip as a live one.
+      shapeNote: r.shapeNote || null,
     })),
     // Kills of roster bosses, each carrying the instance it happened in.
     kills: [],
@@ -2861,6 +2902,9 @@ function projectGrid(state, now) {
         // a claim that the boss can or cannot carry one — the task goes to the
         // first three raids of the week, whichever they are.
         weeklyTaskObserved: entry.weeklyTaskObserved === true,
+        // Which instance shape this row describes, where that is in doubt.
+        // Null for rows with nothing to say — see the Hate entry in RAIDS.
+        shapeNote: entry.shapeNote || null,
         difficulty: d,
         difficultyLabel: DIFFICULTY_LABELS[d],
         state: cellState,
@@ -3838,7 +3882,15 @@ function render() {
           c.alsoDies.join(", ") : "") +
         (c.singleBoss ? "" : BR + BR + "contains: " + c.bosses.join(", ") + BR +
           "(one cell per raid assumes these bosses share a lock — the alt+Z " +
-          "window is consistent with that and does not prove it)");
+          "window is consistent with that and does not prove it)") +
+        /* WHICH INSTANCE THE CELL IS ABOUT. A row can describe the group
+           instance while the same zone also has a raid shape we have never
+           seen produce this row's bosses. Saying so is not a footnote: if the
+           shapes lock separately and we ship one row, the tool tells a player
+           they are locked out of content they can still run, or clear to run
+           content they are locked out of — a wrong answer with a confident
+           face, which is the thing this page exists not to give. */
+        (c.shapeNote ? BR + BR + c.shapeNote : "");
       cell.appendChild(span);
       tr.appendChild(cell);
     }
@@ -3862,6 +3914,13 @@ function render() {
     ["log covers", (g.period.coverageFrom || "—") + "  ..  " + (g.period.coverageTo || "—")],
     ["spans the week", String(g.period.coverageSpansPeriod)],
     ["decoded as", S.decoder || "—"],
+    /* Stated globally because the Hate cell now carries a shape note, and a
+       note on ONE row implies the others are shape-agnostic. They are not:
+       every completion this tool recognises was measured in a GROUP instance.
+       A caveat that creates a false contrast is worse than no caveat. */
+    ["instance shape", "the completion model was measured entirely in GROUP " +
+                       "instances — whether a zone's raid shape shares the " +
+                       "same lock is not measured"],
     ["evidence", g.period.evidenceNote],
   ];
   for (const [k, v] of rows) {

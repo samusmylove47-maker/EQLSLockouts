@@ -666,6 +666,45 @@ test('RAIDS: the shared-lock ASSUMPTION is stated, not buried', () => {
   assert.match(src, /one cell would hide it/i, 'and what it would fail to show');
 });
 
+test('RAIDS: the Hate row says WHICH INSTANCE SHAPE it describes, on every cell', () => {
+  // The alt+Z window that built this row was taken after Group runs, so it
+  // could only ever have returned the group shape. An instrument that cannot
+  // observe the alternative cannot weigh between them, so the row stays single
+  // and says which shape it is about.
+  //
+  // This is asserted ON THE CELL rather than on RAIDS, because a note that
+  // never reaches a cell is invisible in ordinary output — the exact class the
+  // mutation sweep found guards missing from. A cell renders the same with the
+  // field absent, so nothing but this test can tell.
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Wed Aug 19 20:30:00 2026] Maestro of Rancor has been slain by Chrysaetos!',
+  ]);
+  const cells = core.projectGrid(st, NOW).cells;
+  const hate = cells.filter((c) => c.label === 'Plane of Hate');
+  assert.equal(hate.length, 5, 'all five difficulties');
+  for (const c of hate) {
+    assert.match(c.shapeNote, /GROUP/, `D${c.difficulty} must name the shape observed`);
+    assert.match(c.shapeNote, /NOT KNOWN/, 'and refuse to state what was not measured');
+  }
+  // Completed or not, the note is the same — it is a fact about the roster row,
+  // not about this player's week.
+  assert.equal(hate.find((c) => c.difficulty === 4).state, 'completed');
+  assert.equal(hate.find((c) => c.difficulty === 4).shapeNote, hate.find((c) => c.difficulty === 0).shapeNote);
+
+  // And it carries NO corpus count. "10 raid-shape visits" is a fact about our
+  // logs, and this string is read by someone looking at theirs.
+  assert.doesNotMatch(hate[0].shapeNote, /\d/, 'no number from our corpus may ride into the reader’s tooltip');
+
+  // Every other row states nothing rather than something false: the shape
+  // question is live for Hate and unraised elsewhere.
+  for (const c of cells.filter((x) => x.label !== 'Plane of Hate')) {
+    assert.equal(c.shapeNote, null, `${c.label} must not inherit Hate’s caveat`);
+  }
+});
+
 test('RAIDS: a kill records both the raid and the boss', () => {
   const st = core.createState('Avenrae');
   core.applyLines(st, [
@@ -1005,6 +1044,7 @@ const GRID_SHAPE = [
   'cells[].label',
   'cells[].raid',
   'cells[].repeatKills',
+  'cells[].shapeNote',
   'cells[].shapes',
   'cells[].singleBoss',
   'cells[].state',
@@ -1028,6 +1068,7 @@ const GRID_SHAPE = [
   'notLooked[].label',
   'notLooked[].raid',
   'notLooked[].repeatKills',
+  'notLooked[].shapeNote',
   'notLooked[].shapes',
   'notLooked[].singleBoss',
   'notLooked[].state',

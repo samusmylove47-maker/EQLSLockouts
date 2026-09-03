@@ -146,6 +146,34 @@ was a clearance asserted without a string.
 My hexdump was piped through `grep`, which strips the terminator and appends its
 own LF. **I hexdumped my instrument, not the file.**
 
+### ~~"Hate's group and raid shapes hold different populations."~~ REFUTED 3 Sep 2026
+
+I wrote that ten further bosses die in Hate instances **only** in the bare
+`Zone N` raid shape. The count was right; the exclusivity was never measured.
+Split raids-measured.json's 65 Hate rows on its own `group_instance` flag:
+
+| | bosses |
+|---|---|
+| only in the group shape | **2** — Innoruuk, Maestro of Rancor |
+| only in the raid shape | **1** — High Priest M`kari |
+| in **both** shapes | **9** |
+
+**Nine of the ten die in the group shape too.** A second pass over the 16 raw
+logs through `lockoutCore.parseLine` agrees in structure — 12 of 15 distinct
+named mobs in both, same 2 group-only, 1 raid-only.
+
+**This was the strongest argument for splitting the Hate row in two, and it was
+the part of it I had never checked.** It is also the argument I put to the
+Director, who repeated it back to me in a ruling. Refuted in my own favour's
+opposite direction: the shapes are more alike than I claimed, not less.
+
+**What survives is sharper.** The two bosses this row is keyed on are exactly
+the two never seen in the raid shape — 10 raid-shape Hate visits, neither boss.
+So the raid shape has never produced a completion for this row. **That is still
+not a lockout fact.** A shared population does not imply a shared lock, and a
+disjoint one would not imply two. The question the Director put to the owner is
+unaffected; only my evidence for asking it was wrong.
+
 ---
 
 ## Traps — each one cost someone a wrong answer
@@ -255,5 +283,5 @@ into a fake event. Other players are never named outside the credits.
 | Solo instances | never observed in 16 files; the window says they exist |
 | do bosses in a raid share a lock? | a run clearing *some* of a zone's bosses, then evidence about the others |
 | Group vs raid instance — one lock or two? | unmeasured; the grid carries `shapes` so it stays answerable |
-| Plane of Hate row shape | **Director's ruling.** Ten further bosses die in Hate instances, but only in the bare `Zone N` shape; Innoruuk and the Maestro only in `- Group N`. The two shapes hold different populations. |
+| Plane of Hate row shape | **Director's ruling: CANNOT-TELL**, and the reason is a sampling artefact — the alt+Z window was taken after Group runs, so it could only ever have returned the group shape. The row stays single and is marked as describing the group instance. **The "different populations" evidence I gave for it is REFUTED — see the correction below.** |
 | clause 2 and 4 amendments | **I have never received their content.** Asked four times. |
