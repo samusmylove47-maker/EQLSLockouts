@@ -826,7 +826,15 @@ function render() {
           c.alsoDies.join(", ") : "") +
         (c.singleBoss ? "" : BR + BR + "contains: " + c.bosses.join(", ") + BR +
           "(one cell per raid assumes these bosses share a lock — the alt+Z " +
-          "window is consistent with that and does not prove it)");
+          "window is consistent with that and does not prove it)") +
+        /* WHICH INSTANCE THE CELL IS ABOUT. A row can describe the group
+           instance while the same zone also has a raid shape we have never
+           seen produce this row's bosses. Saying so is not a footnote: if the
+           shapes lock separately and we ship one row, the tool tells a player
+           they are locked out of content they can still run, or clear to run
+           content they are locked out of — a wrong answer with a confident
+           face, which is the thing this page exists not to give. */
+        (c.shapeNote ? BR + BR + c.shapeNote : "");
       cell.appendChild(span);
       tr.appendChild(cell);
     }
@@ -850,6 +858,25 @@ function render() {
     ["log covers", (g.period.coverageFrom || "—") + "  ..  " + (g.period.coverageTo || "—")],
     ["spans the week", String(g.period.coverageSpansPeriod)],
     ["decoded as", S.decoder || "—"],
+    /* Stated globally because the Hate cell now carries a shape note, and a
+       note on ONE row implies the others are shape-agnostic. They are not:
+       every completion this tool recognises was measured in a GROUP instance.
+       A caveat that creates a false contrast is worse than no caveat. */
+    ["instance shape", "every cell here is a GROUP instance — the completion " +
+                       "model was measured entirely in them, and raid-shape " +
+                       "instances lock separately (owner, stated) and are NOT " +
+                       "tracked by this page"],
+    /* A LIMIT OF THE EVIDENCE, NOT OF THIS LOG. The corpus these rules were
+       derived from spans a change to the weekly reset announced by staff on
+       18 Aug 2026, and the constants sit either side of it: the reset bracket
+       and the 3-per-week cap were measured before, the lockout model after.
+       Comparing the two halves showed the reset weekday agreeing across the
+       boundary, which is why nothing here is withdrawn — but a reader acting
+       on these numbers is entitled to know they were not all taken under the
+       same conditions. Stated, with the broadcast as its source. */
+    ["regime", "the rules here come from a corpus spanning a weekly-reset " +
+               "change announced 18 Aug 2026 — measured either side, the reset " +
+               "weekday agrees; the reset hour was never measured in either"],
     ["evidence", g.period.evidenceNote],
   ];
   for (const [k, v] of rows) {

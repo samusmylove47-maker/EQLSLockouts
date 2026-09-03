@@ -136,6 +136,15 @@ function built() {
   };
 }
 
+// Does the BUILT page still SAY a thing? `built()` reports fonts and urls; a
+// provenance row is a sentence, and a sentence needs its own reader.
+function builtSays(re) {
+  const b = built();
+  if (b === 'BUILD-FAILED') return b;
+  const name = fs.readFileSync(path.join(OUT, 'latest.txt'), 'utf8').trim();
+  return re.test(fs.readFileSync(path.join(OUT, name), 'utf8'));
+}
+
 // ---------------------------------------------------------------------------
 // The mutations. Each names the CLAIM it tests.
 // ---------------------------------------------------------------------------
@@ -752,7 +761,10 @@ const MUTATIONS = [
 
   { name: 'beyond-horizon-counter-never-fires',
     claim: 'a line older than the whole index is COUNTED, not silently accepted',
-    find: '  if (state.seenCount >= MAX_SEEN && civil < oldestSeen(state)) {',
+    // ANCHOR REPAIRED 3 Sep: the 1 Sep horizon fix moved both operands out of
+    // this line and the harness went NOANCHOR — correctly reporting itself stale
+    // rather than reporting the guard as blind.
+    find: '  if (horizonCount >= MAX_SEEN && civil < horizonOldest) {',
     repl: '  if (false) {',
     probe: (c) => {
       const st = c.createState('Avenrae');
@@ -787,6 +799,376 @@ const MUTATIONS = [
       const g = c.projectGrid(st, NOW);
       return [g.period.coverageHoles.length, g.period.coverageSpansPeriod];
     } },
+  // -- R177 SWEEP, 3 Sep: SEVEN INVISIBLE MECHANISMS, NONE PREVIOUSLY TOUCHED
+  //
+  // Chosen by the heuristic, not by guessing: each one's correctness never
+  // appears in ordinary output, and each needs a constructed input to see fail.
+
+  { name: 'observed-fraction-double-counts-overlap',
+    claim: 'overlapping spans are counted ONCE toward the observed fraction',
+    find: '    if (b > a && b > cursorObs) observedMs += b - Math.max(a, cursorObs);',
+    repl: '    if (b > a) observedMs += b - a;',
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      // Two DELIBERATELY overlapping spans, which noteCoverage would merge but
+      // a restored/persisted state can carry.
+      st.spans = [{ from: Date.UTC(2026,7,18,0,0,0), to: Date.UTC(2026,7,20,0,0,0) },
+                  { from: Date.UTC(2026,7,19,0,0,0), to: Date.UTC(2026,7,21,0,0,0) }];
+      st.firstSeen = st.spans[0].from; st.lastSeen = st.spans[1].to;
+      return c.projectGrid(st, NOW).period.coverageObservedFraction;
+    } },
+
+  { name: 'from-civil-weekday-off-by-one',
+    claim: 'fromCivil is the exact inverse of civilOf, weekday included',
+    find: "    weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()],",
+    repl: "    weekday: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d.getUTCDay()],",
+    probe: (c) => {
+      const at = { weekday: 'Wed', year: 2026, month: 8, day: 19, hour: 10, minute: 0, second: 0 };
+      return JSON.stringify(c.fromCivil(c.civilOf(at)));
+    } },
+
+  { name: 'character-from-filename-takes-the-server',
+    claim: 'the CHARACTER is the first field of the log filename, not the server',
+    find: "  const m = /^eqlog_([^_]+)_/i.exec(String(filename)",
+    repl: "  const m = /^eqlog_[^_]+_([^_.]+)/i.exec(String(filename)",
+    probe: (c) => [c.characterFromLogFilename('eqlog_Avenrae_rivervale.txt'),
+                   c.characterFromLogFilename('C:/x/eqlog_Shara_rivervale_2026-08-19.txt')] },
+
+  { name: 'bracket-width-measured-from-the-wrong-end',
+    claim: 'a reset bracket is as wide as the interval it brackets',
+    find: '        widthHours: (next.civil - after.civil) / 3600000,',
+    repl: '        widthHours: 0,',
+    probe: (c) => {
+      const st = stateOf(c, [...beat(8, 21),
+        ...grantPair(12, 10, 'Lord Nagafen'), ...grantPair(19, 10, 'Lord Nagafen')]);
+      const r = c.projectReset(st);
+      return r.brackets ? r.brackets.map((b) => b.widthHours) : String(r.provenance);
+    } },
+
+  { name: 'voidling-bound-drops-the-NEWEST',
+    claim: 'the Voidling bound drops the OLDEST second — a refusal degrades to unknown, never to a false refused',
+    find: '      if (state.voidlingReplies.length > MAX_VOIDLING_REPLIES) state.voidlingReplies.shift();',
+    repl: '      if (state.voidlingReplies.length > MAX_VOIDLING_REPLIES) state.voidlingReplies.pop();',
+    // THE BOUND ONLY RUNS ABOVE MAX_VOIDLING_REPLIES. Pre-fill to exactly the
+    // cap with sentinel values, then add one real reply so the guard fires on
+    // this call. A three-element fixture never reaches it and reports INERT.
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      const CAP = c.THRESHOLDS.MAX_VOIDLING_REPLIES;
+      st.voidlingReplies = Array.from({ length: CAP }, (_, i) => i + 1);
+      c.applyLine(st, line(19, 10, 0, "Voidling says, 'Your hubris risks our very reality itself.'"));
+      const v = st.voidlingReplies;
+      return [v.length, v[0], v[v.length - 1]];
+    } },
+
+  { name: 'task-cadence-dropped',
+    claim: 'a task name yields series, boss AND cadence — cadence is what makes it weekly',
+    find: '  return { task: taskName, series: m[1], boss: m[2], cadence: m[3] };',
+    repl: '  return { task: taskName, series: m[1], boss: m[2], cadence: null };',
+    probe: (c) => {
+      const e = c.parseLine(line(19, 10, 0, "You have been assigned the task 'Potential of the Void - Lord Nagafen - Weekly'."));
+      return e ? [e.series, e.boss, e.cadence] : null;
+    } },
+
+  { name: 'requests-bound-drops-the-NEWEST',
+    claim: 'the request log drops the OLDEST when bounded',
+    find: '    if (state.requests.length > MAX_EVENTS) state.requests.shift();',
+    repl: '    if (state.requests.length > MAX_EVENTS) state.requests.pop();',
+    // Same shape: pre-fill to the cap so the shift/pop actually runs.
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      const CAP = c.THRESHOLDS.MAX_EVENTS;
+      st.requests = Array.from({ length: CAP }, (_, i) => ({ civil: i + 1, at: null }));
+      c.applyLine(st, line(19, 10, 0, "You say, 'danger'"));
+      const r = st.requests;
+      return [r.length, r[0].civil, r[r.length - 1].civil];
+    } },
+
+  // ── AIMED AT TODAY'S OWN ADDITIONS (3 Sep) ─────────────────────────────
+  //
+  // Everything below was written in the last few hours, fast, to satisfy the
+  // Director's rulings, and none of it had ever been graded. Their stated
+  // prediction: assertions written to DEMONSTRATE COMPLIANCE are the ones most
+  // likely to be unfalsifiable. One had already proved it — the
+  // instance-created branch was nested where it could never run, and the
+  // "changes no cell" assertion passed, because a dead branch also changes no
+  // cell. These are aimed at the rest of that day's work.
+
+
+  // ── THE REST OF THE BOUND FAMILY. The Director named three; there are FIVE.
+  // `events` and `kills` had never been mutated at all — not blind, UNMEASURED,
+  // which my report did not say. `kills` is the one that matters: dropping the
+  // NEWEST kill loses a completion, which is the single failure this tool
+  // exists to prevent.
+
+  // ── WORKING THE 42 UNTOUCHED (3 Sep, after the bound family) ───────────
+  //
+  // The count read as 42 unguarded behaviours. It is not: one is the universal
+  // catcher, correctly excluded now, and several are SOURCE-TEXT invariants
+  // rather than behaviour. These are aimed at the genuinely mutable ones.
+
+  { name: 'boss-match-becomes-substring',
+    claim: 'a roster name matches by exact equality, never by substring',
+    // The near-miss names in roster-evidence.json exist precisely because a
+    // substring match would swallow them. This is the mutation those were
+    // collected against, and nothing had ever run it.
+    find: 'function normaliseBossName(name) {\n  return String(name).toLowerCase();\n}',
+    repl: 'function normaliseBossName(name) {\n  return String(name).toLowerCase().replace(/^(a|an|the) /, \'\');\n}',
+    probe: (c) => [c.normaliseBossName('a dracoliche'), c.normaliseBossName('A dracoliche'),
+                   c.RAID_OF_BOSS[c.normaliseBossName('a dracoliche')]] },
+
+  { name: 'slain-and-killer-swapped',
+    claim: 'a kill line yields the SLAIN first and the killer second',
+    // My first version made the first group greedy instead of lazy. That is
+    // behaviour-identical here — the ` has been slain by ` anchor is
+    // unambiguous, so both give the same split — and the harness said INERT.
+    // A mutation has to be able to be wrong before its verdict means anything.
+    find: '    return { kind: \'kill\', at, slain: m[1], killer: m[2], byYou: false };',
+    repl: '    return { kind: \'kill\', at, slain: m[2], killer: m[1], byYou: false };',
+    probe: (c) => {
+      const e = c.parseLine(line(19, 10, 0, 'Innoruuk, the Prince of Hate has been slain by Chrysaetos!'));
+      return e ? [e.slain, e.killer] : null;
+    } },
+
+  { name: 'space-padded-day-rejected',
+    claim: 'a space-padded single-digit day still parses',
+    // Session E found this shape; C measured our corpus as zero-padded and the
+    // tolerance was kept anyway because the failure it prevents is silent.
+    // The test exists. Nothing had ever checked that it could fail.
+    find: 'const TS_RE = /^\\[([A-Za-z]{3}) ([A-Za-z]{3}) {1,2}(\\d{1,2}) (\\d{2}):(\\d{2}):(\\d{2}) (\\d{4})\\] ?(.*)$/;',
+    repl: 'const TS_RE = /^\\[([A-Za-z]{3}) ([A-Za-z]{3}) (\\d{2}):(\\d{2}):(\\d{2}):(\\d{2}) (\\d{4})\\] ?(.*)$/;',
+    probe: (c) => {
+      const e = c.parseLine('[Tue Sep  1 10:00:00 2026] You have entered Nektulos Forest.');
+      const f = c.parseLine('[Tue Sep 01 10:00:00 2026] You have entered Nektulos Forest.');
+      return [e && e.kind, f && f.kind];
+    } },
+
+  { name: 'unstamped-line-is-guessed-at',
+    claim: 'an unstamped line is ignored and counted, never given a stamp',
+    find: '    if (typeof line === \'string\' && line.length && !stamped) state.dropped.unstamped++;',
+    repl: '    if (typeof line === \'string\' && line.length && !stamped) { state.dropped.unstamped++; state.lastSeen = state.lastSeen || 0; }',
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      c.applyLine(st, 'this line has no stamp at all');
+      return [st.dropped.unstamped, st.lastSeen, st.firstSeen];
+    } },
+
+  { name: 'project-accepts-an-epoch',
+    claim: 'project refuses a Date or an epoch rather than guessing a timezone',
+    find: '  if (!now || typeof now !== \'object\' || typeof now.year !== \'number\') {',
+    repl: '  if (false) {',
+    probe: (c) => {
+      const st = stateOf(c, beat(19, 20));
+      try { c.project(st, 1787133600000); return 'ACCEPTED-AN-EPOCH'; }
+      catch (e) { return 'threw:' + e.constructor.name; }
+    } },
+
+  { name: 'shared-lock-assumption-unstated',
+    claim: 'the one-cell-per-raid assumption stays written down in the module',
+    // A source-text invariant, and those are exactly as losable as behaviour:
+    // the sentence is the only thing telling the next reader the cell is an
+    // assumption rather than a measurement.
+    find: '// One cell per raid is correct only if the bosses inside a raid SHARE a lock.',
+    repl: '// One cell per raid.',
+    // THE PROBE MUST NOT SHARE THE TEST'S DEFECT. Written as a whole-file grep
+    // for /SHARE a lock/i — which is what the TEST does — it read "unchanged",
+    // because today I added a SECOND occurrence of that phrase in the Plane of
+    // Hate note. The guard has been satisfiable by unrelated text ever since.
+    // The probe now checks the specific sentence, so the verdict is about the
+    // test rather than about my instrument.
+    probe: () => {
+      const src = fs.readFileSync(REL(FILE_ENGINE), 'utf8');
+      return [/One cell per raid is correct only if/.test(src),
+              (src.match(/share a lock/gi) || []).length];
+    } },
+
+  { name: 'third-kill-shape-quietly-parsed',
+    claim: '"<Name> died." is deliberately NOT parsed — it covers players and pets',
+    find: "const SLAIN_BY_RE = /^(.+?) has been slain by (.+?)!$/;",
+    repl: "const SLAIN_BY_RE = /^(.+?) (?:has been slain by (.+?)!|died\\.)$/;",
+    probe: (c) => {
+      const a = c.parseLine(line(19, 10, 0, 'Avenrae died.'));
+      const b = c.parseLine(line(19, 10, 0, 'Maestro of Rancor has been slain by Chrysaetos!'));
+      return [a && a.kind, a && a.slain, b && b.slain];
+    } },
+
+  { name: 'grid-emits-a-countdown',
+    claim: 'no cell ever carries a countdown — this page has never had one',
+    find: '        difficulty: d,',
+    repl: '        difficulty: d,\n        secondsUntilReset: 3600,',
+    probe: (c) => {
+      const g = c.projectGrid(stateOf(c, beat(19, 20)), NOW);
+      return Object.keys(g.cells[0]).sort().join(',');
+    } },
+
+  { name: 'events-bound-drops-the-NEWEST',
+    claim: 'the event log drops the OLDEST when bounded',
+    find: '  if (state.events.length > MAX_EVENTS) state.events.shift();',
+    repl: '  if (state.events.length > MAX_EVENTS) state.events.pop();',
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      const CAP = c.THRESHOLDS.MAX_EVENTS;
+      st.events = Array.from({ length: CAP }, (_, i) => ({ key: 'k' + i, kind: 'x', civil: i + 1, at: null }));
+      c.applyLine(st, line(19, 10, 0, 'You have entered Nektulos Forest.'));
+      const e = st.events;
+      return [e.length, e[0].civil, e[e.length - 1].kind];
+    } },
+
+  { name: 'kills-bound-drops-the-NEWEST',
+    claim: 'the kill log drops the OLDEST when bounded — a dropped NEWEST kill is a lost completion',
+    find: '      if (state.kills.length > MAX_EVENTS) state.kills.shift();',
+    repl: '      if (state.kills.length > MAX_EVENTS) state.kills.pop();',
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      const CAP = c.THRESHOLDS.MAX_EVENTS;
+      st.kills = Array.from({ length: CAP }, (_, i) => ({ civil: i + 1, boss: 'filler' + i, raid: 'x' }));
+      c.applyLines(st, [
+        line(19, 10, 0, 'You have entered The Plane of Hate - Group 4 (Refined).'),
+        line(19, 10, 30, 'Maestro of Rancor has been slain by Chrysaetos!'),
+      ]);
+      const k = st.kills;
+      return [k.length, k[0].boss, k[k.length - 1].boss];
+    } },
+
+  { name: 'creating-instance-regex-broken',
+    claim: 'the only line that identifies an instance is parsed at all',
+    find: 'const CREATING_RE = /^Player (.+?) creating instance (.+?) (\\d+)\\.$/;',
+    repl: 'const CREATING_RE = /^Player (.+?) creating expedition (.+?) (\\d+)\\.$/;',
+    probe: (c) => {
+      const e = c.parseLine(line(19, 10, 0, 'Player Avenrae creating instance The Plane of Hate 3846.'));
+      return e ? [e.kind, e.instanceId, e.zone] : null;
+    } },
+
+  { name: 'instance-created-branch-renested',
+    claim: 'the creation branch sits where it can actually run',
+    // THE EXACT BUG I SHIPPED AND CAUGHT. Nesting it under the entered/invite
+    // guard leaves it unreachable. A guard asserting only that cells do not
+    // move is satisfied by a branch that never executes, so this mutation is
+    // what says whether the POSITIVE half of that test exists.
+    find: "  if (ev.kind === 'instance-created') {",
+    repl: "  if (ev.kind === 'instance-created' && ev.kind === 'entered') {",
+    probe: (c) => stateOf(c, [line(19, 10, 0, 'Player Avenrae creating instance The Plane of Hate 3846.')]).instanceCreations.length },
+
+  { name: 'instance-creations-bound-drops-the-NEWEST',
+    claim: 'the creation log drops the OLDEST when bounded',
+    find: '    if (state.instanceCreations.length > MAX_INSTANCE_CREATIONS) state.instanceCreations.shift();',
+    repl: '    if (state.instanceCreations.length > MAX_INSTANCE_CREATIONS) state.instanceCreations.pop();',
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      for (let i = 0; i < 2005; i++) {
+        const mm = i % 1440, d = 1 + Math.floor(i / 1440);
+        c.applyLine(st, line(d, Math.floor(mm / 60), mm % 60,
+          'Player Avenrae creating instance The Plane of Hate ' + (1000 + i) + '.'));
+      }
+      const a = st.instanceCreations;
+      return [a.length, a[0] && a[0].instanceId, a[a.length - 1] && a[a.length - 1].instanceId];
+    } },
+
+  { name: 'instanced-entries-never-counted',
+    claim: 'the denominator beside the creation count is real',
+    find: '      if (ev.instanced) state.instancedEntries++;',
+    repl: '      if (false) state.instancedEntries++;',
+    probe: (c) => {
+      const st = stateOf(c, [
+        line(19, 10, 0, 'You have entered The Plane of Hate - Group 4 (Refined).'),
+        line(19, 10, 5, 'Player Avenrae creating instance The Plane of Hate 3846.'),
+      ]);
+      const g = c.projectGrid(st, NOW);
+      return [g.instanceCreations.instancedEntries, g.instanceCreations.coveragePct];
+    } },
+
+  { name: 'coverage-pct-zero-instead-of-null',
+    claim: 'no denominator yields NO PERCENTAGE, never 0%',
+    // 0% asserts a measured absence where there is nothing to measure against.
+    // The Director called this field the unifying law reduced to one line,
+    // which makes it exactly the kind written to please rather than to catch.
+    // Either a test fails here or the law is decoration.
+    find: '        : null,',
+    repl: '        : 0,',
+    probe: (c) => c.projectGrid(c.createState('Avenrae'), NOW).instanceCreations.coveragePct },
+
+  { name: 'shape-note-never-reaches-the-cell',
+    claim: 'the Hate cells say which instance shape they describe',
+    find: '        shapeNote: entry.shapeNote || null,',
+    repl: '        shapeNote: null,',
+    probe: (c) => {
+      const g = c.projectGrid(stateOf(c, beat(19, 20)), NOW);
+      return g.cells.filter((x) => x.label === 'Plane of Hate').map((x) => x.shapeNote && x.shapeNote.slice(0, 30));
+    } },
+
+  { name: 'shape-note-leaks-to-every-row',
+    claim: 'only the row with a shape question carries the caveat',
+    // A caveat on every row is as wrong as a caveat on none: it would tell a
+    // reader that Nagafen's Lair has a raid-shape ambiguity nobody measured.
+    find: '        shapeNote: entry.shapeNote || null,',
+    repl: "        shapeNote: entry.shapeNote || 'this cell is the GROUP instance (stated)',",
+    probe: (c) => {
+      const g = c.projectGrid(stateOf(c, beat(19, 20)), NOW);
+      return g.cells.filter((x) => x.label !== 'Plane of Hate' && x.shapeNote !== null).length;
+    } },
+
+  { name: 'shape-note-claims-it-was-measured',
+    claim: 'a stated fact never dresses itself as an observation',
+    // The owner told us; we did not measure it and could not have. The
+    // assertion guarding this was written today — in a first version that
+    // could not tell the claim "measured by us" from its own denial "not
+    // measured by us".
+    // ANCHOR WRITTEN AGAINST A DEAD DRAFT. My first version quoted the note's
+    // ORIGINAL wording, from before the owner answered and the note stopped
+    // hedging. The harness reported NOANCHOR — stale instrument, not a finding.
+    find: "               'tracked here — owner, stated, not measured by us',",
+    repl: "               'tracked here — owner, observed and measured by us',",
+    probe: (c) => {
+      const g = c.projectGrid(stateOf(c, beat(19, 20)), NOW);
+      const h = g.cells.find((x) => x.label === 'Plane of Hate');
+      return h && h.shapeNote;
+    } },
+
+  { name: 'the-witness-leaks-into-a-cell',
+    claim: 'a creation line moves NO cell — the witness never becomes a model',
+    // The deepEqual guard exists to stop the instance id being used to decide
+    // something once that looks convenient. If nothing fails here, the guard is
+    // decoration and the id is one edit from driving state unnoticed.
+    find: '        singleBoss: entry.singleBoss === true,',
+    repl: '        singleBoss: state.instanceCreations.length ? false : entry.singleBoss === true,',
+    probe: (c) => {
+      const st = stateOf(c, [
+        ...beat(19, 20),
+        line(20, 21, 0, 'Player Avenrae creating instance The Plane of Hate 3846.'),
+      ]);
+      return c.projectGrid(st, NOW).cells.map((x) => x.singleBoss).join(',');
+    } },
+
+  { name: 'regime-provenance-row-removed',
+    file: FILE_TEMPLATE,
+    claim: 'the page states that its rules span a weekly-reset change',
+    find: '    ["regime", "the rules here come from a corpus spanning a weekly-reset " +',
+    repl: '    ["regime", "not stated"], ["regime-dead", "" +',
+    // THE REGEX MUST NOT SPAN A CONCATENATION. The page embeds the template's
+    // JS as source, so `"...a weekly-reset " + "change announced 18 Aug..."`
+    // appears with the `" +` break intact. My first probe matched across it,
+    // found nothing on CLEAN code, and reported INERT — correctly, and about my
+    // instrument rather than the page.
+    // AND IT MUST TARGET THE LINE THE MUTATION ACTUALLY REPLACES. Aimed at the
+    // SECOND literal, the probe read `true` either way — the mutation removes
+    // the row's first line and leaves the rest as dead source, which the page
+    // still embeds. INERT again, and again about my instrument.
+    probe: () => builtSays(/the rules here come from a corpus spanning a weekly-reset/) },
+
+  { name: 'instance-shape-provenance-row-removed',
+    file: FILE_TEMPLATE,
+    claim: 'the page states that every cell is a group instance',
+    find: '    ["instance shape", "every cell here is a GROUP instance — the completion " +',
+    repl: '    ["instance shape", "not stated"], ["shape-dead", "" +',
+    probe: () => builtSays(/every cell here is a GROUP instance/) },
+];
+
+
+// Tests that fail on ANY edit to a built source file, behavioural or not.
+// They are legitimate tests and useless as mutation catchers: see the note at
+// the verdict. Matched by substring against the test name.
+const UNIVERSAL_CATCHERS = [
+  'the COMMITTED latest.txt names what the CURRENT SOURCE produces',
 ];
 
 const MUTABLE = [FILE_ENGINE, FILE_TEMPLATE, FILE_BUILD];
@@ -874,10 +1256,40 @@ function main() {
     restore();
     delete require.cache[require.resolve(SRC)];
 
-    for (const n of res.names) everFired.add(n);
+    // The universal catcher fires on ANY edit, so counting it here would
+    // inflate SURFACE by one test that no mutation actually exercises.
+    for (const n of res.names) {
+      if (UNIVERSAL_CATCHERS.some((u) => n.includes(u))) continue;
+      everFired.add(n);
+    }
+
+    // ── A UNIVERSAL CATCHER IS NOT A CATCHER. ────────────────────────────
+    //
+    // `BUILD: the COMMITTED latest.txt names what the CURRENT SOURCE produces`
+    // compares the committed artifact pointer against a fresh build, so ANY
+    // edit to a built source file fails it — including one that changes no
+    // behaviour at all. PROVEN, not assumed: appending a lone comment line to
+    // src/lockoutCore.js fails that test and nothing else.
+    //
+    // It is a good test. It is not a behavioural guard, and counting it as one
+    // made this harness report CAUGHT for every mutation that touched the
+    // engine. **79 of 79 listed it. Six were caught by NOTHING ELSE**, and I
+    // had reported those to the Director as guarded.
+    //
+    // The verdict now ignores it. A mutation whose only catcher was the pointer
+    // is BLIND, which is what it always was.
+    const universal = [...res.names].filter((n) => UNIVERSAL_CATCHERS.some((u) => n.includes(u)));
+    const real = [...res.names].filter((n) => !UNIVERSAL_CATCHERS.some((u) => n.includes(u)));
 
     if (!live) {
       rows.push({ mut, outcome: 'INERT', detail: `probe unchanged (${before})` });
+    } else if (real.length === 0 && universal.length > 0) {
+      rows.push({
+        mut,
+        outcome: 'BLIND',
+        detail: `probe ${before} -> ${after}; only the universal catcher fired ` +
+                `(${universal.join(', ')}) — no test asserts this behaviour`,
+      });
     } else if (res.failCount > 0) {
       // NAME THE TESTS, NOT JUST THE FILES — R143.
       //
@@ -891,7 +1303,7 @@ function main() {
         mut,
         outcome: 'CAUGHT',
         detail: `${res.failCount} assertion(s) in ${res.failedFiles.join(', ')}`,
-        catchers: [...res.names],
+        catchers: real,
       });
     } else {
       rows.push({ mut, outcome: 'BLIND', detail: `probe ${before} -> ${after}, no test failed` });
@@ -921,10 +1333,57 @@ function main() {
   const totalTests = TESTS.reduce((acc, t) =>
     acc + (fs.readFileSync(t, 'utf8').match(/^test\(/gm) || []).length, 0);
 
+  // ── UNMEASURED IS A VERDICT, NOT AN ABSENCE OF ONE. ──────────────────
+  //
+  // `BLIND` means mutated and survived. A site with NO mutation produced no row
+  // at all, and my report rendered the two identically — so `state.events` and
+  // `state.kills` sat outside a bound sweep I had told the Director was
+  // complete. Same defect as counting the universal catcher, in the opposite
+  // direction: one inflated CAUGHT, this one silently shrank the denominator.
+  //
+  // A family is only checkable this way if it can be ENUMERATED FROM SOURCE.
+  // That is the constraint, not a limitation: a hand-written list of sites
+  // would reproduce exactly the gap it is meant to detect.
+  const FAMILIES = [
+    {
+      label: 'bounded arrays — every `.shift()` bound must have a mutation',
+      sites: (src) => [...src.matchAll(/state\.(\w+)\.length > MAX_\w+\) state\.\1\.shift\(\)/g)]
+        .map((m) => m[1]),
+      covered: (site) => MUTATIONS.some((m) => (m.find || '').includes(`state.${site}.length >`)),
+    },
+  ];
+
+  const engineSrc = fs.readFileSync(REL(FILE_ENGINE), 'utf8');
+  const unmeasured = [];
+  console.log('\n=== FAMILY COVERAGE (UNMEASURED, not BLIND) ===');
+  for (const fam of FAMILIES) {
+    const sites = fam.sites(engineSrc);
+    const missing = sites.filter((s) => !fam.covered(s));
+    console.log(`  ${fam.label}`);
+    console.log(`    ${sites.length} site(s) in source, ${sites.length - missing.length} with a mutation`);
+    for (const s of missing) { unmeasured.push(s); console.log(`    UNMEASURED: state.${s} — bounded, never mutated`); }
+    if (!missing.length) console.log('    none unmeasured');
+  }
+
   console.log('\n=== SURFACE ===');
   console.log(`  tests in the suite                   : ${totalTests}`);
   console.log(`  tests that failed under >=1 mutation : ${everFired.size}`);
   console.log(`  never exercised by THIS mutation set : ${totalTests - everFired.size}`);
+  // NAME THEM. A count cannot be worked through; a list can. And some of these
+  // are assertions no CODE mutation can reach — repo layout, doc content, git
+  // attributes — which is a different thing from a test that cannot fail, and
+  // the distinction is invisible in the number alone.
+  {
+    const all = [];
+    for (const t of TESTS) {
+      const body = fs.readFileSync(t, 'utf8');
+      for (const m of body.matchAll(/^test\('([^']+)'/gm)) all.push({ file: path.basename(t), name: m[1] });
+    }
+    const untouched = all.filter((t) => !everFired.has(t.name));
+    console.log(`\n  NEVER EXERCISED (${untouched.length}):`);
+    for (const t of untouched) console.log(`    [${t.file}] ${t.name}`);
+    console.log('');
+  }
   console.log('  The last number is a fact about these mutations, NOT proof the');
   console.log('  remaining tests are vacuous. Add mutations to shrink it.');
 

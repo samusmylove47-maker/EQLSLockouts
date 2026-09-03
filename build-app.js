@@ -147,5 +147,10 @@ process.stdout.write(
   (fonts.count
     ? `  fonts   ${fonts.count} faces, ${fonts.bytes.toLocaleString()} bytes inlined as data: URIs\n`
     : '') +
-  `  page    ${html.length.toLocaleString()} bytes, self-contained\n`
+  // Buffer.byteLength, NOT html.length. `html.length` is UTF-16 code units and
+  // this file is written UTF-8, so the line said "310,060 bytes" for a 312,818
+  // byte file — 1,384 non-ASCII characters (em dashes, curly quotes) at 3 bytes
+  // each and 1 unit each, an exact 2,758 short. It read as a size and was not
+  // one. Found 3 Sep 2026 by comparing this line against `wc -c` on its output.
+  `  page    ${Buffer.byteLength(html, 'utf8').toLocaleString()} bytes, self-contained\n`
 );

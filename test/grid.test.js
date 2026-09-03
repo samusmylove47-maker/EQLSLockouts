@@ -666,6 +666,114 @@ test('RAIDS: the shared-lock ASSUMPTION is stated, not buried', () => {
   assert.match(src, /one cell would hide it/i, 'and what it would fail to show');
 });
 
+test('RAIDS: the Hate row says WHICH INSTANCE SHAPE it describes, on every cell', () => {
+  // The alt+Z window that built this row was taken after Group runs, so it
+  // could only ever have returned the group shape. An instrument that cannot
+  // observe the alternative cannot weigh between them, so the row stays single
+  // and says which shape it is about.
+  //
+  // This is asserted ON THE CELL rather than on RAIDS, because a note that
+  // never reaches a cell is invisible in ordinary output — the exact class the
+  // mutation sweep found guards missing from. A cell renders the same with the
+  // field absent, so nothing but this test can tell.
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Wed Aug 19 20:30:00 2026] Maestro of Rancor has been slain by Chrysaetos!',
+  ]);
+  const cells = core.projectGrid(st, NOW).cells;
+  const hate = cells.filter((c) => c.label === 'Plane of Hate');
+  assert.equal(hate.length, 5, 'all five difficulties');
+  for (const c of hate) {
+    assert.match(c.shapeNote, /GROUP/, `D${c.difficulty} must name the shape it describes`);
+    assert.match(c.shapeNote, /SEPARATE lockout/, 'and state what the owner settled');
+    // The owner ANSWERED this on 3 Sep 2026; we did not measure it, and could
+    // not have — zero roster kills have ever happened in a raid-shape instance.
+    // A settled fact still has to carry the provenance it was settled by, the
+    // same way RESET_RULE says `stated`. Claiming measurement we do not have is
+    // the failure this whole vocabulary exists to prevent.
+    assert.match(c.shapeNote, /stated/, 'labelled as testimony, not as measurement');
+    // The lookbehind is load-bearing. Written as /measured by us/ this fired on
+    // the note's own DISCLAIMER, "not measured by us" — an assertion that
+    // cannot tell a claim from its denial. It is the phrase the metalist
+    // already uses for RESET_RULE, so the wording stayed and the test was fixed.
+    assert.doesNotMatch(c.shapeNote, /\bobserved\b|(?<!not )measured by us/,
+      'and must never claim the provenance it does not have');
+  }
+  // Completed or not, the note is the same — it is a fact about the roster row,
+  // not about this player's week.
+  assert.equal(hate.find((c) => c.difficulty === 4).state, 'completed');
+  assert.equal(hate.find((c) => c.difficulty === 4).shapeNote, hate.find((c) => c.difficulty === 0).shapeNote);
+
+  // And it carries NO corpus count. "10 raid-shape visits" is a fact about our
+  // logs, and this string is read by someone looking at theirs.
+  assert.doesNotMatch(hate[0].shapeNote, /\d/, 'no number from our corpus may ride into the reader’s tooltip');
+
+  // Every other row states nothing rather than something false: the shape
+  // question is live for Hate and unraised elsewhere.
+  for (const c of cells.filter((x) => x.label !== 'Plane of Hate')) {
+    assert.equal(c.shapeNote, null, `${c.label} must not inherit Hate’s caveat`);
+  }
+});
+
+test('INSTANCE ID: parsed and recorded, and it drives NO cell state', () => {
+  // `Player <you> creating instance <Zone> <N>.` is the only line in the corpus
+  // that identifies an instance — 63 lines, 63 distinct ids, none reused. I told
+  // the Director the client never wrote one, which was a universal inferred from
+  // the four zone shapes I had modelled. One grep refuted it.
+  //
+  // The Director's ruling was: parse it, record it, do NOT model on it. The
+  // reason is coverage — it fires only when YOU create the instance, so it saw
+  // 63 of 256 instanced zone-ins in our corpus. This test is what keeps it a
+  // witness: the SAME log with and without the creation line must produce
+  // identical cells.
+  const base = [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Wed Aug 19 20:30:00 2026] Maestro of Rancor has been slain by Chrysaetos!',
+  ];
+  const withCreate = [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 19:59:30 2026] Player Avenrae creating instance The Plane of Hate 3846.',
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Wed Aug 19 20:30:00 2026] Maestro of Rancor has been slain by Chrysaetos!',
+  ];
+  const a = core.createState('Avenrae'); core.applyLines(a, base);
+  const b = core.createState('Avenrae'); core.applyLines(b, withCreate);
+  const ga = core.projectGrid(a, NOW), gb = core.projectGrid(b, NOW);
+
+  // The cells are byte-identical. If a future change lets the id decide
+  // anything, this fails and someone has to say so out loud.
+  assert.deepEqual(gb.cells, ga.cells, 'a creation line must not move any cell');
+  assert.equal(gb.completedCount, ga.completedCount);
+  assert.equal(gb.openCount, ga.openCount);
+
+  // And it IS recorded — parsed, not dropped.
+  assert.equal(ga.instanceCreations.count, 0);
+  assert.equal(gb.instanceCreations.count, 1);
+  const rec = gb.instanceCreations.seen[0];
+  assert.equal(rec.instanceId, 3846, 'the id is captured, not the tier');
+  assert.equal(rec.zone, 'The Plane of Hate', 'and the zone is bare — no shape, no tier');
+  assert.equal(rec.player, 'Avenrae');
+
+  // 3846 is an ID, not a difficulty. Reading it as a tier is the failure this
+  // whole line shape invited, since every other trailing number in a zone
+  // string IS a tier.
+  assert.ok(rec.instanceId > 4, 'ids run past the 0-4 tier range');
+
+  // THE DENOMINATOR TRAVELS. Without it, count 0 cannot be told apart from
+  // "joined instances somebody else created", which is the common case.
+  assert.equal(typeof gb.instanceCreations.instancedEntries, 'number');
+  assert.ok(gb.instanceCreations.instancedEntries >= 1, 'instanced entries are counted');
+  assert.equal(gb.instanceCreations.coveragePct,
+    Math.round((1 / gb.instanceCreations.instancedEntries) * 1000) / 10);
+  // A state that entered no instance reports null coverage rather than 0% —
+  // 0% would assert a measured absence where there is no denominator at all.
+  const empty = core.projectGrid(core.createState('Avenrae'), NOW);
+  assert.equal(empty.instanceCreations.coveragePct, null, 'no denominator, no percentage');
+});
+
 test('RAIDS: a kill records both the raid and the boss', () => {
   const st = core.createState('Avenrae');
   core.applyLines(st, [
@@ -1005,12 +1113,22 @@ const GRID_SHAPE = [
   'cells[].label',
   'cells[].raid',
   'cells[].repeatKills',
+  'cells[].shapeNote',
   'cells[].shapes',
   'cells[].singleBoss',
   'cells[].state',
   'cells[].tierFromOmission',
   'cells[].weeklyTaskObserved',
   'completed',
+  // The instance-id witness. Declared with its DENOMINATOR beside it:
+  // `count` alone cannot tell "created none" from "joined someone
+  // else's", which is the common case. Recorded, never used to decide.
+  'instanceCreations',
+  'instanceCreations.count',
+  'instanceCreations.coveragePct',
+  'instanceCreations.instancedEntries',
+  'instanceCreations.note',
+  'instanceCreations.seen',
   'completedCount',
   'conditional',
   'conditionalCount',
@@ -1028,6 +1146,7 @@ const GRID_SHAPE = [
   'notLooked[].label',
   'notLooked[].raid',
   'notLooked[].repeatKills',
+  'notLooked[].shapeNote',
   'notLooked[].shapes',
   'notLooked[].singleBoss',
   'notLooked[].state',
@@ -1696,4 +1815,84 @@ test('A NOT_LOOKED CELL SAYS HOW FAR OVER THE TOLERANCE, not just how much is mi
   // The excess must be DERIVED, not a constant: hole 25.33h - 24h = 1.3h.
   assert.match(why, /1\.3h over/,
     'the excess is computed from the measured hole and the published tolerance');
+});
+
+test('ROSTER: normaliseBossName is a PURE CASE-FOLD and does nothing else', () => {
+  // This was BLIND: `normaliseBossName` could be loosened — made to strip
+  // leading articles, trim, collapse whitespace — and no test noticed.
+  //
+  // AND THE CONSEQUENCE IS NOT WHAT IT LOOKS LIKE. Article-stripping causes
+  // ZERO false completions on our corpus: every one of the ten near-miss names
+  // in roster-evidence.json still fails to equal a roster key after stripping.
+  // Measured, not assumed. So this is not a live false-completion hazard; it is
+  // CONTRACT EROSION — the folding function can drift with nothing objecting,
+  // and the NEXT loosening, or the next mob name, is where it would land.
+  //
+  // Written against the contract rather than against the consequence, because
+  // the consequence is currently absent and the contract is the thing that
+  // keeps it absent.
+  const n = core.normaliseBossName;
+
+  // Case, and ONLY case.
+  assert.equal(n('Cazic-Thule'), 'cazic-thule', 'case folds');
+  assert.equal(n('a dracoliche'), 'a dracoliche', 'a LEADING ARTICLE IS PART OF THE NAME');
+  assert.equal(n('A dracoliche'), 'a dracoliche', 'and folds with the rest');
+  assert.equal(n('  Terror  '), '  terror  ', 'no trimming — whitespace is not ours to remove');
+  assert.equal(n('Innoruuk,  the Prince'), 'innoruuk,  the prince', 'no whitespace collapsing');
+  assert.equal(n('Innoruuk`s Chosen'), 'innoruuk`s chosen', 'punctuation survives, backtick included');
+
+  // Derived over the whole roster rather than spot-checked: folding must equal
+  // lower-casing for every key we actually ship.
+  for (const r of core.RAIDS) {
+    for (const b of r.bosses) {
+      assert.equal(n(b), b.toLowerCase(),
+        `${b} must fold to exactly its lower-case form and nothing else`);
+    }
+  }
+
+  // AND THE FOLD MUST STAY INJECTIVE ACROSS THE ROSTER. Two different bosses
+  // folding together is the failure this function could cause, so it is
+  // asserted directly rather than left to follow from the cases above.
+  const folded = core.RAIDS.flatMap((r) => r.bosses).map(n);
+  assert.equal(new Set(folded).size, folded.length,
+    'no two roster names may fold to the same string');
+});
+
+test('ROSTER: every near-miss name in the evidence completes NOTHING', () => {
+  // roster-evidence.json collected ten near-miss names across 189 kills,
+  // specifically because a loose match would swallow them. Until now exactly
+  // THREE of the ten were ever driven through the parser, all of them
+  // Innoruuk's. The fixture existed and sat idle.
+  //
+  // Names are read FROM THE EVIDENCE, never typed here — a typed list would
+  // stop covering the file it came from the moment the file grew.
+  const misses = ROSTER_EVIDENCE.roster.flatMap((r) => r.nearMisses.map((m) => m.name));
+  assert.ok(misses.length >= 10, `expected the collected near misses, got ${misses.length}`);
+
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    // Every near miss, in both kill-line shapes the client writes.
+    ...misses.flatMap((name, i) => [
+      `[Wed Aug 19 20:${String(10 + i).padStart(2, '0')}:00 2026] ${name} has been slain by Orlando!`,
+      `[Wed Aug 19 20:${String(30 + i).padStart(2, '0')}:00 2026] You have slain ${name}!`,
+    ]),
+  ]);
+  assert.equal(st.kills.length, 0,
+    `a near-miss name completed something: ${st.kills.map((k) => k.boss).join(', ')}`);
+
+  const grid = core.projectGrid(st, NOW);
+  assert.equal(grid.completedCount, 0, '189 kills of near-miss names must complete no cell');
+
+  // THE POSITIVE CONTROL. Without it this passes on a parser that reads nothing
+  // at all, which is the shape that has cost me an afternoon today.
+  const ctl = core.createState('Avenrae');
+  core.applyLines(ctl, [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Wed Aug 19 20:30:00 2026] Maestro of Rancor has been slain by Orlando!',
+  ]);
+  assert.equal(ctl.kills.length, 1, 'the instrument must still register a REAL kill');
+  assert.equal(core.projectGrid(ctl, NOW).completedCount, 1);
 });

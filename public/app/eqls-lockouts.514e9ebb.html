@@ -878,6 +878,31 @@ const NOT_A_ZONE = new Set([
 // the instance the way the levitation notice did.
 const LOOKS_LIKE_A_SENTENCE = /^[a-z]/;
 
+// Player Avenrae creating instance The Plane of Sky 716.
+//
+// THE ONLY LINE IN THE CORPUS THAT IDENTIFIES AN INSTANCE. 63 occurrences, 63
+// distinct trailing numbers, none reused, range 13–20,807 — a server-side
+// serial, NOT a difficulty tier (tiers are 0–4 and appear in the zone name).
+//
+// I told the Director the client never writes an instance identifier and that
+// the question "is each raid instance separate?" was unanswerable from logs by
+// anyone, ever. That was a universal inferred from the four zone shapes I had
+// already modelled, and one grep refuted it. See CANON's correction.
+//
+// PARSED AND RECORDED. IT MUST NOT DRIVE LOCKOUT STATE, and the reason is its
+// coverage: 63 creations against 256 instanced zone-ins, and the `Player` field
+// was the logging character in all 63 — it cannot see an instance somebody else
+// made. A signal present a quarter of the time and blind to other people's
+// creations is a witness, not a model. `state.instanceCreations` records it and
+// `projectGrid` reports the coverage beside it, so a reader can tell "no
+// creation line" from "no instance created" — two states that would otherwise
+// render identically.
+//
+// The zone name here is BARE: no shape, no tier. The tier comes from the zone-in
+// that follows, which paired 63 of 63 in our corpus. That pairing is measured
+// but NOT performed here — joining them is a model decision, not a parse.
+const CREATING_RE = /^Player (.+?) creating instance (.+?) (\d+)\.$/;
+
 // Lumbarin has asked you to join the instance: Nagafen's Lair - Group 1 (Awakened).        Would you like to join? ...
 // Client string 3527. The run of spaces is the client's, and is matched
 // loosely so a change in its width cannot break the parse.
@@ -1178,13 +1203,36 @@ const WEEKLY_TASK_IS_PER_BOSS = false;
 //    activity, not the client's word for the instance shape, and nothing in this
 //    module should key on the shape believing otherwise.
 //
-// 2. **THE PLANE OF HATE LIST IS INCOMPLETE FOR THE RAID SHAPE.** Ten further
-//    bosses from raids-measured.json die inside Plane of Hate instances — but
-//    only in the bare `Zone N` shape, and Innoruuk and the Maestro appear only
-//    in `- Group N`. The two shapes hold different populations. The alt+Z window
+// 2. **THE PLANE OF HATE ROW DESCRIBES THE GROUP INSTANCE.** The alt+Z window
 //    was taken after Group-shape runs, so it could only ever have shown these
 //    two. **A Hate row built from that window describes the group instance and
 //    not the raid instance**, and that is not yet decided anywhere.
+//
+//    ~~"Ten further bosses die in Hate instances but only in the bare `Zone N`
+//    shape. The two shapes hold different populations."~~ **REFUTED 3 Sep 2026,
+//    by me, against my own claim.** raids-measured.json holds 12 distinct Hate
+//    bosses over 65 rows. Split on its own `group_instance` flag:
+//
+//        only in the group shape  2   Innoruuk, Maestro of Rancor
+//        only in the raid shape   1   High Priest M`kari
+//        in BOTH shapes           9
+//
+//    **Nine of the ten "further" bosses die in the group shape as well.** The
+//    two shapes hold LARGELY THE SAME population, not different ones. An
+//    independent pass over the 16 raw logs, classifying through this module's
+//    own `parseLine`, agrees in structure: 12 of 15 distinct named mobs appear
+//    in both, the same 2 group-only, 1 raid-only.
+//
+//    The count of ten was right and the exclusivity was invented. It read as
+//    the strongest argument for splitting this row in two, and it was the one
+//    part of it never measured.
+//
+//    **WHAT SURVIVES, AND IT IS SHARPER.** The two bosses this row is keyed on
+//    are exactly the two never once seen in the raid shape — across 10 raid-
+//    shape Hate visits, neither died. So the raid shape has never produced a
+//    completion for this row. **That is still not a lockout fact:** a shared
+//    population does not imply a shared lock, and neither does a disjoint one.
+//    Whether the shapes lock together is unmeasured and stays unmeasured.
 //
 // 3. **THE PLANE OF FEAR LIST IS COMPLETE AT FIVE.** The only other candidate,
 //    Phoboplasm, fails on its own evidence: it is absent from
@@ -1309,6 +1357,23 @@ const RAIDS = Object.freeze([
     alsoDies: Object.freeze([]),
     singleBoss: false,
     weeklyTaskObserved: false,
+    // WHICH INSTANCE THIS ROW IS ABOUT, on the page rather than in a comment.
+    //
+    // ANSWERED 3 Sep 2026 by the owner, asked directly:
+    //   "No, they are not shared. Each hate raid instance is unique and separate."
+    //
+    // So the group and raid shapes do NOT share a lock, and this row describes
+    // the group one. That is settled — but it is `stated`, NOT `observed`, and
+    // the page must not dress it as a measurement. We could not have measured
+    // it: zero roster kills have ever occurred in a raid-shape instance, so we
+    // have no completion data for raid content to reason from. Same provenance
+    // class as RESET_RULE, which says `stated` for the same kind of reason.
+    //
+    // Carries no corpus count: "10 raid-shape visits" is a fact about OUR logs,
+    // and this string is read by someone looking at THEIRS.
+    shapeNote: 'this cell is the GROUP instance. The raid shape ' +
+               '(“The Plane of Hate N”) is a SEPARATE lockout and is not ' +
+               'tracked here — owner, stated, not measured by us',
   },
 ].map(Object.freeze));
 
@@ -1603,6 +1668,9 @@ function parseLine(line) {
   if ((m = INSTANCE_INVITE_RE.exec(message))) {
     return { kind: 'instance-invite', at, from: m[1], ...parseInstanceName(m[2]) };
   }
+  if ((m = CREATING_RE.exec(message))) {
+    return { kind: 'instance-created', at, player: m[1], zone: m[2], instanceId: +m[3] };
+  }
   if (SELF_DANGER_RE.test(message)) {
     return { kind: 'weekly-request', at };
   }
@@ -1721,9 +1789,25 @@ function createState(character, opts) {
       singleBoss: r.singleBoss === true,
       // Observed in OUR corpus; not a property of the raid. See the note above.
       weeklyTaskObserved: r.weeklyTaskObserved === true,
+      // Which instance shape the row describes, where that is in doubt. Null
+      // for rows with nothing to say. Copied so a restored snapshot renders
+      // the same tooltip as a live one.
+      shapeNote: r.shapeNote || null,
     })),
     // Kills of roster bosses, each carrying the instance it happened in.
     kills: [],
+    // `Player <you> creating instance <Zone> <N>.` — the only line that names an
+    // instance. RECORDED, NEVER ACTED ON: nothing in this module reads this to
+    // decide a cell, and a test asserts that adding one changes no cell state.
+    //
+    // Bounded like every other unbounded-growth list here. A creation is a rare
+    // event (63 in a 7.8M-line corpus) so the cap is small, and — as with the
+    // other bounds — it drops the OLDEST so a long log keeps its recent truth.
+    instanceCreations: [],
+    // The denominator that must travel with it. Without this a reader cannot
+    // tell "no creation line was written" from "no instance was created", and
+    // those are opposite facts that would otherwise render identically.
+    instancedEntries: 0,
     // The instance most recently entered, so a kill can be attributed to a
     // difficulty. Null means the open world or nothing seen yet.
     currentInstance: null,
@@ -1773,6 +1857,10 @@ const MAX_EVENTS = 5000;
 // single character over 434 MB. See the note at the insert site for what
 // overflowing costs — it degrades a refusal to `unknown`, never the reverse.
 const MAX_VOIDLING_REPLIES = 5000;
+
+// 63 creations in a 7.8M-line corpus, so 2000 is far above anything observed
+// and still bounded. Drops the OLDEST, like the other bounds here.
+const MAX_INSTANCE_CREATIONS = 2000;
 // The dedupe index is deliberately far larger than the provenance log. The
 // owner's own corpus produces ~12k observations for one character, so a bound
 // of 5000 was actively corrupting counts.
@@ -2004,6 +2092,23 @@ function applyLine(state, line) {
     if (state.requests.length > MAX_EVENTS) state.requests.shift();
   }
 
+  // A WITNESS, NEVER EVIDENCE. Sits at the TOP LEVEL of this dispatch on
+  // purpose: my first attempt nested it inside the `entered || instance-invite`
+  // block below, where it was unreachable and silently recorded nothing. The
+  // test that says "the id is recorded" is the only reason that surfaced —
+  // the test that says "it changes no cell" passed either way, because a branch
+  // that never runs also changes no cell. See CREATING_RE.
+  if (ev.kind === 'instance-created') {
+    state.instanceCreations.push({
+      at: formatCivil(civilOf(ev.at)),
+      player: ev.player,
+      zone: ev.zone,
+      instanceId: ev.instanceId,
+    });
+    if (state.instanceCreations.length > MAX_INSTANCE_CREATIONS) state.instanceCreations.shift();
+    return state;
+  }
+
   if (ev.kind === 'entered' || ev.kind === 'instance-invite') {
     if (ev.instanced) {
       const k = `${ev.zone}|${ev.group ? 'group' : 'raid'}|${ev.difficulty}`;
@@ -2055,6 +2160,7 @@ function applyLine(state, line) {
     // test/grid.test.js is what holds it now — inside, after leaving, and never
     // entered, because no two of those three distinguish every wrong version.
     if (ev.kind === 'entered') {
+      if (ev.instanced) state.instancedEntries++;
       state.currentInstance = ev.instanced
         ? {
             zone: ev.zone,
@@ -2861,6 +2967,9 @@ function projectGrid(state, now) {
         // a claim that the boss can or cannot carry one — the task goes to the
         // first three raids of the week, whichever they are.
         weeklyTaskObserved: entry.weeklyTaskObserved === true,
+        // Which instance shape this row describes, where that is in doubt.
+        // Null for rows with nothing to say — see the Hate entry in RAIDS.
+        shapeNote: entry.shapeNote || null,
         difficulty: d,
         difficultyLabel: DIFFICULTY_LABELS[d],
         state: cellState,
@@ -2976,6 +3085,25 @@ function projectGrid(state, now) {
     notLookedCount: by('not_looked').length,
     completed: by('completed'),
     completedCount: by('completed').length,
+    // THE WITNESS, WITH ITS DENOMINATOR ATTACHED. `Player <you> creating
+    // instance <Zone> <N>` is the only line that identifies an instance, and it
+    // drives NOTHING here — no cell reads it. It ships with `coveragePct`
+    // because the signal is worthless without it: the line fires only when YOUR
+    // character creates the instance, so a zero can mean "created none" or
+    // "joined someone else's", and a denominator is the only thing that tells
+    // those apart. A figure that travels without its denominator is how a 70.7%
+    // becomes a fact.
+    instanceCreations: {
+      seen: state.instanceCreations.slice(),
+      count: state.instanceCreations.length,
+      instancedEntries: state.instancedEntries,
+      coveragePct: state.instancedEntries
+        ? Math.round((state.instanceCreations.length / state.instancedEntries) * 1000) / 10
+        : null,
+      note: 'creation lines name an instance id; they are written only when YOU ' +
+            'create the instance, never when you join one. Recorded, not used to ' +
+            'decide any cell.',
+    },
     cells,
   };
 }
@@ -3838,7 +3966,15 @@ function render() {
           c.alsoDies.join(", ") : "") +
         (c.singleBoss ? "" : BR + BR + "contains: " + c.bosses.join(", ") + BR +
           "(one cell per raid assumes these bosses share a lock — the alt+Z " +
-          "window is consistent with that and does not prove it)");
+          "window is consistent with that and does not prove it)") +
+        /* WHICH INSTANCE THE CELL IS ABOUT. A row can describe the group
+           instance while the same zone also has a raid shape we have never
+           seen produce this row's bosses. Saying so is not a footnote: if the
+           shapes lock separately and we ship one row, the tool tells a player
+           they are locked out of content they can still run, or clear to run
+           content they are locked out of — a wrong answer with a confident
+           face, which is the thing this page exists not to give. */
+        (c.shapeNote ? BR + BR + c.shapeNote : "");
       cell.appendChild(span);
       tr.appendChild(cell);
     }
@@ -3862,6 +3998,25 @@ function render() {
     ["log covers", (g.period.coverageFrom || "—") + "  ..  " + (g.period.coverageTo || "—")],
     ["spans the week", String(g.period.coverageSpansPeriod)],
     ["decoded as", S.decoder || "—"],
+    /* Stated globally because the Hate cell now carries a shape note, and a
+       note on ONE row implies the others are shape-agnostic. They are not:
+       every completion this tool recognises was measured in a GROUP instance.
+       A caveat that creates a false contrast is worse than no caveat. */
+    ["instance shape", "every cell here is a GROUP instance — the completion " +
+                       "model was measured entirely in them, and raid-shape " +
+                       "instances lock separately (owner, stated) and are NOT " +
+                       "tracked by this page"],
+    /* A LIMIT OF THE EVIDENCE, NOT OF THIS LOG. The corpus these rules were
+       derived from spans a change to the weekly reset announced by staff on
+       18 Aug 2026, and the constants sit either side of it: the reset bracket
+       and the 3-per-week cap were measured before, the lockout model after.
+       Comparing the two halves showed the reset weekday agreeing across the
+       boundary, which is why nothing here is withdrawn — but a reader acting
+       on these numbers is entitled to know they were not all taken under the
+       same conditions. Stated, with the broadcast as its source. */
+    ["regime", "the rules here come from a corpus spanning a weekly-reset " +
+               "change announced 18 Aug 2026 — measured either side, the reset " +
+               "weekday agrees; the reset hour was never measured in either"],
     ["evidence", g.period.evidenceNote],
   ];
   for (const [k, v] of rows) {

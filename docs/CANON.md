@@ -146,6 +146,137 @@ was a clearance asserted without a string.
 My hexdump was piped through `grep`, which strips the terminator and appends its
 own LF. **I hexdumped my instrument, not the file.**
 
+### THE CORPUS STRADDLES A WEEKLY-RESET BEHAVIOUR CHANGE. Found 3 Sep 2026
+
+**Staff broadcast, `Tue Aug 18 00:36:13 2026` client-local, one occurrence,
+staff name folded:**
+
+> `<SYSTEMWIDE_MESSAGE>: <staff> : Due to a known issue with the weekly reset,
+> we will be disabling personal and raid instances at 10 PM PDT tonight.
+> Instances will be available again when the servers come back up after the
+> scheduled patch in the morning. The weekly reset issue will be resolved by
+> the changes included in tomorrow's patch.`
+
+**The client does not state a patch date.** It names "10 PM PDT tonight" and a
+patch "in the morning", so the change lands on or about **18 Aug 2026**.
+
+**The corpus runs `2026-08-04 13:33:15` → `2026-09-03 15:34:26`.** It straddles:
+**14 days before, 16 days after.**
+
+**AND THE LOAD-BEARING CONSTANTS FALL ON OPPOSITE SIDES.** This is not one
+average across two regimes; it is a model assembled from both:
+
+| constant | measured | side |
+|---|---|---|
+| `RESET_RULE.measuredBracketPacific` | Mon 10 Aug → Tue 11 Aug | **BEFORE** |
+| `TOKEN_CAP` | weeks of 4 and 11 Aug | **BEFORE** |
+| `LOCKOUT_MODEL` | alt+Z window, 25 Aug | **AFTER** |
+
+`RESET_RULE.source` is the owner speaking on 23 Aug — **post-patch testimony
+corroborated by a pre-patch measurement.** If the rule changed on the 18th, the
+statement and the bracket describe different regimes and agreeing means nothing.
+
+**OTHER CANDIDATE BOUNDARIES in the same corpus**, listed without investigation:
+`A new client has been pushed to the servers` on **6 Aug 19:26:52** and
+**2 Sep 16:03:48**; server-down sequences on **25 Aug** at 15:15 and 17:57.
+Only the 18 Aug broadcast names the weekly reset.
+
+**NOTHING RE-DERIVED AND NOTHING SPLIT.** Splitting a corpus is a modelling
+decision and it is the Director's. Recorded so that no figure derived from this
+corpus is quoted again without someone knowing it may span a discontinuity.
+
+#### The matched pair across the seam — MEASURED 3 Sep 2026, and they AGREE
+
+`analysis/reset-bracket-by-regime.js`. Reset brackets derived **separately in
+each regime**, 18 Aug discarded in full, brackets touching the seam discarded:
+
+| regime | reset bracket | touches |
+|---|---|---|
+| BEFORE | Mon 10 Aug 18:34:52 → Tue 11 Aug 20:40:44 (26.1h) | **Mon/Tue** |
+| BEFORE | Mon 10 Aug 18:34:14 → Tue 11 Aug 20:37:37 (26.1h) | **Mon/Tue** |
+| AFTER | Mon 31 Aug 00:42:05 → Tue 1 Sep 18:40:27 (42.0h) | **Mon/Tue** |
+
+**Both regimes bracket the reset to the same Mon→Tue transition.** And the
+weekly budget is **3 assignments in every period on both sides** — 3/3/3/3
+before, 3/3 after — so `TOKEN_CAP` now has post-patch evidence, which it did
+not have when it was written.
+
+**WHAT IT DOES NOT SETTLE.** Every bracket is wider than 24h, so none pins a
+weekday alone: each is equally consistent with a late-Monday reset. **The hour
+is unmeasured in both regimes, so a change of HOUR is invisible to this test.**
+**And the brackets are deliberately NOT intersected** — combining them into one
+tighter window would assume the regimes are the same, which is the thing under
+test.
+
+**MY FIRST INSTRUMENT WAS WRONG AND SAID SOMETHING ALARMING.** Looking for
+`refused → granted` transitions gave **7 before the seam and 0 after**, which
+reads as "the post-patch regime has no reset". It does not: the token arrives on
+task COMPLETION, so post-patch grants had no classifiable hail beside them. The
+weekly budget is spent on **assignment**. *A signal absent on one side of a
+comparison is the first thing to distrust about the instrument, not the first
+thing to believe about the world.*
+
+### ~~"The client never writes an instance identifier."~~ REFUTED 3 Sep 2026
+
+I told the Director this was **"not answerable from logs by anyone, with any
+corpus, ever"** — a universal, about a game, inferred from the four zone shapes
+I had already modelled. **Reasoning from my own configuration to a claim about
+the client.** The same error as `singleBoss` being read off our own list length,
+one day after I refuted the Hate population claim the same way.
+
+It took one grep of every distinct line shape containing "instance":
+
+    Player Avenrae creating instance The Plane of Sky 716.
+    Player Avenrae creating instance The Ruins of Old Paineel 4583.
+
+**63 lines, 63 distinct N, none reused, range 13–20,807.** Not tiers — tiers are
+0–4. A server-side instance serial. **`parseLine` returns `null` for it.**
+
+| | |
+|---|---|
+| creations followed by a zone-in to the same zone | **63 of 63** — an id is attributable to a tier |
+| the `Player` field | the logging character in all 63 — **your own creations only** |
+| coverage | 63 creations against **256** instanced zone-ins |
+| tier stated on the line | **none** — it comes from the following entry |
+| Plane of Hate | **2** creations, different weeks, different characters |
+
+**What it changes.** "Each hate raid instance is unique and separate" is not
+answerable from *this* corpus, but it IS answerable from logs — a character who
+creates two Hate raid instances in one week writes two distinct N. **It needs
+future logs, not an alt+Z reading.** That is a much cheaper acquisition than the
+one I told the Director was required.
+
+**Not modelled deliberately.** Consuming this line is model work and is the
+Director's to rule on. Recorded, not built.
+
+### ~~"Hate's group and raid shapes hold different populations."~~ REFUTED 3 Sep 2026
+
+I wrote that ten further bosses die in Hate instances **only** in the bare
+`Zone N` raid shape. The count was right; the exclusivity was never measured.
+Split raids-measured.json's 65 Hate rows on its own `group_instance` flag:
+
+| | bosses |
+|---|---|
+| only in the group shape | **2** — Innoruuk, Maestro of Rancor |
+| only in the raid shape | **1** — High Priest M`kari |
+| in **both** shapes | **9** |
+
+**Nine of the ten die in the group shape too.** A second pass over the 16 raw
+logs through `lockoutCore.parseLine` agrees in structure — 12 of 15 distinct
+named mobs in both, same 2 group-only, 1 raid-only.
+
+**This was the strongest argument for splitting the Hate row in two, and it was
+the part of it I had never checked.** It is also the argument I put to the
+Director, who repeated it back to me in a ruling. Refuted in my own favour's
+opposite direction: the shapes are more alike than I claimed, not less.
+
+**What survives is sharper.** The two bosses this row is keyed on are exactly
+the two never seen in the raid shape — 10 raid-shape Hate visits, neither boss.
+So the raid shape has never produced a completion for this row. **That is still
+not a lockout fact.** A shared population does not imply a shared lock, and a
+disjoint one would not imply two. The question the Director put to the owner is
+unaffected; only my evidence for asking it was wrong.
+
 ---
 
 ## Traps — each one cost someone a wrong answer
@@ -255,5 +386,5 @@ into a fake event. Other players are never named outside the credits.
 | Solo instances | never observed in 16 files; the window says they exist |
 | do bosses in a raid share a lock? | a run clearing *some* of a zone's bosses, then evidence about the others |
 | Group vs raid instance — one lock or two? | unmeasured; the grid carries `shapes` so it stays answerable |
-| Plane of Hate row shape | **Director's ruling.** Ten further bosses die in Hate instances, but only in the bare `Zone N` shape; Innoruuk and the Maestro only in `- Group N`. The two shapes hold different populations. |
+| Plane of Hate row shape | **Director's ruling: CANNOT-TELL**, and the reason is a sampling artefact — the alt+Z window was taken after Group runs, so it could only ever have returned the group shape. The row stays single and is marked as describing the group instance. **The "different populations" evidence I gave for it is REFUTED — see the correction below.** |
 | clause 2 and 4 amendments | **I have never received their content.** Asked four times. |
