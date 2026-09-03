@@ -185,6 +185,37 @@ Only the 18 Aug broadcast names the weekly reset.
 decision and it is the Director's. Recorded so that no figure derived from this
 corpus is quoted again without someone knowing it may span a discontinuity.
 
+#### The matched pair across the seam — MEASURED 3 Sep 2026, and they AGREE
+
+`analysis/reset-bracket-by-regime.js`. Reset brackets derived **separately in
+each regime**, 18 Aug discarded in full, brackets touching the seam discarded:
+
+| regime | reset bracket | touches |
+|---|---|---|
+| BEFORE | Mon 10 Aug 18:34:52 → Tue 11 Aug 20:40:44 (26.1h) | **Mon/Tue** |
+| BEFORE | Mon 10 Aug 18:34:14 → Tue 11 Aug 20:37:37 (26.1h) | **Mon/Tue** |
+| AFTER | Mon 31 Aug 00:42:05 → Tue 1 Sep 18:40:27 (42.0h) | **Mon/Tue** |
+
+**Both regimes bracket the reset to the same Mon→Tue transition.** And the
+weekly budget is **3 assignments in every period on both sides** — 3/3/3/3
+before, 3/3 after — so `TOKEN_CAP` now has post-patch evidence, which it did
+not have when it was written.
+
+**WHAT IT DOES NOT SETTLE.** Every bracket is wider than 24h, so none pins a
+weekday alone: each is equally consistent with a late-Monday reset. **The hour
+is unmeasured in both regimes, so a change of HOUR is invisible to this test.**
+**And the brackets are deliberately NOT intersected** — combining them into one
+tighter window would assume the regimes are the same, which is the thing under
+test.
+
+**MY FIRST INSTRUMENT WAS WRONG AND SAID SOMETHING ALARMING.** Looking for
+`refused → granted` transitions gave **7 before the seam and 0 after**, which
+reads as "the post-patch regime has no reset". It does not: the token arrives on
+task COMPLETION, so post-patch grants had no classifiable hail beside them. The
+weekly budget is spent on **assignment**. *A signal absent on one side of a
+comparison is the first thing to distrust about the instrument, not the first
+thing to believe about the world.*
+
 ### ~~"The client never writes an instance identifier."~~ REFUTED 3 Sep 2026
 
 I told the Director this was **"not answerable from logs by anyone, with any

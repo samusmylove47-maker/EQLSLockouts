@@ -866,6 +866,17 @@ function render() {
                        "model was measured entirely in them, and raid-shape " +
                        "instances lock separately (owner, stated) and are NOT " +
                        "tracked by this page"],
+    /* A LIMIT OF THE EVIDENCE, NOT OF THIS LOG. The corpus these rules were
+       derived from spans a change to the weekly reset announced by staff on
+       18 Aug 2026, and the constants sit either side of it: the reset bracket
+       and the 3-per-week cap were measured before, the lockout model after.
+       Comparing the two halves showed the reset weekday agreeing across the
+       boundary, which is why nothing here is withdrawn — but a reader acting
+       on these numbers is entitled to know they were not all taken under the
+       same conditions. Stated, with the broadcast as its source. */
+    ["regime", "the rules here come from a corpus spanning a weekly-reset " +
+               "change announced 18 Aug 2026 — measured either side, the reset " +
+               "weekday agrees; the reset hour was never measured in either"],
     ["evidence", g.period.evidenceNote],
   ];
   for (const [k, v] of rows) {
