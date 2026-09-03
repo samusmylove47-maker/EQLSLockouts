@@ -136,6 +136,15 @@ function built() {
   };
 }
 
+// Does the BUILT page still SAY a thing? `built()` reports fonts and urls; a
+// provenance row is a sentence, and a sentence needs its own reader.
+function builtSays(re) {
+  const b = built();
+  if (b === 'BUILD-FAILED') return b;
+  const name = fs.readFileSync(path.join(OUT, 'latest.txt'), 'utf8').trim();
+  return re.test(fs.readFileSync(path.join(OUT, name), 'utf8'));
+}
+
 // ---------------------------------------------------------------------------
 // The mutations. Each names the CLAIM it tests.
 // ---------------------------------------------------------------------------
@@ -874,6 +883,156 @@ const MUTATIONS = [
       const r = st.requests;
       return [r.length, r[0].civil, r[r.length - 1].civil];
     } },
+
+  // ── AIMED AT TODAY'S OWN ADDITIONS (3 Sep) ─────────────────────────────
+  //
+  // Everything below was written in the last few hours, fast, to satisfy the
+  // Director's rulings, and none of it had ever been graded. Their stated
+  // prediction: assertions written to DEMONSTRATE COMPLIANCE are the ones most
+  // likely to be unfalsifiable. One had already proved it — the
+  // instance-created branch was nested where it could never run, and the
+  // "changes no cell" assertion passed, because a dead branch also changes no
+  // cell. These are aimed at the rest of that day's work.
+
+  { name: 'creating-instance-regex-broken',
+    claim: 'the only line that identifies an instance is parsed at all',
+    find: 'const CREATING_RE = /^Player (.+?) creating instance (.+?) (\\d+)\\.$/;',
+    repl: 'const CREATING_RE = /^Player (.+?) creating expedition (.+?) (\\d+)\\.$/;',
+    probe: (c) => {
+      const e = c.parseLine(line(19, 10, 0, 'Player Avenrae creating instance The Plane of Hate 3846.'));
+      return e ? [e.kind, e.instanceId, e.zone] : null;
+    } },
+
+  { name: 'instance-created-branch-renested',
+    claim: 'the creation branch sits where it can actually run',
+    // THE EXACT BUG I SHIPPED AND CAUGHT. Nesting it under the entered/invite
+    // guard leaves it unreachable. A guard asserting only that cells do not
+    // move is satisfied by a branch that never executes, so this mutation is
+    // what says whether the POSITIVE half of that test exists.
+    find: "  if (ev.kind === 'instance-created') {",
+    repl: "  if (ev.kind === 'instance-created' && ev.kind === 'entered') {",
+    probe: (c) => stateOf(c, [line(19, 10, 0, 'Player Avenrae creating instance The Plane of Hate 3846.')]).instanceCreations.length },
+
+  { name: 'instance-creations-bound-drops-the-NEWEST',
+    claim: 'the creation log drops the OLDEST when bounded',
+    find: '    if (state.instanceCreations.length > MAX_INSTANCE_CREATIONS) state.instanceCreations.shift();',
+    repl: '    if (state.instanceCreations.length > MAX_INSTANCE_CREATIONS) state.instanceCreations.pop();',
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      for (let i = 0; i < 2005; i++) {
+        const mm = i % 1440, d = 1 + Math.floor(i / 1440);
+        c.applyLine(st, line(d, Math.floor(mm / 60), mm % 60,
+          'Player Avenrae creating instance The Plane of Hate ' + (1000 + i) + '.'));
+      }
+      const a = st.instanceCreations;
+      return [a.length, a[0] && a[0].instanceId, a[a.length - 1] && a[a.length - 1].instanceId];
+    } },
+
+  { name: 'instanced-entries-never-counted',
+    claim: 'the denominator beside the creation count is real',
+    find: '      if (ev.instanced) state.instancedEntries++;',
+    repl: '      if (false) state.instancedEntries++;',
+    probe: (c) => {
+      const st = stateOf(c, [
+        line(19, 10, 0, 'You have entered The Plane of Hate - Group 4 (Refined).'),
+        line(19, 10, 5, 'Player Avenrae creating instance The Plane of Hate 3846.'),
+      ]);
+      const g = c.projectGrid(st, NOW);
+      return [g.instanceCreations.instancedEntries, g.instanceCreations.coveragePct];
+    } },
+
+  { name: 'coverage-pct-zero-instead-of-null',
+    claim: 'no denominator yields NO PERCENTAGE, never 0%',
+    // 0% asserts a measured absence where there is nothing to measure against.
+    // The Director called this field the unifying law reduced to one line,
+    // which makes it exactly the kind written to please rather than to catch.
+    // Either a test fails here or the law is decoration.
+    find: '        : null,',
+    repl: '        : 0,',
+    probe: (c) => c.projectGrid(c.createState('Avenrae'), NOW).instanceCreations.coveragePct },
+
+  { name: 'shape-note-never-reaches-the-cell',
+    claim: 'the Hate cells say which instance shape they describe',
+    find: '        shapeNote: entry.shapeNote || null,',
+    repl: '        shapeNote: null,',
+    probe: (c) => {
+      const g = c.projectGrid(stateOf(c, beat(19, 20)), NOW);
+      return g.cells.filter((x) => x.label === 'Plane of Hate').map((x) => x.shapeNote && x.shapeNote.slice(0, 30));
+    } },
+
+  { name: 'shape-note-leaks-to-every-row',
+    claim: 'only the row with a shape question carries the caveat',
+    // A caveat on every row is as wrong as a caveat on none: it would tell a
+    // reader that Nagafen's Lair has a raid-shape ambiguity nobody measured.
+    find: '        shapeNote: entry.shapeNote || null,',
+    repl: "        shapeNote: entry.shapeNote || 'this cell is the GROUP instance (stated)',",
+    probe: (c) => {
+      const g = c.projectGrid(stateOf(c, beat(19, 20)), NOW);
+      return g.cells.filter((x) => x.label !== 'Plane of Hate' && x.shapeNote !== null).length;
+    } },
+
+  { name: 'shape-note-claims-it-was-measured',
+    claim: 'a stated fact never dresses itself as an observation',
+    // The owner told us; we did not measure it and could not have. The
+    // assertion guarding this was written today — in a first version that
+    // could not tell the claim "measured by us" from its own denial "not
+    // measured by us".
+    // ANCHOR WRITTEN AGAINST A DEAD DRAFT. My first version quoted the note's
+    // ORIGINAL wording, from before the owner answered and the note stopped
+    // hedging. The harness reported NOANCHOR — stale instrument, not a finding.
+    find: "               'tracked here — owner, stated, not measured by us',",
+    repl: "               'tracked here — owner, observed and measured by us',",
+    probe: (c) => {
+      const g = c.projectGrid(stateOf(c, beat(19, 20)), NOW);
+      const h = g.cells.find((x) => x.label === 'Plane of Hate');
+      return h && h.shapeNote;
+    } },
+
+  { name: 'the-witness-leaks-into-a-cell',
+    claim: 'a creation line moves NO cell — the witness never becomes a model',
+    // The deepEqual guard exists to stop the instance id being used to decide
+    // something once that looks convenient. If nothing fails here, the guard is
+    // decoration and the id is one edit from driving state unnoticed.
+    find: '        singleBoss: entry.singleBoss === true,',
+    repl: '        singleBoss: state.instanceCreations.length ? false : entry.singleBoss === true,',
+    probe: (c) => {
+      const st = stateOf(c, [
+        ...beat(19, 20),
+        line(20, 21, 0, 'Player Avenrae creating instance The Plane of Hate 3846.'),
+      ]);
+      return c.projectGrid(st, NOW).cells.map((x) => x.singleBoss).join(',');
+    } },
+
+  { name: 'regime-provenance-row-removed',
+    file: FILE_TEMPLATE,
+    claim: 'the page states that its rules span a weekly-reset change',
+    find: '    ["regime", "the rules here come from a corpus spanning a weekly-reset " +',
+    repl: '    ["regime", "not stated"], ["regime-dead", "" +',
+    // THE REGEX MUST NOT SPAN A CONCATENATION. The page embeds the template's
+    // JS as source, so `"...a weekly-reset " + "change announced 18 Aug..."`
+    // appears with the `" +` break intact. My first probe matched across it,
+    // found nothing on CLEAN code, and reported INERT — correctly, and about my
+    // instrument rather than the page.
+    // AND IT MUST TARGET THE LINE THE MUTATION ACTUALLY REPLACES. Aimed at the
+    // SECOND literal, the probe read `true` either way — the mutation removes
+    // the row's first line and leaves the rest as dead source, which the page
+    // still embeds. INERT again, and again about my instrument.
+    probe: () => builtSays(/the rules here come from a corpus spanning a weekly-reset/) },
+
+  { name: 'instance-shape-provenance-row-removed',
+    file: FILE_TEMPLATE,
+    claim: 'the page states that every cell is a group instance',
+    find: '    ["instance shape", "every cell here is a GROUP instance — the completion " +',
+    repl: '    ["instance shape", "not stated"], ["shape-dead", "" +',
+    probe: () => builtSays(/every cell here is a GROUP instance/) },
+];
+
+
+// Tests that fail on ANY edit to a built source file, behavioural or not.
+// They are legitimate tests and useless as mutation catchers: see the note at
+// the verdict. Matched by substring against the test name.
+const UNIVERSAL_CATCHERS = [
+  'the COMMITTED latest.txt names what the CURRENT SOURCE produces',
 ];
 
 const MUTABLE = [FILE_ENGINE, FILE_TEMPLATE, FILE_BUILD];
@@ -961,10 +1120,40 @@ function main() {
     restore();
     delete require.cache[require.resolve(SRC)];
 
-    for (const n of res.names) everFired.add(n);
+    // The universal catcher fires on ANY edit, so counting it here would
+    // inflate SURFACE by one test that no mutation actually exercises.
+    for (const n of res.names) {
+      if (UNIVERSAL_CATCHERS.some((u) => n.includes(u))) continue;
+      everFired.add(n);
+    }
+
+    // ── A UNIVERSAL CATCHER IS NOT A CATCHER. ────────────────────────────
+    //
+    // `BUILD: the COMMITTED latest.txt names what the CURRENT SOURCE produces`
+    // compares the committed artifact pointer against a fresh build, so ANY
+    // edit to a built source file fails it — including one that changes no
+    // behaviour at all. PROVEN, not assumed: appending a lone comment line to
+    // src/lockoutCore.js fails that test and nothing else.
+    //
+    // It is a good test. It is not a behavioural guard, and counting it as one
+    // made this harness report CAUGHT for every mutation that touched the
+    // engine. **79 of 79 listed it. Six were caught by NOTHING ELSE**, and I
+    // had reported those to the Director as guarded.
+    //
+    // The verdict now ignores it. A mutation whose only catcher was the pointer
+    // is BLIND, which is what it always was.
+    const universal = [...res.names].filter((n) => UNIVERSAL_CATCHERS.some((u) => n.includes(u)));
+    const real = [...res.names].filter((n) => !UNIVERSAL_CATCHERS.some((u) => n.includes(u)));
 
     if (!live) {
       rows.push({ mut, outcome: 'INERT', detail: `probe unchanged (${before})` });
+    } else if (real.length === 0 && universal.length > 0) {
+      rows.push({
+        mut,
+        outcome: 'BLIND',
+        detail: `probe ${before} -> ${after}; only the universal catcher fired ` +
+                `(${universal.join(', ')}) — no test asserts this behaviour`,
+      });
     } else if (res.failCount > 0) {
       // NAME THE TESTS, NOT JUST THE FILES — R143.
       //
@@ -978,7 +1167,7 @@ function main() {
         mut,
         outcome: 'CAUGHT',
         detail: `${res.failCount} assertion(s) in ${res.failedFiles.join(', ')}`,
-        catchers: [...res.names],
+        catchers: real,
       });
     } else {
       rows.push({ mut, outcome: 'BLIND', detail: `probe ${before} -> ${after}, no test failed` });
