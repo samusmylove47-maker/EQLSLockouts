@@ -686,8 +686,20 @@ test('RAIDS: the Hate row says WHICH INSTANCE SHAPE it describes, on every cell'
   const hate = cells.filter((c) => c.label === 'Plane of Hate');
   assert.equal(hate.length, 5, 'all five difficulties');
   for (const c of hate) {
-    assert.match(c.shapeNote, /GROUP/, `D${c.difficulty} must name the shape observed`);
-    assert.match(c.shapeNote, /NOT KNOWN/, 'and refuse to state what was not measured');
+    assert.match(c.shapeNote, /GROUP/, `D${c.difficulty} must name the shape it describes`);
+    assert.match(c.shapeNote, /SEPARATE lockout/, 'and state what the owner settled');
+    // The owner ANSWERED this on 3 Sep 2026; we did not measure it, and could
+    // not have — zero roster kills have ever happened in a raid-shape instance.
+    // A settled fact still has to carry the provenance it was settled by, the
+    // same way RESET_RULE says `stated`. Claiming measurement we do not have is
+    // the failure this whole vocabulary exists to prevent.
+    assert.match(c.shapeNote, /stated/, 'labelled as testimony, not as measurement');
+    // The lookbehind is load-bearing. Written as /measured by us/ this fired on
+    // the note's own DISCLAIMER, "not measured by us" — an assertion that
+    // cannot tell a claim from its denial. It is the phrase the metalist
+    // already uses for RESET_RULE, so the wording stayed and the test was fixed.
+    assert.doesNotMatch(c.shapeNote, /\bobserved\b|(?<!not )measured by us/,
+      'and must never claim the provenance it does not have');
   }
   // Completed or not, the note is the same — it is a fact about the roster row,
   // not about this player's week.

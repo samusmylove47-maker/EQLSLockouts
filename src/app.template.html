@@ -862,9 +862,10 @@ function render() {
        note on ONE row implies the others are shape-agnostic. They are not:
        every completion this tool recognises was measured in a GROUP instance.
        A caveat that creates a false contrast is worse than no caveat. */
-    ["instance shape", "the completion model was measured entirely in GROUP " +
-                       "instances — whether a zone's raid shape shares the " +
-                       "same lock is not measured"],
+    ["instance shape", "every cell here is a GROUP instance — the completion " +
+                       "model was measured entirely in them, and raid-shape " +
+                       "instances lock separately (owner, stated) and are NOT " +
+                       "tracked by this page"],
     ["evidence", g.period.evidenceNote],
   ];
   for (const [k, v] of rows) {

@@ -1334,18 +1334,21 @@ const RAIDS = Object.freeze([
     weeklyTaskObserved: false,
     // WHICH INSTANCE THIS ROW IS ABOUT, on the page rather than in a comment.
     //
-    // Hate is the one zone where the question is live and reader-facing. Both
-    // of this row's bosses have been seen ONLY in the group shape; the raid
-    // shape was entered 10 times and produced neither. Whether the two shapes
-    // share a lock is UNMEASURED and cannot be settled from our corpus — the
-    // alt+Z window was taken after Group runs, so it could only ever have
-    // returned the group shape. See note 2 above RAIDS.
+    // ANSWERED 3 Sep 2026 by the owner, asked directly:
+    //   "No, they are not shared. Each hate raid instance is unique and separate."
     //
-    // Carries no corpus count: 10 visits is a fact about OUR logs, and this
-    // string is read by someone looking at THEIRS.
-    shapeNote: 'both of these have only ever been seen dying in the GROUP ' +
-               'instance — whether the raid shape (“The Plane of Hate N”) ' +
-               'shares this lock is NOT KNOWN, so read this cell as the group one',
+    // So the group and raid shapes do NOT share a lock, and this row describes
+    // the group one. That is settled — but it is `stated`, NOT `observed`, and
+    // the page must not dress it as a measurement. We could not have measured
+    // it: zero roster kills have ever occurred in a raid-shape instance, so we
+    // have no completion data for raid content to reason from. Same provenance
+    // class as RESET_RULE, which says `stated` for the same kind of reason.
+    //
+    // Carries no corpus count: "10 raid-shape visits" is a fact about OUR logs,
+    // and this string is read by someone looking at THEIRS.
+    shapeNote: 'this cell is the GROUP instance. The raid shape ' +
+               '(“The Plane of Hate N”) is a SEPARATE lockout and is not ' +
+               'tracked here — owner, stated, not measured by us',
   },
 ].map(Object.freeze));
 
@@ -3918,9 +3921,10 @@ function render() {
        note on ONE row implies the others are shape-agnostic. They are not:
        every completion this tool recognises was measured in a GROUP instance.
        A caveat that creates a false contrast is worse than no caveat. */
-    ["instance shape", "the completion model was measured entirely in GROUP " +
-                       "instances — whether a zone's raid shape shares the " +
-                       "same lock is not measured"],
+    ["instance shape", "every cell here is a GROUP instance — the completion " +
+                       "model was measured entirely in them, and raid-shape " +
+                       "instances lock separately (owner, stated) and are NOT " +
+                       "tracked by this page"],
     ["evidence", g.period.evidenceNote],
   ];
   for (const [k, v] of rows) {
