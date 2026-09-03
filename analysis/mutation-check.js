@@ -894,6 +894,41 @@ const MUTATIONS = [
   // "changes no cell" assertion passed, because a dead branch also changes no
   // cell. These are aimed at the rest of that day's work.
 
+
+  // ── THE REST OF THE BOUND FAMILY. The Director named three; there are FIVE.
+  // `events` and `kills` had never been mutated at all — not blind, UNMEASURED,
+  // which my report did not say. `kills` is the one that matters: dropping the
+  // NEWEST kill loses a completion, which is the single failure this tool
+  // exists to prevent.
+  { name: 'events-bound-drops-the-NEWEST',
+    claim: 'the event log drops the OLDEST when bounded',
+    find: '  if (state.events.length > MAX_EVENTS) state.events.shift();',
+    repl: '  if (state.events.length > MAX_EVENTS) state.events.pop();',
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      const CAP = c.THRESHOLDS.MAX_EVENTS;
+      st.events = Array.from({ length: CAP }, (_, i) => ({ key: 'k' + i, kind: 'x', civil: i + 1, at: null }));
+      c.applyLine(st, line(19, 10, 0, 'You have entered Nektulos Forest.'));
+      const e = st.events;
+      return [e.length, e[0].civil, e[e.length - 1].kind];
+    } },
+
+  { name: 'kills-bound-drops-the-NEWEST',
+    claim: 'the kill log drops the OLDEST when bounded — a dropped NEWEST kill is a lost completion',
+    find: '      if (state.kills.length > MAX_EVENTS) state.kills.shift();',
+    repl: '      if (state.kills.length > MAX_EVENTS) state.kills.pop();',
+    probe: (c) => {
+      const st = c.createState('Avenrae');
+      const CAP = c.THRESHOLDS.MAX_EVENTS;
+      st.kills = Array.from({ length: CAP }, (_, i) => ({ civil: i + 1, boss: 'filler' + i, raid: 'x' }));
+      c.applyLines(st, [
+        line(19, 10, 0, 'You have entered The Plane of Hate - Group 4 (Refined).'),
+        line(19, 10, 30, 'Maestro of Rancor has been slain by Chrysaetos!'),
+      ]);
+      const k = st.kills;
+      return [k.length, k[0].boss, k[k.length - 1].boss];
+    } },
+
   { name: 'creating-instance-regex-broken',
     claim: 'the only line that identifies an instance is parsed at all',
     find: 'const CREATING_RE = /^Player (.+?) creating instance (.+?) (\\d+)\\.$/;',

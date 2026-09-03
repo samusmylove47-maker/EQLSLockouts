@@ -494,3 +494,41 @@ test('BUILD: .gitattributes COVERS the artifact directory, at any depth', () => 
   assert.equal(attr('public/other.html'), 'unspecified',
     'the rule must be scoped to the artifact directory, not the whole repo');
 });
+
+test('PAGE: the two provenance rows that disclose our LIMITS are actually shipped', () => {
+  // BOTH OF THESE WERE BLIND UNTIL NOW, and they were the two the Director
+  // ruled load-bearing. The page could stop saying either one and the whole
+  // suite stayed green, because nothing asserted text that only a reader sees.
+  //
+  // They were written to SATISFY A RULING rather than to catch anything, which
+  // is exactly the class that ships undefended: compliance produces text,
+  // intent produces assertions.
+  //
+  // A page that can silently stop disclosing its own limits is worse than one
+  // that never disclosed them — the disclosure is what earns a reader's trust
+  // in everything else on the page.
+  const { html } = build();
+
+  // Asserted as SEPARATE FRAGMENTS, never as one long phrase. The page embeds
+  // its own JavaScript source, so these strings appear with their `" +` line
+  // breaks intact — a regex spanning a concatenation matches nothing and looks
+  // like a missing row. That cost me an INERT mutation before it cost a test.
+  assert.match(html, /every cell here is a GROUP instance/,
+    'the page must say which instance shape every cell describes');
+  assert.match(html, /instances lock separately \(owner, stated\)/,
+    'and that raid-shape instances lock separately — STATED, never measured');
+
+  assert.match(html, /corpus spanning a weekly-reset/,
+    'the page must disclose that its rules span a regime change');
+  assert.match(html, /change announced 18 Aug 2026/,
+    'and name the date, so a reader can place it against their own log');
+  assert.match(html, /the reset hour was never measured in either/,
+    'and state the limit of the comparison, not just its result');
+
+  // THE NEGATIVE CONTROL. Without it these five assertions would pass against
+  // any page large enough to contain anything, and I would have replaced a
+  // blind spot with a test that cannot fail — which is the shape this whole
+  // sweep exists to find.
+  assert.doesNotMatch(html, /every cell here is a SOLO instance/,
+    'the checker must discriminate: a claim we never made must not match');
+});
