@@ -1232,6 +1232,38 @@ function main() {
   const totalTests = TESTS.reduce((acc, t) =>
     acc + (fs.readFileSync(t, 'utf8').match(/^test\(/gm) || []).length, 0);
 
+  // ── UNMEASURED IS A VERDICT, NOT AN ABSENCE OF ONE. ──────────────────
+  //
+  // `BLIND` means mutated and survived. A site with NO mutation produced no row
+  // at all, and my report rendered the two identically — so `state.events` and
+  // `state.kills` sat outside a bound sweep I had told the Director was
+  // complete. Same defect as counting the universal catcher, in the opposite
+  // direction: one inflated CAUGHT, this one silently shrank the denominator.
+  //
+  // A family is only checkable this way if it can be ENUMERATED FROM SOURCE.
+  // That is the constraint, not a limitation: a hand-written list of sites
+  // would reproduce exactly the gap it is meant to detect.
+  const FAMILIES = [
+    {
+      label: 'bounded arrays — every `.shift()` bound must have a mutation',
+      sites: (src) => [...src.matchAll(/state\.(\w+)\.length > MAX_\w+\) state\.\1\.shift\(\)/g)]
+        .map((m) => m[1]),
+      covered: (site) => MUTATIONS.some((m) => (m.find || '').includes(`state.${site}.length >`)),
+    },
+  ];
+
+  const engineSrc = fs.readFileSync(REL(FILE_ENGINE), 'utf8');
+  const unmeasured = [];
+  console.log('\n=== FAMILY COVERAGE (UNMEASURED, not BLIND) ===');
+  for (const fam of FAMILIES) {
+    const sites = fam.sites(engineSrc);
+    const missing = sites.filter((s) => !fam.covered(s));
+    console.log(`  ${fam.label}`);
+    console.log(`    ${sites.length} site(s) in source, ${sites.length - missing.length} with a mutation`);
+    for (const s of missing) { unmeasured.push(s); console.log(`    UNMEASURED: state.${s} — bounded, never mutated`); }
+    if (!missing.length) console.log('    none unmeasured');
+  }
+
   console.log('\n=== SURFACE ===');
   console.log(`  tests in the suite                   : ${totalTests}`);
   console.log(`  tests that failed under >=1 mutation : ${everFired.size}`);

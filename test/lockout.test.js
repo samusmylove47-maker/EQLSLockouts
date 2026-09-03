@@ -1005,3 +1005,102 @@ test('THE DEDUPE-HORIZON COUNTER CAN ACTUALLY FIRE', () => {
   assert.equal(newer.kills.length, 1);
   assert.equal(small.kills.length, 1);
 });
+
+test('BOUNDS: every bounded array drops the OLDEST, and the family is read FROM SOURCE', () => {
+  // FIVE ARRAYS, ONE FAULT. Each grows without limit unless bounded, and each
+  // bound must drop the OLDEST. Dropping the NEWEST is the wrong direction to
+  // fail in for anything a reader reads for currency — and for `state.kills` it
+  // is not an accuracy bug at all:
+  //
+  //     [5000,"filler1","Maestro of Rancor"] -> [5000,"filler0","filler4999"]
+  //
+  // that is a mutation discarding a freshly observed kill while 5,000 stale
+  // fillers survive. A LOST COMPLETION. A tool that tells a player they have
+  // not done a raid they just did has failed at the only thing it promises.
+  // All five were BLIND until this test existed.
+  //
+  // THE TABLE IS NOT THE FAMILY. The family is enumerated from the source, and
+  // every site found there must appear below or this fails. A hand-written list
+  // covers what its author remembered: `state.events` and `state.kills` were
+  // absent from a bound sweep I believed complete, and a typed table would have
+  // preserved exactly that gap under a green cell. An enumeration cannot report
+  // what it excluded, so this one does not enumerate — it reads the category.
+  const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'lockoutCore.js'), 'utf8');
+
+  const sites = [...src.matchAll(/state\.(\w+)\.length > (MAX_\w+)\) state\.\1\.shift\(\)/g)]
+    .map((m) => ({ array: m[1], capName: m[2] }));
+  assert.ok(sites.length >= 5, `expected the known bound family, found ${sites.length}`);
+
+  const capOf = (name) => {
+    // `\\d`, NOT `\d`. Inside a TEMPLATE LITERAL an unrecognised escape
+    // collapses — `\d` becomes a bare `d`, so the pattern silently became
+    // `(d+)` and matched nothing. The assert below is the only reason that
+    // surfaced as a failure rather than as a cap of NaN quietly under-filling
+    // every array and making all five checks pass against empty bounds.
+    const m = new RegExp(`^const ${name} = (\\d+);`, 'm').exec(src);
+    assert.ok(m, `${name} must be a literal cap this test can read`);
+    return Number(m[1]);
+  };
+
+  // Only the part that CANNOT be derived: how to make each array grow by one.
+  const HOW = {
+    voidlingReplies: {
+      fill: (i) => i + 1,
+      lines: ["[Wed Aug 19 10:00:00 2026] Voidling says, 'Your hubris risks our very reality itself.'"],
+    },
+    events: {
+      fill: (i) => ({ key: 'filler' + i, kind: 'filler', civil: i + 1, at: null }),
+      lines: ['[Wed Aug 19 10:00:00 2026] You have entered Nektulos Forest.'],
+    },
+    requests: {
+      fill: (i) => ({ civil: i + 1, at: null, filler: true }),
+      lines: ["[Wed Aug 19 10:00:00 2026] You say, 'danger'"],
+    },
+    instanceCreations: {
+      fill: (i) => ({ at: null, player: 'filler', zone: 'filler' + i, instanceId: i + 1 }),
+      lines: ['[Wed Aug 19 10:00:00 2026] Player Avenrae creating instance The Plane of Hate 3846.'],
+    },
+    kills: {
+      fill: (i) => ({ civil: i + 1, boss: 'filler' + i, raid: 'filler' }),
+      lines: [
+        '[Wed Aug 19 10:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+        '[Wed Aug 19 10:30:00 2026] Maestro of Rancor has been slain by Chrysaetos!',
+      ],
+    },
+  };
+
+  // COMPLETENESS, BOTH WAYS. A new bounded array with no entry fails here, and
+  // an entry for an array that is no longer bounded fails too — otherwise this
+  // test would quietly keep testing something that had been deleted.
+  for (const { array } of sites) {
+    assert.ok(HOW[array], `state.${array} is bounded in the source but not covered by this test`);
+  }
+  for (const array of Object.keys(HOW)) {
+    assert.ok(sites.some((s) => s.array === array),
+      `this test covers state.${array}, which is no longer a bounded array`);
+  }
+
+  const isFiller = (v) => (typeof v === 'object' && v !== null
+    ? String(v.boss || v.zone || v.key || '').startsWith('filler') || v.filler === true
+    : typeof v === 'number' && v <= 100000);
+
+  for (const { array, capName } of sites) {
+    const cap = capOf(capName);
+    const st = core.createState('Avenrae');
+    st[array] = Array.from({ length: cap }, (_, i) => HOW[array].fill(i));
+    const firstBefore = st[array][0];
+    const secondBefore = st[array][1];
+
+    core.applyLines(st, HOW[array].lines);
+    const a = st[array];
+
+    assert.equal(a.length, cap, `state.${array} must stay at its bound of ${cap}`);
+    assert.notDeepEqual(a[0], firstBefore,
+      `state.${array} kept its OLDEST entry — the bound dropped the wrong end`);
+    assert.deepEqual(a[0], secondBefore,
+      `state.${array} must drop exactly one entry, the oldest`);
+    assert.ok(!isFiller(a[a.length - 1]),
+      `state.${array} discarded the NEWLY OBSERVED entry and kept stale filler — ` +
+      'for kills this is a lost completion');
+  }
+});
