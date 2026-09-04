@@ -1173,8 +1173,19 @@ const UNIVERSAL_CATCHERS = [
 
 const MUTABLE = [FILE_ENGINE, FILE_TEMPLATE, FILE_BUILD];
 
+// ── RESTORING THE SOURCE IS NOT RESTORING THE TREE. ──────────────────────
+//
+// `built()` runs build-app.js, which WRITES `public/app/`. Restoring only the
+// three source files left the last mutation's build sitting on disk — and on
+// 4 Sep 2026 a `git add -A` committed one. **A mutant artifact reached `main`
+// with its "instance shape" provenance row reading "not stated" instead of the
+// disclosure**, one of the two rows ruled load-bearing.
+//
+// The build outputs are restored here too, and the run rebuilds from clean
+// source at the end so what is on disk is what the committed source produces.
+const BUILD_OUTPUT = 'public/app';
 function restore() {
-  execFileSync('git', ['checkout', '--', ...MUTABLE], { cwd: ROOT });
+  execFileSync('git', ['checkout', '--', ...MUTABLE, BUILD_OUTPUT], { cwd: ROOT });
 }
 
 function probeOf(mut) {
@@ -1311,7 +1322,16 @@ function main() {
   }
 
   restore();
-  const after = execFileSync('git', ['status', '--porcelain', ...MUTABLE],
+  // ── THE CLEANLINESS CHECK WAS SCOPED TO THE FILES IT RESTORES. ─────────
+  //
+  // Asking `git status` about only MUTABLE meant it reported "tree after
+  // restore: clean" while `public/app/` held a build made from mutated source.
+  // **An instrument whose scope is narrower than its claim cannot see the mess
+  // it makes** — the same fault as the bound guard measuring `.shift()` while
+  // claiming "bounded". Unscoped now: it asks about the WHOLE tree, including
+  // untracked files, so a stray artifact is visible instead of implied absent.
+  execFileSync(process.execPath, [path.join(ROOT, 'build-app.js')], { cwd: ROOT, stdio: 'ignore' });
+  const after = execFileSync('git', ['status', '--porcelain'],
     { cwd: ROOT, encoding: 'utf8' }).trim();
 
   // Outcomes never share a column.
