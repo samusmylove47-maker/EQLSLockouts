@@ -352,7 +352,18 @@ unaffected; only my evidence for asking it was wrong.
 NEVER INVENT A NUMBER · DERIVE, NEVER TYPE · A CLEARANCE CARRIES THE STRING YOU
 SEARCHED · A CHECK RESULT NAMES THE TREE IT WAS MEASURED ON · A DRAWING IS AN
 ASSERTION · ONE SAMPLE IS A SAMPLE, NOT A RATE · NEVER PRESENT LIVE EQ OR P99
-BEHAVIOUR AS LEGENDS · **A REFUSAL TO GUESS IS NOT A REFUSAL TO HELP.**
+BEHAVIOUR AS LEGENDS · **FINISHED MEANS GREEN, CLEAN, PUSHED AND REACHABLE** ·
+**A REFUSAL TO GUESS IS NOT A REFUSAL TO HELP.**
+
+**Why "reachable" is in that list, because a rule without its reason is the one
+that gets deleted by whoever finds it inconvenient.** Green, clean and pushed
+are properties of your own tree. **Reachable is a property of the world, which
+is why it is the one that goes unmeasured.** On 3 Sep 2026 fifteen commits — all
+green, tree clean, branch pushed — sat behind a PR nobody had opened, the last
+merge having been 1 September; it surfaced only because someone asked for a
+status. The same thing happened once before, at 51 commits, on the integration
+date. **The check is one command — `git log origin/main..HEAD` and whether a PR
+exists — and the failure it prevents is a day of finished work nobody can read.**
 
 Security, standing: **no memory reading, no packet inspection, no client
 injection.** Log files and what the client prints to the player, nothing else.
