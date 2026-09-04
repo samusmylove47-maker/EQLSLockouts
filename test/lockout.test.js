@@ -1006,11 +1006,31 @@ test('THE DEDUPE-HORIZON COUNTER CAN ACTUALLY FIRE', () => {
   assert.equal(small.kills.length, 1);
 });
 
-test('BOUNDS: every bounded array drops the OLDEST, and the family is read FROM SOURCE', () => {
-  // FIVE ARRAYS, ONE FAULT. Each grows without limit unless bounded, and each
-  // bound must drop the OLDEST. Dropping the NEWEST is the wrong direction to
-  // fail in for anything a reader reads for currency — and for `state.kills` it
-  // is not an accuracy bug at all:
+test('BOUNDS: every `.shift()`-BOUNDED array drops the OLDEST — the `.shift()` family only', () => {
+  // ── WHAT THIS DOES NOT COVER, STATED FIRST BECAUSE IT USED TO OVERCLAIM. ──
+  //
+  // This was called "every bounded array" and it is not. It enumerates
+  // `.shift()` bound SITES from the source, so it is complete over the
+  // `.shift()` FAMILY — and an array that was never bounded at all has no site
+  // to enumerate and is invisible to it.
+  //
+  // **`state.spans` IS EXACTLY THAT AND IT IS UNBOUNDED.** It grows by
+  // `push`/`splice` with no cap: 5,000 lines produced 2,376 spans, measured.
+  // Found on 4 Sep 2026 by reading Session C's fork of this engine, which had
+  // added a `MAX_SPANS` this file never had — an outside instrument seeing what
+  // ours could not, in a repository that has only ever had one author.
+  //
+  // The guard was COMPLETE OVER THE WRONG CATEGORY: `.shift()` is a vocabulary,
+  // "bounded" is a property, and it was measuring the vocabulary while claiming
+  // the property. **A guard that overclaims is worse than a narrow one, because
+  // the next reader stops looking.** Renamed rather than widened, deliberately:
+  // widening it and capping `spans` is queued, and until then the gap is
+  // written down here instead of hidden behind a title.
+  //
+  // FIVE ARRAYS, ONE FAULT. Each of these grows without limit unless bounded,
+  // and each bound must drop the OLDEST. Dropping the NEWEST is the wrong
+  // direction to fail in for anything a reader reads for currency — and for
+  // `state.kills` it is not an accuracy bug at all:
   //
   //     [5000,"filler1","Maestro of Rancor"] -> [5000,"filler0","filler4999"]
   //
@@ -1029,7 +1049,7 @@ test('BOUNDS: every bounded array drops the OLDEST, and the family is read FROM 
 
   const sites = [...src.matchAll(/state\.(\w+)\.length > (MAX_\w+)\) state\.\1\.shift\(\)/g)]
     .map((m) => ({ array: m[1], capName: m[2] }));
-  assert.ok(sites.length >= 5, `expected the known bound family, found ${sites.length}`);
+  assert.ok(sites.length >= 5, `expected the known .shift() bound family, found ${sites.length}`);
 
   const capOf = (name) => {
     // `\\d`, NOT `\d`. Inside a TEMPLATE LITERAL an unrecognised escape
@@ -1073,11 +1093,11 @@ test('BOUNDS: every bounded array drops the OLDEST, and the family is read FROM 
   // an entry for an array that is no longer bounded fails too — otherwise this
   // test would quietly keep testing something that had been deleted.
   for (const { array } of sites) {
-    assert.ok(HOW[array], `state.${array} is bounded in the source but not covered by this test`);
+    assert.ok(HOW[array], `state.${array} has a .shift() bound in the source but is not covered here`);
   }
   for (const array of Object.keys(HOW)) {
     assert.ok(sites.some((s) => s.array === array),
-      `this test covers state.${array}, which is no longer a bounded array`);
+      `this test covers state.${array}, which no longer has a .shift() bound`);
   }
 
   const isFiller = (v) => (typeof v === 'object' && v !== null
@@ -1094,7 +1114,7 @@ test('BOUNDS: every bounded array drops the OLDEST, and the family is read FROM 
     core.applyLines(st, HOW[array].lines);
     const a = st[array];
 
-    assert.equal(a.length, cap, `state.${array} must stay at its bound of ${cap}`);
+    assert.equal(a.length, cap, `state.${array} must stay at its .shift() bound of ${cap}`);
     assert.notDeepEqual(a[0], firstBefore,
       `state.${array} kept its OLDEST entry — the bound dropped the wrong end`);
     assert.deepEqual(a[0], secondBefore,
