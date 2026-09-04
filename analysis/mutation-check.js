@@ -1167,6 +1167,26 @@ const MUTATIONS = [
 // Tests that fail on ANY edit to a built source file, behavioural or not.
 // They are legitimate tests and useless as mutation catchers: see the note at
 // the verdict. Matched by substring against the test name.
+//
+// ── "DISCOUNTED HERE" DOES NOT MEAN "LOW VALUE". READ THIS BEFORE CONCLUDING
+//    OTHERWISE, BECAUSE ITS AUTHOR DID AND IT COST A LIVE PAGE. ────────────
+//
+// **A test's value as a MUTATION DISCRIMINATOR and its value as a CHECK are
+// different axes, and this harness measures only the first.** A test that
+// fires on every change discriminates nothing — it cannot say WHICH mutation
+// it caught — so as a mutation instrument it is noise, and discounting it here
+// is correct.
+//
+// **It is also the only assertion in the suite that compares WHAT IS COMMITTED
+// against WHAT THE SOURCE PRODUCES, and no amount of discrimination
+// substitutes for that.** On 4 Sep 2026 an artifact built from MUTATED SOURCE
+// was committed and merged to `main`, dropping a reader-facing disclosure from
+// the live page. **This test was the only thing that caught it.**
+//
+// This file has no column for what a test would cost if removed, and the two
+// axes come apart hardest exactly here: **the broadest checks discriminate
+// worst and protect most.** Do not read a name in this list as a candidate for
+// deletion.
 const UNIVERSAL_CATCHERS = [
   'the COMMITTED latest.txt names what the CURRENT SOURCE produces',
 ];
@@ -1418,6 +1438,14 @@ function main() {
   for (const r of blind) console.log(`    BLIND: ${r.mut.name} — ${r.mut.claim}`);
   for (const r of inert) console.log(`    INERT (verdict meaningless, fix the mutation): ${r.mut.name}`);
   for (const r of noanchor) console.log(`    NO ANCHOR (harness is stale): ${r.mut.name}`);
+  // The reader of this OUTPUT is the one who misreads the discount, not the
+  // reader of the source. Said here as well as at UNIVERSAL_CATCHERS.
+  console.log('\n  NOTE: this report discounts ' + UNIVERSAL_CATCHERS.length +
+              ' test(s) that fire on every change. That is about MUTATION');
+  console.log('  DISCRIMINATION only — as CHECKS they are the broadest cover in the suite,');
+  console.log('  and one of them caught a mutant artifact that had reached main. Discounted');
+  console.log('  here is not low value, and nothing in this file scores what a test protects.');
+
   console.log(`\n  tree after restore: ${after ? 'DIRTY — ' + after : 'clean'}`);
 
   if (after) process.exit(2);
