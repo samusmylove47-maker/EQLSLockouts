@@ -37,3 +37,17 @@ public/app/*.html -text
 # and test/build.test.js now asserts it rather than trusting the glob reads the
 # way it looks.
 public/app/**/*.html -text
+
+# AND THE POINTER, FOR THE SAME REASON AND FROM THE SAME WRITER.
+#
+# `latest.txt` is written by build-app.js in the same breath as the artifact,
+# with LF. It was not covered, so git wanted CRLF in the working copy and
+# reported it MODIFIED after every single build — `git diff` empty, `git status`
+# dirty, forever.
+#
+# That is not cosmetic. It made `public/app/` permanently noisy, and on
+# 4 Sep 2026 a stray artifact built from MUTATED SOURCE was committed out of
+# that directory by a `git add -A` — past a warning I had seen on every commit
+# for two days and had stopped reading. **A warning that is always there is not
+# a warning.** Silencing the false one is what lets a true one be seen.
+public/app/latest.txt -text
