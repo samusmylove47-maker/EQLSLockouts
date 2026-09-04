@@ -1346,7 +1346,9 @@ function main() {
   // would reproduce exactly the gap it is meant to detect.
   const FAMILIES = [
     {
-      label: 'bounded arrays — every `.shift()` bound must have a mutation',
+      label: '.shift()-bounded arrays — every `.shift()` site must have a mutation'
+        + ' (NOT every array that grows: `state.spans` has no bound and no site,'
+        + ' so it cannot appear here — see test/lockout.test.js BOUNDS)',
       sites: (src) => [...src.matchAll(/state\.(\w+)\.length > MAX_\w+\) state\.\1\.shift\(\)/g)]
         .map((m) => m[1]),
       covered: (site) => MUTATIONS.some((m) => (m.find || '').includes(`state.${site}.length >`)),
