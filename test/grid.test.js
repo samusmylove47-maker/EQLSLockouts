@@ -1896,3 +1896,91 @@ test('ROSTER: every near-miss name in the evidence completes NOTHING', () => {
   assert.equal(ctl.kills.length, 1, 'the instrument must still register a REAL kill');
   assert.equal(core.projectGrid(ctl, NOW).completedCount, 1);
 });
+
+test('RESET BOUNDARY: supplying the rule is INERT by default, and LIVE when it differs', () => {
+  // `projectGrid` now takes an optional reset boundary so a host can supply one
+  // this module cannot compute — the owner's Tuesday 11:00 EASTERN is a wall
+  // clock in a zone, and this module deliberately owns no timezone.
+  //
+  // THE BAR IS INERTNESS FIRST. The engine ships inside two products (our
+  // artifact and Session C's =Auras), so the change must be provably incapable
+  // of moving a cell before it is useful for anything.
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    ...heartbeat(17, 21),
+    '[Wed Aug 19 20:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Wed Aug 19 20:30:00 2026] Maestro of Rancor has been slain by Chrysaetos!',
+  ]);
+
+  const base = core.projectGrid(st, NOW);
+
+  // ── INERT: no opts, empty opts, and opts restating the defaults ──────────
+  assert.deepEqual(core.projectGrid(st, NOW, {}).cells, base.cells,
+    'an empty options object must change nothing');
+  assert.deepEqual(
+    core.projectGrid(st, NOW, { resetWeekday: core.RESET_RULE.weekday }).cells, base.cells,
+    'restating the default weekday must change nothing');
+  // Whole projection, not only cells — a parameter that moved a count or a
+  // provenance line while leaving cells alone would still be a behaviour change.
+  assert.deepEqual(core.projectGrid(st, NOW, {}), base,
+    'the entire projection must be identical, not just the cells');
+
+  // ── LIVE: the positive control. Without this, every assertion above is
+  // satisfied by a parameter that is never read — which is exactly how a dead
+  // branch passed a "changes no cell" test in this repo four days ago.
+  const shifted = core.projectGrid(st, NOW, { resetWeekday: 5 });   // Friday
+  assert.notDeepEqual(shifted.period.boundaryDay, base.period.boundaryDay,
+    'a different reset weekday MUST move the boundary — else the option is dead');
+  assert.equal(shifted.period.boundaryWeekday, 'Friday',
+    'and the reported weekday name must follow the supplied rule, not the frozen one');
+
+  // ── THE HOUR: dormant machinery, now reachable ───────────────────────────
+  assert.equal(base.period.hourKnown, false, 'by default the hour is still unmeasured');
+  assert.equal(base.period.periodStartedAt, null);
+  const withHour = core.projectGrid(st, NOW, { resetHour: 11 });
+  assert.equal(withHour.period.hourKnown, true, 'a supplied hour must be consumed');
+  assert.ok(withHour.period.periodStartedAt, 'and must produce an instant');
+  assert.match(withHour.period.periodStartedAt, / 11:00:00$/,
+    'the period must start at the supplied hour');
+
+  // ── boundaryCivil: the timezone-honest form, and it wins over an hour ─────
+  const boundary = { year: 2026, month: 8, day: 18, hour: 11, minute: 0, second: 0 };
+  const withBoundary = core.projectGrid(st, NOW, { boundaryCivil: boundary, resetHour: 3 });
+  assert.equal(withBoundary.period.periodStartedAt, '2026-08-18 11:00:00',
+    'an explicit boundary must be used verbatim and must beat resetHour');
+
+  // ── AND IT REFUSES A BOUNDARY IT CANNOT MEAN ─────────────────────────────
+  // A period that starts after `now` has negative length. Guessing which way
+  // the caller meant it would produce cells computed from nonsense.
+  assert.throws(
+    () => core.projectGrid(st, NOW, { boundaryCivil: { year: 2099, month: 1, day: 1, hour: 0, minute: 0, second: 0 } }),
+    /supplied period start is AFTER/,
+    'a boundary after `now` must be refused, not guessed at');
+});
+
+test('RESET BOUNDARY: a known hour retires the `conditional` state', () => {
+  // `conditional` exists solely to carry "we do not know which side of the
+  // turnover this kill fell on". With an hour there is no ambiguity to carry,
+  // and the cell becomes an answer instead of a condition. This is the whole
+  // reason the parameter is worth having.
+  //
+  // NOW is a Friday, so build a state whose kill lands on the reset weekday
+  // itself — the only day the ambiguity arises.
+  const st = core.createState('Avenrae');
+  core.applyLines(st, [
+    ...heartbeat(11, 21),
+    '[Tue Aug 18 09:00:00 2026] You have entered The Plane of Hate - Group 4 (Refined).',
+    '[Tue Aug 18 09:30:00 2026] Maestro of Rancor has been slain by Chrysaetos!',
+  ]);
+  const onBoundary = { year: 2026, month: 8, day: 18, hour: 20, minute: 0, second: 0 };
+
+  const vague = core.projectGrid(st, onBoundary);
+  const exact = core.projectGrid(st, onBoundary, { resetHour: 11 });
+
+  assert.equal(vague.period.hourKnown, false);
+  assert.equal(exact.period.hourKnown, true);
+  // The kill at 09:30 is BEFORE an 11:00 turnover, so with the hour known it
+  // belongs to the previous period and the cell is answered rather than hedged.
+  assert.ok(exact.conditionalCount <= vague.conditionalCount,
+    'knowing the hour must not INCREASE the number of hedged cells');
+});

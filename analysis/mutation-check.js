@@ -181,8 +181,12 @@ const MUTATIONS = [
 
   { name: 'hour-known-forced-true',
     claim: 'the reset hour is unmeasured and conditional cells carry that',
-    find: "const hourKnown = typeof resetHour === 'number' && resetHour >= 0 && resetHour < 24;",
-    repl: 'const hourKnown = true;',
+    // ANCHOR REPAIRED 6 Sep: I renamed this expression to `hourFromOpts` when
+    // projectGrid learned to take a supplied boundary, which left the mutation
+    // pointing at a line that no longer exists. NOANCHOR, not a finding — my
+    // own edit staling my own instrument, caught by the harness rather than by me.
+    find: "  const hourKnown = explicitBoundary !== null || hourFromOpts;",
+    repl: '  const hourKnown = true;',
     probe: (c) => c.projectGrid(stateOf(c, beat(15, 21)), NOW).period.hourKnown },
 
   { name: 'token-cap-raised-to-99',
@@ -999,6 +1003,55 @@ const MUTATIONS = [
     probe: (c) => {
       const g = c.projectGrid(stateOf(c, beat(19, 20)), NOW);
       return Object.keys(g.cells[0]).sort().join(',');
+    } },
+
+
+  // ── THE SUPPLIABLE RESET BOUNDARY (6 Sep). ─────────────────────────────
+  //
+  // A parameter that is never read satisfies every inertness assertion — the
+  // dead-branch fault, four days old, in this same module. These exist so the
+  // "supplying the rule is INERT by default" test cannot pass on dead options.
+
+  { name: 'reset-weekday-opt-ignored',
+    claim: 'a supplied reset weekday is consumed, not silently dropped',
+    find: '  const weekday = Number.isInteger(opts.resetWeekday) ? opts.resetWeekday : RESET_RULE.weekday;',
+    repl: '  const weekday = RESET_RULE.weekday;',
+    probe: (c) => {
+      const g = c.projectGrid(stateOf(c, beat(19, 20)), NOW, { resetWeekday: 5 });
+      return [g.period.boundaryWeekday, g.period.boundaryDay];
+    } },
+
+  { name: 'reset-hour-opt-ignored',
+    claim: 'a supplied reset hour is consumed — the dormant path becomes reachable',
+    find: '  const resetHour = Number.isInteger(opts.resetHour) ? opts.resetHour : RESET_RULE.hour;',
+    repl: '  const resetHour = RESET_RULE.hour;',
+    probe: (c) => {
+      const g = c.projectGrid(stateOf(c, beat(19, 20)), NOW, { resetHour: 11 });
+      return [g.period.hourKnown, g.period.periodStartedAt];
+    } },
+
+  { name: 'boundary-civil-ignored',
+    claim: 'an explicit boundary is used verbatim — it is the only timezone-honest form',
+    find: '  const explicitBoundary = opts.boundaryCivil ? civilOf(opts.boundaryCivil) : null;',
+    repl: '  const explicitBoundary = null;',
+    probe: (c) => {
+      const g = c.projectGrid(stateOf(c, beat(19, 20)), NOW,
+        { boundaryCivil: { year: 2026, month: 8, day: 18, hour: 11, minute: 0, second: 0 } });
+      return [g.period.hourKnown, g.period.periodStartedAt];
+    } },
+
+  { name: 'future-boundary-accepted',
+    claim: 'a period start after `now` is REFUSED, never guessed at',
+    // Accepting it yields a period of negative length and cells computed from
+    // it. Refusing is the same stance as requireCivil refusing an epoch.
+    find: '    if (explicitBoundary > nowCivil) {',
+    repl: '    if (false) {',
+    probe: (c) => {
+      try {
+        c.projectGrid(stateOf(c, beat(19, 20)), NOW,
+          { boundaryCivil: { year: 2099, month: 1, day: 1, hour: 0, minute: 0, second: 0 } });
+        return 'ACCEPTED-A-FUTURE-BOUNDARY';
+      } catch (e) { return 'threw:' + e.constructor.name; }
     } },
 
   { name: 'events-bound-drops-the-NEWEST',
