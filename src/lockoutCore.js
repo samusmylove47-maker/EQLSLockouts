@@ -958,6 +958,11 @@ const RAID_OF_BOSS = Object.freeze(
 // without seeing this window and a window read without seeing that measurement
 // agree, which is the strongest corroboration this project has produced.
 
+// Index 0 = Sunday, matching civilWeekday and Date.getUTCDay. Used to name a
+// SUPPLIED reset weekday; the module's own default name lives in RESET_RULE.
+const WEEKDAY_NAMES = Object.freeze(
+  ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
+
 const RESET_RULE = Object.freeze({
   weekday: 2,                    // 0 = Sunday, so 2 = Tuesday
   weekdayName: 'Tuesday',
@@ -2088,15 +2093,45 @@ function projectPeriod(state) {
 // NO COUNTDOWN. `available` is a state, never a time. The owner asked for no
 // countdown and the module could not honestly produce one anyway: the reset
 // hour is not recorded.
-function projectGrid(state, now) {
+// ── THE RULE IS SUPPLIABLE, AND THE ENGINE STILL OWNS NO TIMEZONE. ─────────
+//
+// `opts` lets a HOST supply the reset boundary instead of taking this module's
+// default. Every field is optional and omitting all of them reproduces the
+// previous behaviour exactly — asserted, not assumed, by a matched-pair test.
+//
+//   opts.boundaryCivil   a civil timestamp: the instant the current period
+//                        began, IN THE SAME CLOCK THAT WROTE THE LOG. This is
+//                        the timezone-honest parameter and the one a host with
+//                        a real zone conversion should use.
+//   opts.resetHour       0-23, an hour in the LOG'S OWN CLOCK.
+//   opts.resetWeekday    0-6, Sunday = 0.
+//
+// **WHY `boundaryCivil` EXISTS AND WHY IT IS NOT THE SAME AS `resetHour`.**
+// The owner states the period runs Tuesday 11:00 EASTERN. This module works in
+// the client's local wall clock and deliberately owns no timezone — see
+// CAVEAT_DST. Those two coincide only for a player whose machine is Eastern.
+// **Passing 11 as `resetHour` for a player on Pacific would place the boundary
+// three hours wrong, and wrong in the direction of confidently assigning a kill
+// to the wrong week.** So converting "Tuesday 11:00 Eastern" into an instant is
+// the HOST's job — it is the only layer that knows the machine's zone — and
+// `boundaryCivil` is where the answer comes in. Session C's `=Auras` does
+// exactly this conversion in `src/shared/easternReset.js`, DST-aware.
+//
+// **THIS IS PARAMETERISATION, NOT A MODEL CHANGE.** `RESET_RULE.hour` is still
+// null and no default changed. What the owner stated is not baked in here,
+// because baking it in would assert the client's clock is Eastern.
+function projectGrid(state, now, opts = {}) {
   requireCivil(now);
   const nowCivil = civilOf(now);
 
-  // The period boundary is a DAY, not an instant, because the rule is a day.
-  // Walk back to the most recent RESET_RULE.weekday at or before `now`.
+  const weekday = Number.isInteger(opts.resetWeekday) ? opts.resetWeekday : RESET_RULE.weekday;
+  const weekdayName = WEEKDAY_NAMES[weekday] || RESET_RULE.weekdayName;
+
+  // The period boundary is a DAY, not an instant, unless an hour is known.
+  // Walk back to the most recent reset weekday at or before `now`.
   const nowDay = Date.UTC(now.year, now.month - 1, now.day);
   const dow = new Date(nowDay).getUTCDay();
-  const back = (dow - RESET_RULE.weekday + 7) % 7;
+  const back = (dow - weekday + 7) % 7;
   let boundaryDayStart = nowDay - back * 86400000;
   let boundaryDayEnd = boundaryDayStart + 86400000;
 
@@ -2126,10 +2161,29 @@ function projectGrid(state, now) {
   // here and nowhere else, and the test that fails when a reset constant appears
   // outside that field is unaffected — reading the attributed field is the
   // permitted case; copying its value somewhere else is not.
-  const resetHour = RESET_RULE.hour;
-  const hourKnown = typeof resetHour === 'number' && resetHour >= 0 && resetHour < 24;
+  const resetHour = Number.isInteger(opts.resetHour) ? opts.resetHour : RESET_RULE.hour;
+  const hourFromOpts = typeof resetHour === 'number' && resetHour >= 0 && resetHour < 24;
+  // An explicit boundary beats an hour: it is already the instant, and it is
+  // the only form that can carry a conversion this module cannot perform.
+  const explicitBoundary = opts.boundaryCivil ? civilOf(opts.boundaryCivil) : null;
+  const hourKnown = explicitBoundary !== null || hourFromOpts;
   let periodStart = null;          // the exact instant, or null while unmeasured
-  if (hourKnown) {
+  if (explicitBoundary !== null) {
+    // REFUSE, DO NOT GUESS. A boundary after `now` is a caller error, and
+    // guessing which way they meant it would produce a period of negative
+    // length and cells computed from it. Same stance as requireCivil.
+    if (explicitBoundary > nowCivil) {
+      throw new RangeError(
+        'projectGrid(opts.boundaryCivil): the supplied period start is AFTER `now` ' +
+        '(' + formatCivil(fromCivil(explicitBoundary)) + ' > ' + formatCivil(now) + '). ' +
+        'It must be the instant the CURRENT period began.');
+    }
+    periodStart = explicitBoundary;
+    // Keep the day window consistent with the supplied instant, so every
+    // downstream reader sees one boundary rather than two disagreeing ones.
+    boundaryDayStart = periodStart - ((periodStart % 86400000) + 86400000) % 86400000;
+    boundaryDayEnd = boundaryDayStart + 86400000;
+  } else if (hourKnown) {
     periodStart = boundaryDayStart + resetHour * 3600000;
     // If the turnover has NOT yet happened today, the live period is last
     // week's. With a day-granular boundary this was unknowable and produced the
@@ -2440,7 +2494,7 @@ function projectGrid(state, now) {
         cellState = 'conditional';
         const say = (h) => (h.s === 'conditional' ? `${h.doneIf} — ${h.s}` : h.s);
         because =
-          `today is ${RESET_RULE.weekdayName} and the reset hour has never been measured, so ` +
+          `today is ${weekdayName} and the reset hour has never been measured, so ` +
           `whether the turnover has happened yet is unknown: "${say(h1)}" if it has, ` +
           `"${say(h2)}" if it has not`;
         decidedBy = {
@@ -2523,7 +2577,7 @@ function projectGrid(state, now) {
     resetRule: RESET_RULE,
     period: {
       boundaryDay: formatCivil(fromCivil(boundaryDayStart)).slice(0, 10),
-      boundaryWeekday: RESET_RULE.weekdayName,
+      boundaryWeekday: weekdayName,
       // TRUE once the reset hour is measured and this projection used it.
       // While false, the boundary is a whole day and `conditional` cells carry
       // the ambiguity; the moment it is true they stop arising at all.
